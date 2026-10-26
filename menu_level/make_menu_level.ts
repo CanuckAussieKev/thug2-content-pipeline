@@ -616,6 +616,60 @@ export function addLevelEditor(text: string): string {
     return text.slice(0, at) + LEVEL_EDITOR_SCRIPTS + text.slice(at);
 }
 
+// --- the new front end's pause menu items (the DLL's src/game/front/new_frontend.h) ----------------------------------
+
+const NEW_FRONTEND_PAUSE_SCRIPTS = `script newfe_pause_open {
+    NewFrontend_Open <...>
+}
+script newfe_pause_restart {
+    handle_pause_continue <...>
+    SpawnScript newfe_pause_restart_after
+}
+script newfe_pause_restart_after {
+    wait 1 gameframe
+    ResetSkaters
+}
+`;
+
+export function addNewFrontendPause(text: string): string {
+    // With [features] new_frontend=1 the pause menu is the game's, restyled by the DLL - so the new front end's own
+    // items are made here, each only while NewFrontend_PauseItem says so (false with the new front end off: the menu as
+    // it was): RESTART after CONTINUE (free skate: CONTINUE, then ResetSkaters), CHANGE LEVEL opening our level select
+    // (NewFrontend_Open screen=levels) in place of the game's, and OPTIONS (ours; its Game options row opens the game's)
+    // in place of GAME OPTIONS. A part not found (Anteara Mod's pause menu) is left as it is.
+    const continueItem = /\n( *)add_roundbar_menu_item \{text="CONTINUE" \n[\s\S]*?\n\1\} \n/g;
+    text = text.replace(
+        continueItem,
+        (block: string, indent: string) =>
+            `${block}${indent}if NewFrontend_PauseItem item=restart {\n${indent}    add_roundbar_menu_item text="RESTART" ` +
+            `id=menu_newfe_restart pad_choose_script=newfe_pause_restart \n${indent}} \n`,
+    );
+    const changeLevel = search(/\n( *)(add_roundbar_menu_item \{text="CHANGE LEVEL" \n[\s\S]*?\n\1\} \n)/, text);
+    if (changeLevel) {
+        const indent = changeLevel.str(1);
+        const wrapped =
+            `\n${indent}if NewFrontend_PauseItem item=levels {\n${indent}    add_roundbar_menu_item text="CHANGE LEVEL" ` +
+            `id=menu_level_select pad_choose_script=newfe_pause_open pad_choose_params={screen=levels} \n` +
+            `${indent}} else {\n${indent}${changeLevel.str(2)}${indent}} \n`;
+        text = text.slice(0, changeLevel.start()) + wrapped + text.slice(changeLevel.end());
+    }
+    const gameOptions = search(
+        /\n( *)(add_roundbar_menu_item text="GAME OPTIONS" id=menu_game_options pad_choose_script=create_options_menu \n)/,
+        text,
+    );
+    if (gameOptions) {
+        const indent = gameOptions.str(1);
+        const wrapped =
+            `\n${indent}if NewFrontend_PauseItem item=options {\n${indent}    add_roundbar_menu_item text="OPTIONS" ` +
+            `id=menu_newfe_options pad_choose_script=newfe_pause_open pad_choose_params={screen=options} \n` +
+            `${indent}} else {\n${indent}    ${gameOptions.str(2)}${indent}} \n`;
+        text = text.slice(0, gameOptions.start()) + wrapped + text.slice(gameOptions.end());
+    }
+    const register = text.indexOf("\n__register_checksums__");
+    const at = register >= 0 ? register + 1 : text.length;
+    return text.slice(0, at) + NEW_FRONTEND_PAUSE_SCRIPTS + text.slice(at);
+}
+
 // --- GAME OPTIONS' CREATE 100% CAS (career_complete.ts; the DLL's src/game/front/career_complete.h) --------------
 
 export const OPTIONS_MENU_QB = "levels\\mainmenu\\mainmenu_options.qb";
@@ -1213,9 +1267,13 @@ async function main(): Promise<number> {
             "TestLevel.qb",
         );
         write(testlevelNodes(testlevel), "levels\\TestLevel\\TestLevel.qb");
-        // Always: the pause menu's LEVEL EDITOR (the DLL's [features] level_editor decides whether it shows).
+        // Always: the pause menu's LEVEL EDITOR (the DLL's [features] level_editor decides whether it shows) and the
+        // new front end's items (its [features] new_frontend).
         // (and THAW's BMX's RIDE BMX when its staging folder is there - tools/pipeline/thaw_bmx/install.ts)
-        write(thawBmxInstall.addPauseItem(addLevelEditor(pause), game), "scripts\\game\\menu\\gamemenu_pause.qb");
+        write(
+            thawBmxInstall.addPauseItem(addNewFrontendPause(addLevelEditor(pause)), game),
+            "scripts\\game\\menu\\gamemenu_pause.qb",
+        );
         // Always: GAME OPTIONS' CREATE 100% CAS (the DLL's [features] create_100_cas decides whether it shows).
         addCreate100Cas(decompile, write, pre, levels);
         // The ports' own people (tools/pipeline/level_port/ped_models.ts): their CAS parts and profiles added to THUG2's lists.
@@ -1300,7 +1358,10 @@ async function main(): Promise<number> {
                         ["scripts\\game\\levels.qb", overlayLevels],
                         ["scripts\\game\\menu\\gamemenu_levelselect.qb", overlaySelect],
                         ["scripts\\game\\menu\\sprites.qb", overlaySprites],
-                        ["scripts\\game\\menu\\gamemenu_pause.qb", addLevelEditor],
+                        [
+                            "scripts\\game\\menu\\gamemenu_pause.qb",
+                            (text: string) => addNewFrontendPause(addLevelEditor(text)),
+                        ],
                         ...pedEdits,
                         ...(thug1Driving
                             ? [
