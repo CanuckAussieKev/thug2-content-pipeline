@@ -42,7 +42,7 @@
 //                              For the games with scenic art (scenic_art.ts: THPS3 so far) the levels with a chosen capture
 //                              in the cache get a filtered picture of the level itself instead (640 x 360; its HD version
 //                              2560 x 1440 from the capture, not upscaled); --scenic-style a|b|c picks the filter, off the crops.
-//   anteara\                  the Anteara Mod's script set (tools/anteara/README.md; the DLL reads it first while
+//   anteara\                  Anteara Mod's script set (tools/anteara/README.md; the DLL reads it first while
 //                              [features] anteara_mod=1), with the edits above re-applied to the files it changes.
 //   frontend\levels.json      the DLL's new front end's level select data (frontend_levels.ts; read while [features]
 //                              new_frontend=1 - src/game/front/new_frontend.h); frontend\fonts\*.ttf its fonts, copied
@@ -84,7 +84,7 @@ import {
 import { findall, finditer, type Match, search, sub } from "../lib/re.ts";
 import { unpackNumbers } from "../lib/struct.ts";
 import * as thawBmxInstall from "../thaw_bmx/install.ts"; // (THAW's BMX: bike, skeleton, animations - phase 1)
-import { applyTextEdits, CAR_SCRIPTS, DRIVING_EDITS } from "../thug1_levels/driving.ts"; // (PC-THUG1-22, the Anteara Mod's copy)
+import { applyTextEdits, CAR_SCRIPTS, DRIVING_EDITS } from "../thug1_levels/driving.ts"; // (PC-THUG1-22, Anteara Mod's copy)
 import * as thug2Levels from "../thug2_levels/thugpro_apply.ts"; // (THUGPRO's changes to THUG2's levels: TP-42)
 import * as careerComplete from "./career_complete.ts"; // (GAME OPTIONS' CREATE 100% CAS)
 import { reEscape } from "./career_complete.ts";
@@ -100,7 +100,7 @@ import * as scenicArt from "./scenic_art.ts"; // (pictures of the levels themsel
 const USAGE =
     "usage: make_menu_level.ts [--game GAME] [--out OUT] [--ns NS] [--hd-ui 2|4] [--hd-ui-model M] [--frontend-fonts DIR] [--scenic-style a|b|c|off]";
 
-// The Anteara Mod (the anteara-mod repository, the decomp's submodule tools/anteara) is optional: without it the
+// Anteara Mod (the anteara-mod repository, the decomp's submodule tools/anteara) is optional: without it the
 // overlay is made without its anteara\ folder. (AntearaMod: the part of its anteara.ts this uses.)
 type AntearaEdit = (text: string) => string;
 interface AntearaMod {
@@ -594,7 +594,7 @@ export function addLevelEditor(text: string): string {
     // my_exit_pause_menu does (the game stays paused: no UnpauseGame), the skater out of the world as its edit_goal
     // does (PauseSkaters, HideSkaterAndMiscSkaterEffects), and Start / Select over to the editor (Start leaves it).
     // level_editor_exit brings the skater back and the pause menu again (its CONTINUE unpauses as ever).
-    // (Id= in the Anteara Mod's pause menu: tools/anteara)
+    // (Id= in Anteara Mod's pause menu: tools/anteara)
     const options = search(
         /\n( *)add_roundbar_menu_item text="YOUR OPTIONS" [Ii]d=menu_your_options pad_choose_script=create_your_options_menu \n/,
         text,
@@ -1280,7 +1280,7 @@ async function main(): Promise<number> {
             );
         }
 
-        // The Anteara Mod (tools/anteara; the DLL reads anteara\ first while [features] anteara_mod=1): its script
+        // Anteara Mod (tools/anteara; the DLL reads anteara\ first while [features] anteara_mod=1): its script
         // set, with the edits above re-applied to the files it also changes or this overlay changes. (With THUG1's
         // drivable cars installed - PC-THUG1-22, tools/pipeline/thug1_levels/driving.ts - the mod's car_scripts.qb, THUG1's
         // unchanged, gets their THUG2 edits too: unchanged it hangs THUG1 Vancouver loading. Its own

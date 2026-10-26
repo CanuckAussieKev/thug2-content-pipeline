@@ -88,7 +88,7 @@ export function appendGlobals(text: string, globals: readonly string[]): string 
     return text.slice(0, register.index) + added + text.slice(register.index);
 }
 
-// The edits make_menu_level applies (also to the Anteara Mod's copies of the files).
+// The edits make_menu_level applies (also to Anteara Mod's copies of the files).
 export function casEdit(additions: Additions, file: "cas_ped_m" | "cas_ped_f"): (text: string) => string {
     return (text) => {
         let out = text;

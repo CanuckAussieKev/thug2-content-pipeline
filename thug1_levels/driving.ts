@@ -1,5 +1,5 @@
 // NOT ORIGINAL - PC-THUG1-22 (our own change - port_changes.ts): the THUG2 forms of THUG1's driving scripts, made by
-// thug1_levels.drivingScripts (and re-applied by make_menu_level to the Anteara Mod's copy of car_scripts.qb, which is
+// thug1_levels.drivingScripts (and re-applied by make_menu_level to Anteara Mod's copy of car_scripts.qb, which is
 // THUG1's unchanged).
 
 import { FormatError } from "../level_port/binio.ts";

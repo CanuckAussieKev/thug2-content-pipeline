@@ -9,7 +9,7 @@
 //   levels\<L>\<L>.col.xbx     the collision with the entries' face / object edits (tools/pipeline/thug1_levels/hand_edits.ts's
 //                              applyColEdits) and THUGPRO's added objects (by reference);
 //   levels\<L>\<L>.scn.xbx     THUGPRO's added sectors (by reference) - only when an entry adds geometry;
-//   scripts\game\Levels.qb     (the overlay's, and the Anteara Mod's copy) Level_<L>'s setup_script, when an entry
+//   scripts\game\Levels.qb     (the overlay's, and Anteara Mod's copy) Level_<L>'s setup_script, when an entry
 //                              changes it.
 // Which entries: those `enabled` in the register (none until the user switches them on), or --enable <ids / classes>.
 // make_menu_level.ts calls installEnabled() after making the overlay (so a rebuilt overlay keeps them); this tool's
@@ -304,7 +304,7 @@ export function install(
         if (r.levelsQb.length) levelsEdits.push([L, r.levelsQb]);
     }
     if (levelsEdits.length) {
-        // the overlay's Levels.qb (and the Anteara Mod's), else the game's copied in
+        // the overlay's Levels.qb (and Anteara Mod's), else the game's copied in
         const targets = [
             pyJoin(out, "scripts", "game", "Levels.qb"),
             pyJoin(out, "anteara", "scripts", "game", "Levels.qb"),

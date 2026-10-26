@@ -39,7 +39,7 @@ Each folder has its own README.
 | `src/game/skater/thaw_bmx*.cpp` | `thaw_bmx/ride.test.ts` (skipped alone) | the script names the DLL runs |
 | the decomp's `dinput8.dll` in the game folder | the game scripts (`game/*.ps1`, `try_spot.ts`, `edit_level.ts`, `scenic_capture.ts`) | they run the game with our DLL (logs, automation channel, `-level`) |
 
-The menu builder also installs the Anteara Mod when `tools/anteara` (the anteara-mod repository) is there - beside this
+The menu builder also installs Anteara Mod when `tools/anteara` (the anteara-mod repository) is there - beside this
 repository or in the decomp; without it the overlay is made without its `anteara\` folder (a message says so).
 Everything else - the format readers, the audits (zfight, texture_check, script_check...), the THUGPRO compare /
 inventory tools, the save tool, the scenic / loading / front end art - runs on the game folders alone.
