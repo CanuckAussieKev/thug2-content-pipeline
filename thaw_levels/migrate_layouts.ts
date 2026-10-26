@@ -16,6 +16,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { parseArgs } from "node:util";
 import * as qb from "../level_port/qb.ts";
+import { helpFromHeader } from "../lib/cli.ts";
 import {
     formatG,
     hex8,
@@ -180,4 +181,5 @@ const OPTIONS = {
     "dry-run": { type: "boolean" },
 } as const;
 
+if (isMain(import.meta.url)) helpFromHeader(import.meta.url);
 if (isMain(import.meta.url)) await runMain(() => main());

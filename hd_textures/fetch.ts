@@ -14,6 +14,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { REPO } from "../level_port/common.ts";
 import { DEFAULT_TOOL, TOOL_RELEASE } from "../level_port/hd_textures.ts";
+import { helpFromHeader } from "../lib/cli.ts";
 import { isMain, print, pyExit, runMain } from "../lib/py.ts";
 
 // Real-ESRGAN v0.2.5.0 (2022-04-24), the Windows build
@@ -54,4 +55,5 @@ export async function main(argv: readonly string[] = process.argv.slice(2)): Pro
     return 0;
 }
 
+if (isMain(import.meta.url)) helpFromHeader(import.meta.url);
 if (isMain(import.meta.url)) await runMain(() => main());

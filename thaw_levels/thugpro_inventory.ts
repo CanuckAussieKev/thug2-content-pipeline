@@ -19,6 +19,7 @@ import * as qb from "../level_port/qb.ts";
 import { Name, type QbValue, Struct, Vector } from "../level_port/qb.ts";
 import * as thug2Col from "../level_port/thug2_col.ts";
 import * as thug2Scene from "../level_port/thug2_scene.ts";
+import { helpFromHeader } from "../lib/cli.ts";
 import { resolveInstall } from "../lib/install.ts";
 import { hex8, isMain, print, pyExit, pyJoin, pyJsonDumps, runMain, writeTextPy } from "../lib/py.ts";
 import * as thaw from "./thaw.ts";
@@ -627,4 +628,5 @@ export function main(argv: readonly string[] = process.argv.slice(2)): number {
     return 0;
 }
 
+if (isMain(import.meta.url)) helpFromHeader(import.meta.url);
 if (isMain(import.meta.url)) await runMain(() => main());

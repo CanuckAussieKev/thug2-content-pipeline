@@ -12,6 +12,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { parseArgs } from "node:util";
 import * as qb from "../level_port/qb.ts";
+import { helpFromHeader } from "../lib/cli.ts";
 import { hex8, isMain, print, pyExit, pyJoin, readTextPy, runMain } from "../lib/py.ts";
 import { migrateText } from "../thaw_levels/migrate_layouts.ts";
 import { findPath } from "../thaw_levels/thaw_levels.ts";
@@ -75,4 +76,5 @@ export function main(argv: readonly string[] = process.argv.slice(2)): number {
     return 0;
 }
 
+if (isMain(import.meta.url)) helpFromHeader(import.meta.url);
 if (isMain(import.meta.url)) await runMain(() => main());

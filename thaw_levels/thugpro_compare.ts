@@ -27,6 +27,7 @@ import * as qb from "../level_port/qb.ts";
 import { checksum, Name, type QbValue, Struct, Vector } from "../level_port/qb.ts";
 import * as scriptPort from "../level_port/script_port.ts";
 import * as thug2Col from "../level_port/thug2_col.ts";
+import { helpFromHeader } from "../lib/cli.ts";
 import { resolveInstall } from "../lib/install.ts";
 import {
     Float,
@@ -587,4 +588,5 @@ export function main(argv: readonly string[] = process.argv.slice(2)): number {
     return bad ? 1 : 0;
 }
 
+if (isMain(import.meta.url)) helpFromHeader(import.meta.url);
 if (isMain(import.meta.url)) await runMain(() => main());

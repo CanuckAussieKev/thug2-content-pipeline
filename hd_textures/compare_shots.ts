@@ -8,6 +8,7 @@
 
 import * as fs from "node:fs";
 import { decodePng, encodePng, type Image } from "../game/frame_diff.ts";
+import { helpFromHeader } from "../lib/cli.ts";
 import { isMain, print, pyExit, runMain } from "../lib/py.ts";
 
 const GAP = 8;
@@ -74,4 +75,5 @@ export async function main(argv: readonly string[] = process.argv.slice(2)): Pro
     return 0;
 }
 
+if (isMain(import.meta.url)) helpFromHeader(import.meta.url);
 if (isMain(import.meta.url)) await runMain(() => main());

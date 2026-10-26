@@ -27,6 +27,7 @@ import { parseArgs } from "node:util";
 import { FormatError } from "../level_port/binio.ts";
 import * as qb from "../level_port/qb.ts";
 import { Name, type QbValue, Struct } from "../level_port/qb.ts";
+import { helpFromHeader } from "../lib/cli.ts";
 import {
     applyOwnEdits,
     type Edits,
@@ -459,4 +460,5 @@ function main(argv: string[]): number {
     return 2;
 }
 
+if (isMain(import.meta.url)) helpFromHeader(import.meta.url);
 if (isMain(import.meta.url)) await runMain(() => main(process.argv.slice(2)));

@@ -16,6 +16,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
+import { helpFromHeader } from "../lib/cli.ts";
 import { NS_DEFAULT } from "../lib/decomp.ts";
 import {
     applyOwnEdits,
@@ -150,4 +151,5 @@ async function main(argv: string[]): Promise<number> {
 }
 
 // (not awaited at the top level: main imports make_menu_level.ts, which imports this module - it must be done loading)
+if (isMain(import.meta.url)) helpFromHeader(import.meta.url);
 if (isMain(import.meta.url)) void runMain(() => main(process.argv.slice(2)));

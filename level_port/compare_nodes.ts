@@ -11,6 +11,7 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { helpFromHeader } from "../lib/cli.ts";
 import { isMain, print, runMain } from "../lib/py.ts";
 import { components } from "./components.ts";
 import { resolvedFields } from "./nodes.ts";
@@ -128,4 +129,5 @@ function main(argv: string[]): number {
     return 0;
 }
 
+if (isMain(import.meta.url)) helpFromHeader(import.meta.url);
 if (isMain(import.meta.url)) await runMain(() => main(process.argv.slice(2)));

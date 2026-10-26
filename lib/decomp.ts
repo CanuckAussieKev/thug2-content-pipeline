@@ -63,9 +63,28 @@ export interface LocalConfig {
     protectedFolders?: string[];
 }
 
+// The main checkout of a linked git worktree (its .git is a file "gitdir: <main>/.git/worktrees/<name>", whose
+// commondir names <main>/.git), or null: local.json is gitignored, so a worktree has none of its own.
+export function mainCheckout(dir: string): string | null {
+    const dotGit = path.join(dir, ".git");
+    if (!fs.existsSync(dotGit) || !fs.statSync(dotGit).isFile()) return null;
+    const m = /^gitdir:\s*(.+?)\s*$/m.exec(fs.readFileSync(dotGit, "utf-8"));
+    if (!m) return null;
+    const gitdir = path.resolve(dir, m[1]!);
+    const commondir = path.join(gitdir, "commondir");
+    if (!fs.existsSync(commondir)) return null;
+    return path.dirname(path.resolve(gitdir, fs.readFileSync(commondir, "utf-8").trim()));
+}
+
 function readLocal(): LocalConfig {
-    const file = DECOMP ? path.join(DECOMP, "local.json") : "";
-    if (!file || !fs.existsSync(file)) return {};
+    if (!DECOMP) return {};
+    let file = path.join(DECOMP, "local.json");
+    if (!fs.existsSync(file)) {
+        const main = mainCheckout(DECOMP);
+        if (!main) return {};
+        file = path.join(main, "local.json");
+        if (!fs.existsSync(file)) return {};
+    }
     return JSON.parse(fs.readFileSync(file, "utf-8")) as LocalConfig;
 }
 
