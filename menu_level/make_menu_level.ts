@@ -618,7 +618,7 @@ export function addLevelEditor(text: string): string {
 
 // --- the new front end's pause menu items (the DLL's src/game/front/new_frontend.h) ----------------------------------
 
-const NEW_FRONTEND_PAUSE_SCRIPTS = `script newfe_pause_open {
+const NEW_FRONTEND_PAUSE_SCRIPTS = `script newfe_open {
     NewFrontend_Open <...>
 }
 script newfe_pause_restart {
@@ -633,7 +633,7 @@ script newfe_pause_restart_after {
 
 export function addNewFrontendPause(text: string): string {
     // With [features] new_frontend=1 the pause menu is the game's, restyled by the DLL - so the new front end's own
-    // items are made here, each only while NewFrontend_PauseItem says so (false with the new front end off: the menu as
+    // items are made here, each only while NewFrontend_Item says so (false with the new front end off: the menu as
     // it was): RESTART after CONTINUE (free skate: CONTINUE, then ResetSkaters), CHANGE LEVEL opening our level select
     // (NewFrontend_Open screen=levels) in place of the game's, and OPTIONS (ours; its Game options row opens the game's)
     // in place of GAME OPTIONS. A part not found (Anteara Mod's pause menu) is left as it is.
@@ -641,15 +641,15 @@ export function addNewFrontendPause(text: string): string {
     text = text.replace(
         continueItem,
         (block: string, indent: string) =>
-            `${block}${indent}if NewFrontend_PauseItem item=restart {\n${indent}    add_roundbar_menu_item text="RESTART" ` +
+            `${block}${indent}if NewFrontend_Item item=restart {\n${indent}    add_roundbar_menu_item text="RESTART" ` +
             `id=menu_newfe_restart pad_choose_script=newfe_pause_restart \n${indent}} \n`,
     );
     const changeLevel = search(/\n( *)(add_roundbar_menu_item \{text="CHANGE LEVEL" \n[\s\S]*?\n\1\} \n)/, text);
     if (changeLevel) {
         const indent = changeLevel.str(1);
         const wrapped =
-            `\n${indent}if NewFrontend_PauseItem item=levels {\n${indent}    add_roundbar_menu_item text="CHANGE LEVEL" ` +
-            `id=menu_level_select pad_choose_script=newfe_pause_open pad_choose_params={screen=levels} \n` +
+            `\n${indent}if NewFrontend_Item item=levels {\n${indent}    add_roundbar_menu_item text="CHANGE LEVEL" ` +
+            `id=menu_level_select pad_choose_script=newfe_open pad_choose_params={screen=levels} \n` +
             `${indent}} else {\n${indent}${changeLevel.str(2)}${indent}} \n`;
         text = text.slice(0, changeLevel.start()) + wrapped + text.slice(changeLevel.end());
     }
@@ -660,14 +660,132 @@ export function addNewFrontendPause(text: string): string {
     if (gameOptions) {
         const indent = gameOptions.str(1);
         const wrapped =
-            `\n${indent}if NewFrontend_PauseItem item=options {\n${indent}    add_roundbar_menu_item text="OPTIONS" ` +
-            `id=menu_newfe_options pad_choose_script=newfe_pause_open pad_choose_params={screen=options} \n` +
+            `\n${indent}if NewFrontend_Item item=options {\n${indent}    add_roundbar_menu_item text="OPTIONS" ` +
+            `id=menu_newfe_options pad_choose_script=newfe_open pad_choose_params={screen=options} \n` +
             `${indent}} else {\n${indent}    ${gameOptions.str(2)}${indent}} \n`;
         text = text.slice(0, gameOptions.start()) + wrapped + text.slice(gameOptions.end());
     }
     const register = text.indexOf("\n__register_checksums__");
     const at = register >= 0 ? register + 1 : text.length;
     return text.slice(0, at) + NEW_FRONTEND_PAUSE_SCRIPTS + text.slice(at);
+}
+
+// The new front end's main menu (with [features] new_frontend=1 the DLL restyles the game's menus - these say what
+// they hold): Career (our menu of THUG2 Story, Classic and THUG Story - not yet), Free Skate, Online, Create, Options
+// (ours) and Quit; back from STORY / CLASSIC MODE OPTIONS to Career.
+const NEW_FRONTEND_MAIN_SCRIPTS = `script newfe_main_menu_items {
+    main_menu_list_item {
+        text="CAREER"
+        id=menu_newfe_career
+        pad_choose_params={new_menu_script=newfe_career_menu hold_camera}
+        mark_first_input
+        icon=mainicon_story
+    }
+    main_menu_list_item {
+        text="FREE SKATE"
+        id=menu_singlesess
+        pad_choose_params={new_menu_script=launch_select_skater_menu change_gamemode=change_gamemode_singlesession hold_camera do_loading_logo}
+        mark_first_input
+        icon=mainicon_score
+    }
+    main_menu_list_item {
+        text="ONLINE"
+        id=menu_net
+        pad_choose_params={new_menu_script=select_network_play_multi change_gamemode=change_gamemode_net hold_camera do_loading_logo}
+        mark_first_input
+        icon=mainicon_online
+    }
+    main_menu_list_item {
+        text="CREATE"
+        id=menu_createamodes
+        pad_choose_params={new_menu_script=create_createamodes_menu change_gamemode=change_gamemode_singlesession hold_camera}
+        mark_first_input
+        icon=mainicon_mode
+    }
+    main_menu_list_item {
+        text="OPTIONS"
+        id=menu_newfe_options
+        pad_choose_script=newfe_open
+        pad_choose_params={screen=options}
+        mark_first_input
+        icon=mainicon_options
+    }
+    main_menu_list_item {
+        text="QUIT"
+        id=menu_quit
+        pad_choose_params={new_menu_script=main_menu_exit_game hold_camera}
+        icon=mainicon_mode
+    }
+}
+script newfe_career_menu {
+    make_new_roundbar_menu title="CAREER" pos=(130.0, 100.0) spacing=6 pad_back_script=generic_menu_pad_back pad_back_params={callback=create_main_menu} vmenu_id=newfe_career_vmenu
+    add_roundbar_menu_item {
+        text="STORY MODE"
+        id=menu_career
+        pad_choose_script=gamemode_options_menu_exit
+        pad_choose_params={new_menu_script=create_gamemode_options_menu change_gamemode=change_gamemode_career}
+    }
+    add_roundbar_menu_item {
+        text="CLASSIC MODE"
+        id=menu_classic
+        pad_choose_script=gamemode_options_menu_exit
+        pad_choose_params={new_menu_script=create_gamemode_options_menu change_gamemode=change_gamemode_classic}
+    }
+    add_roundbar_menu_item text="THUG STORY" id=menu_newfe_thugstory not_focusable
+    roundbar_menu_finish build_pause_parts=0
+}
+script newfe_back_to_career {
+    if NewFrontend_Item item=on {
+        newfe_career_menu
+    } else {
+        create_main_menu
+    }
+}
+`;
+
+export function addNewFrontendMain(text: string): string {
+    // The front end's scripts (the standard main menu's): while NewFrontend_Item item=on, add_main_menu_list_items makes
+    // our items (newfe_main_menu_items) instead of the game's; STORY / CLASSIC MODE OPTIONS go back to our Career
+    // menu; CREATE-A-MODES gets LEVEL EDITOR (NewFrontend_Open screen=editlevels) while NewFrontend_Item item=editor.
+    const items = "script add_main_menu_list_items {\n";
+    if (countOf(text, items) !== 1) pyExit("mainmenu_scripts.qb: add_main_menu_list_items not found once");
+    text = replaceFirst(
+        text,
+        items,
+        `${items}    if NewFrontend_Item item=on {\n        newfe_main_menu_items \n        return \n    } \n`,
+    );
+    const back = "pad_back_params={callback=create_main_menu} vmenu_id=career_options_vmenu";
+    if (countOf(text, back) !== 1) pyExit("mainmenu_scripts.qb: create_gamemode_options_menu's back not found once");
+    text = replaceFirst(text, back, "pad_back_params={callback=newfe_back_to_career} vmenu_id=career_options_vmenu");
+    const create = search(
+        /script create_createamodes_menu \{\n[\s\S]*?\n( *)draw_menu_background create_mode \n/,
+        text,
+    );
+    if (!create) pyExit("mainmenu_scripts.qb: create_createamodes_menu's draw_menu_background not found");
+    const indent = create.str(1);
+    const at = create.end() - `${indent}draw_menu_background create_mode \n`.length;
+    const editor =
+        `${indent}if NewFrontend_Item item=editor {\n${indent}    add_roundbar_menu_item text="LEVEL EDITOR" ` +
+        `id=menu_newfe_editor pad_choose_script=newfe_open pad_choose_params={screen=editlevels} icon=mainicon_cap \n` +
+        `${indent}} \n`;
+    text = text.slice(0, at) + editor + text.slice(at);
+    const register = text.indexOf("\n__register_checksums__");
+    const end = register >= 0 ? register + 1 : text.length;
+    return text.slice(0, end) + NEW_FRONTEND_MAIN_SCRIPTS + text.slice(end);
+}
+
+export function addNewFrontendSkateshop(text: string): string {
+    // The skate shop's menu (after the skater select): in free skate its Play Level opens our level select while
+    // NewFrontend_Item item=levels (Back from it makes the shop's menu again: create_ss_menu). A part not found
+    // (Anteara Mod's) is left as it is.
+    const play = search(/\n( *)(add_roundbar_menu_item \{text=%"Play Level" \n[\s\S]*?\n\1\} \n)/, text);
+    if (!play) return text;
+    const indent = play.str(1);
+    const wrapped =
+        `\n${indent}if NewFrontend_Item item=levels {\n${indent}    add_roundbar_menu_item {text=%"Play Level" ` +
+        `id=ss_play_level pad_choose_script=ss_menu_exit pad_choose_params={new_menu_script=newfe_open screen=levels ` +
+        `back=create_ss_menu}} \n${indent}} else {\n${indent}${play.str(2)}${indent}} \n`;
+    return text.slice(0, play.start()) + wrapped + text.slice(play.end());
 }
 
 // --- GAME OPTIONS' CREATE 100% CAS (career_complete.ts; the DLL's src/game/front/career_complete.h) --------------
@@ -992,7 +1110,7 @@ export function frontEndScripts(text: string, look: UnitLookup): string {
     // (do_load_unloadable: load_level skips them for the front end - without them the skater skates in its bind
     // pose; once loaded they stay, as after any level); the skater standing idle instead of reaching for the wheel
     // (the main menu's skater animation: WStand, standing on foot, the board in his hand).
-    text = standardMainMenu(text, look);
+    text = addNewFrontendMain(standardMainMenu(text, look));
     const start = "script mainmenu_startup {\n";
     if (countOf(text, start) !== 1) pyExit("mainmenu_scripts.qb: mainmenu_startup not found");
     text = replaceFirst(text, start, `${start}    LoadCollision scene="${BACKDROP_LEVEL}" \n    do_load_unloadable \n`);
@@ -1274,6 +1392,11 @@ async function main(): Promise<number> {
             thawBmxInstall.addPauseItem(addNewFrontendPause(addLevelEditor(pause)), game),
             "scripts\\game\\menu\\gamemenu_pause.qb",
         );
+        // Always: the skate shop's menu with the new front end's Play Level (its [features] new_frontend).
+        write(
+            addNewFrontendSkateshop(decompile(prxFile(qbScripts, "scripts\\game\\menu\\skateshop.qb"), "skateshop.qb")),
+            "scripts\\game\\menu\\skateshop.qb",
+        );
         // Always: GAME OPTIONS' CREATE 100% CAS (the DLL's [features] create_100_cas decides whether it shows).
         addCreate100Cas(decompile, write, pre, levels);
         // The ports' own people (tools/pipeline/level_port/ped_models.ts): their CAS parts and profiles added to THUG2's lists.
@@ -1362,6 +1485,7 @@ async function main(): Promise<number> {
                             "scripts\\game\\menu\\gamemenu_pause.qb",
                             (text: string) => addNewFrontendPause(addLevelEditor(text)),
                         ],
+                        ["scripts\\game\\menu\\skateshop.qb", addNewFrontendSkateshop],
                         ...pedEdits,
                         ...(thug1Driving
                             ? [
