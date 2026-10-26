@@ -142,7 +142,8 @@ ${loads}
     }
 }
 // (THAW's toggle_bike_on_off2, getting on: tricks and exceptions off, the physics paused and the pad off for the
-// getting-up animation, the stance sprite hidden; then its bmx_finish_on)
+// getting-up animation, the stance sprite hidden, the skater turned unflipped (orient_vehicle: the bike is made
+// unflipped, and a flipped rider's bmx_getup reached for it on the wrong side); then its bmx_finish_on)
 script thaw_bmx_get_on {
     if ! ThawBmxLoadAssets {
         printf "thaw_bmx: the bike's assets didn't load"
@@ -158,11 +159,13 @@ script thaw_bmx_get_on {
     DisablePlayerInput
     thaw_bmx_camera_on
     thaw_bmx_stance_sprite scale=0
+    orient_vehicle
     change bike_pedaling=0
     SwitchOffBoard
     bmx_finish_on
 }
-// (THAW's toggle_bike_on_off2, getting off: bmx_getup backwards, the bike gone; then its bmx_finish_off - the parked bike)
+// (THAW's toggle_bike_on_off2, getting off: unflipped as getting on, bmx_getup backwards, the bike gone; then its
+// bmx_finish_off - the parked bike)
 script thaw_bmx_get_off {
     kill_bail_bike
     ClearExceptions
@@ -171,6 +174,7 @@ script thaw_bmx_get_off {
     SetRollingFriction 100
     PausePhysics
     DisablePlayerInput
+    orient_vehicle
     Skater_BarspinAnimOff
     thaw_bmx_playanim anim=bmx_getup Backwards BlendPeriod=0
     thaw_bmx_waitanim
