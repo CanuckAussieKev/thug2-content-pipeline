@@ -1,0 +1,788 @@
+// THP8's level materials read for THUG2: which of a material's textures is which (the layers, their blend masks, the
+// zone's light maps) and the vertex uv field each one reads - worked out from the data (no code of the game used).
+//
+// A material names a shader template (FXFILES\MaterialLibrary.bin: its templates by name checksum - "DiffuseTerrain_3Pass",
+// "NormalMapTerrain_4Pass"...) and lists its textures in the template's order. The terrain templates draw up to four
+// layers ("passes"): pass 0's diffuse map (then, by template, its normal map - DXN - and specular map), each further
+// pass a diffuse map (some with a normal + specular map) and a blend mask, then the zone's two light maps: the ambient
+// map (sky light, coloured) and the shadow map (the sun's light, grey), atlases shared by the zone's lit materials
+// (b6c03d1 / e4cc61f3 in the skate park: 1024 / 2048 texels), or small stand-ins (16 x 16 grey) for unlit ones.
+//
+// The vertex carries one uv field per "slot": slot 0 is pass 0's (diffuse, normal and specular share it), the last
+// two the light maps' (ambient, shadow); between them each further pass has one (diffuse, normal, specular) and,
+// while there are slots to spare, its mask one of its own - else the mask shares the pass's. (DiffuseTerrain_3Pass
+// meshes always have all seven: 0, 1 / 2, 3 / 4, 5, 6 with unused passes' fields NaN.) Checked against every lit
+// material of the skate park: the light-map fields land in [0, 1] atlases, the masks' fields line up with their
+// passes' where they share.
+//
+// A further pass covers the ones below it by its mask's brightness times its diffuse map's alpha (the stickers on the
+// snack hut: a sticker sheet over the planks through a mask of white rectangles; "RENTALS" letters by their alpha).
+//
+// The parameter block (geom.ts MAT_PARAMS): 0x50 bytes of header (+0x08 texture count, +0x18 the number of float4
+// parameters, +0x20 the template's technique, +0x28 terrain), then the float4s, then the texture checksums. In
+// DiffuseTerrain_3Pass the float4s are the passes' colours (tints: 0.94, 0.89, 0.85 on the skate park's stairs); in
+// the specular / normal-mapped ones the first is the specular power (15, 0, 0, 0) and the second pass 0's colour.
+
+import { checksum } from "../level_port/qb.ts";
+import { lookOf } from "../level_port/texture_check.ts";
+import * as dxt from "./dxt.ts";
+import type * as geom from "./geom.ts";
+import * as xenos from "./xenos.ts";
+
+export const T_DIFFUSE_TERRAIN = checksum("DiffuseTerrain_3Pass");
+export const T_DIFFUSE_SPEC_TERRAIN = checksum("DiffuseSpecTerrain_3Pass");
+export const T_NORMAL_TERRAIN_3 = checksum("NormalMapTerrain_3Pass");
+export const T_NORMAL_TERRAIN_4 = checksum("NormalMapTerrain_4Pass");
+export const T_NORMAL_PARALLAX_TERRAIN = checksum("NormalMapParallaxTerrain_3Pass");
+export const T_NORMAL_ROAD = checksum("NormalMapRoad_3Pass");
+export const T_NORMAL_POSTER = checksum("NormalMapTerrainPoster_4Pass");
+// The reflective 3-pass template (floors, glass, chrome): pass 0 (diffuse, normal, specular), the cube map, pass 0's
+// mask (m_sampPass0Mask), then pass 1 with its own mask (diffuse, normal, specular, mask) - 9 textures before the light
+// maps.
+export const T_NORMAL_ENV_3 = checksum("NormalMapEnvMap_3Pass");
+
+// Templates whose passes are read (the rest: pass 0's diffuse map only, as before).
+export const LAYERED: ReadonlySet<number> = new Set([
+    T_NORMAL_ENV_3,
+    T_DIFFUSE_TERRAIN,
+    T_DIFFUSE_SPEC_TERRAIN,
+    T_NORMAL_TERRAIN_3,
+    T_NORMAL_TERRAIN_4,
+    T_NORMAL_PARALLAX_TERRAIN,
+    T_NORMAL_ROAD,
+    T_NORMAL_POSTER,
+]);
+// Templates whose pass 0 lists a specular map after its diffuse (and normal) map, and whose pass 1 does too.
+const SPECULAR_FIRST_TWO = new Set([T_DIFFUSE_SPEC_TERRAIN]);
+
+export const PARAM_FLOAT4S = 0x18;
+export const PARAM_HEADER = 0x50;
+
+export interface Layer {
+    diffuse: number; // texture checksum
+    mask: number | null; // the blend mask (passes 1...)
+    slot: number; // uv slot of the diffuse map
+    maskSlot: number; // uv slot of the mask (= slot when shared)
+    tiling: readonly number[]; // the factors its u and v are multiplied by (passTiling)
+    colour: number[]; // R, G, B tint, A opacity (passColour; 1, 1, 1, 1 when unknown)
+}
+
+export interface MaterialPlan {
+    layers: Layer[]; // pass 0 first
+    ambient: number | null; // light maps
+    shadow: number | null;
+}
+
+const isNormalMap = (t: number, textures: ReadonlyMap<number, xenos.XenosTexture>): boolean =>
+    textures.get(t)?.format === xenos.FMT_DXN;
+
+// The zone's light maps: textures that stand (nearly always - LIGHT_MAP_SHARE of their uses) second to last
+// (ambient) or last (shadow) of materials of at least three textures. (A few materials list them elsewhere or swap
+// the small stand-ins: the slums' 2048 shadow map once second to last, its 32 x 32 white stand-in in five places.)
+export const LIGHT_MAP_SHARE = 0.8;
+export function lightMaps(materials: readonly geom.GeomMaterial[]): { ambient: Set<number>; shadow: Set<number> } {
+    const uses = new Map<number, number[]>(); // [as ambient, as shadow, elsewhere]
+    for (const m of materials) {
+        const n = m.textures.length;
+        m.textures.forEach((t, i) => {
+            const u = uses.get(t) ?? [0, 0, 0];
+            u[n >= 3 && i === n - 2 ? 0 : n >= 3 && i === n - 1 ? 1 : 2]!++;
+            uses.set(t, u);
+        });
+    }
+    const ambient = new Set<number>();
+    const shadow = new Set<number>();
+    for (const [t, [a, s, e]] of uses as Map<number, [number, number, number]>) {
+        if (a >= LIGHT_MAP_SHARE * (a + s + e)) ambient.add(t);
+        else if (s >= LIGHT_MAP_SHARE * (a + s + e)) shadow.add(t);
+    }
+    return { ambient, shadow };
+}
+
+// The float4 parameters before the texture list.
+export function float4s(m: geom.GeomMaterial): number[][] {
+    const p = m.params;
+    if (p.length < PARAM_HEADER) return [];
+    const k = p.readUInt32BE(PARAM_FLOAT4S);
+    const out: number[][] = [];
+    for (let i = 0; i < k && PARAM_HEADER + 16 * (i + 1) <= p.length; i++) {
+        out.push([0, 1, 2, 3].map((c) => p.readFloatBE(PARAM_HEADER + 16 * i + 4 * c)));
+    }
+    return out;
+}
+
+// Which float4 holds pass p's colour (R, G, B tint, A the layer's opacity), by template: DiffuseTerrain_3Pass lists
+// the passes' colours alone; the specular / normal-mapped ones lead with the specular power and give each pass its
+// colour, a tiling float4 (not applied) and, passes 0 and 1, a specular colour - read from how the values vary over
+// the zones' materials (colours vary in R, G, B, the others stay grey or (u, v, 0, 0)).
+const COLOUR_AT: ReadonlyMap<number, readonly number[]> = new Map([
+    [T_DIFFUSE_TERRAIN, [0, 1, 2]],
+    [T_DIFFUSE_SPEC_TERRAIN, [1, 4, 7]],
+    [T_NORMAL_TERRAIN_3, [1, 4, 7]],
+    // (the parallax template's two extra float4s - the height scale (0.02, 0, 0, 0) and bias - sit before the colours:
+    // read as the colour, the school's walls were multiplied by (0.02, 0, 0) = black)
+    [T_NORMAL_PARALLAX_TERRAIN, [3, 6, 9]],
+    [T_NORMAL_ROAD, [1, 4, 7]],
+    [T_NORMAL_TERRAIN_4, [1, 4, 6, 8]],
+    [T_NORMAL_POSTER, [1, 4, 6, 8]],
+    [T_NORMAL_ENV_3, [1, 5]],
+]);
+
+// The templates whose float4 after pass 0's colour is its tiling (checked on the floor of the school hall: (0.5, 0.25, 1,
+// 1), the checker twice the size of the meshes' uvs). Only its x is
+// read: the same scale for u and v (THP8's textures are authored with the same texel density in both; y is something
+// else - 2 / 3 / 4 in a few hundred terrain materials).
+const TILED = new Set([
+    T_NORMAL_ENV_3,
+    T_NORMAL_TERRAIN_3,
+    T_NORMAL_TERRAIN_4,
+    T_DIFFUSE_SPEC_TERRAIN,
+    T_NORMAL_PARALLAX_TERRAIN,
+    T_NORMAL_ROAD,
+    T_NORMAL_POSTER,
+]);
+
+// The factor pass p's uvs are multiplied by (the float4 after its colour, x): 1 when the template has none or the
+// value doesn't read as one.
+export const TILING_MIN = 0.05;
+export const TILING_MAX = 8;
+export function passTiling(m: geom.GeomMaterial, pass: number): number[] {
+    const at = COLOUR_AT.get(m.template)?.[pass];
+    if (at === undefined || !TILED.has(m.template)) return [1, 1];
+    const f = float4s(m);
+    if (!(f[0] !== undefined && f[0][1] === 0 && f[0][2] === 0)) return [1, 1];
+    const t = f[at + 1];
+    if (t === undefined) return [1, 1];
+    const ok = (x: number): boolean => Number.isFinite(x) && x >= TILING_MIN && x <= TILING_MAX;
+    return ok(t[0]!) && ok(t[1]!) ? [t[0]!, t[1]!] : [1, 1];
+}
+
+// Pass p's colour [R, G, B, A], or null when the template's isn't known or the value doesn't read as one (a few
+// DiffuseTerrain_3Pass materials have 5, 5, 5 there).
+export function passColour(m: geom.GeomMaterial, pass: number): number[] | null {
+    const at = COLOUR_AT.get(m.template)?.[pass];
+    if (at === undefined) return null;
+    const f = float4s(m);
+    if (m.template !== T_DIFFUSE_TERRAIN && !(f[0] !== undefined && f[0][1] === 0 && f[0][2] === 0)) return null;
+    const c = f[at];
+    if (c === undefined) return null;
+    const ok = c.slice(0, 3).every((x) => Number.isFinite(x) && x >= 0 && x <= 2) && c[3]! >= 0 && c[3]! <= 1;
+    return ok ? c : null;
+}
+
+// The material's layers and light maps (uv slots for a mesh of `slots` uv fields). Layers past pass 0 only for the
+// terrain templates, and only when the texture list reads as their layout (else pass 0 alone).
+export function planMaterial(
+    m: geom.GeomMaterial,
+    textures: ReadonlyMap<number, xenos.XenosTexture>,
+    maps: { ambient: ReadonlySet<number>; shadow: ReadonlySet<number> },
+    slots: number,
+): MaterialPlan {
+    const t = m.textures;
+    const n = t.length;
+    const lit = n >= 3 && maps.ambient.has(t[n - 2]!) && maps.shadow.has(t[n - 1]!) && slots >= 3;
+    const ambient = lit ? t[n - 2]! : null;
+    const shadow = lit ? t[n - 1]! : null;
+    const colour = (p: number): number[] => passColour(m, p) ?? [1, 1, 1, 1];
+    // pass 0: the first texture that isn't a normal map (a few shaders list theirs first)
+    const first = t.find((x, i) => !isNormalMap(x, textures) && (!lit || i < n - 2));
+    if (first === undefined) return { layers: [], ambient, shadow };
+    const base: Layer = {
+        diffuse: first,
+        mask: null,
+        slot: 0,
+        maskSlot: 0,
+        tiling: passTiling(m, 0),
+        colour: colour(0),
+    };
+    const single: MaterialPlan = { layers: [base], ambient, shadow };
+    if (!LAYERED.has(m.template) || !lit) return single;
+    // the passes: walk the list
+    const list = t.slice(0, n - 2);
+    const spec = SPECULAR_FIRST_TWO.has(m.template);
+    let i = 0;
+    const take = (p: number): number | null => {
+        const d = list[i++];
+        if (d === undefined) return null;
+        if (list[i] !== undefined && isNormalMap(list[i]!, textures))
+            i += 2; // normal + specular map
+        else if (spec && p <= 1) i++; // specular map
+        return d;
+    };
+    if (take(0) !== first) return single;
+    const env = m.template === T_NORMAL_ENV_3;
+    // (the reflective template: the cube map and pass 0's mask sit between pass 0 and pass 1; exactly one more pass)
+    if (env) {
+        if (list.length !== 9) return single;
+        i += 2;
+    }
+    const passes: { diffuse: number; mask: number }[] = [];
+    while (i < list.length) {
+        const d = take(passes.length + 1);
+        const mask = list[i++];
+        if (d === null || mask === undefined || isNormalMap(d, textures) || isNormalMap(mask, textures)) return single;
+        passes.push({ diffuse: d, mask });
+    }
+    if (i !== list.length || passes.length > 3) return single;
+    // uv slots: 0 = pass 0, then each pass one, its mask its own while slots are spare, light maps last
+    const fixed = m.template === T_DIFFUSE_TERRAIN && slots === 7;
+    let spare = slots - 3 - (env ? 1 : 0) - passes.length;
+    if (spare < 0) return single;
+    let s = env ? 2 : 1; // (the reflective template's pass 0 mask has the field after pass 0's)
+    const layers = [base];
+    for (const [k, p] of passes.entries()) {
+        if (fixed) {
+            layers.push({
+                diffuse: p.diffuse,
+                mask: p.mask,
+                slot: 1 + 2 * k,
+                maskSlot: 2 + 2 * k,
+                tiling: passTiling(m, k + 1),
+                colour: colour(k + 1),
+            });
+            continue;
+        }
+        const own = spare > 0;
+        if (own) spare--;
+        layers.push({
+            diffuse: p.diffuse,
+            mask: p.mask,
+            slot: s,
+            maskSlot: own ? s + 1 : s,
+            tiling: passTiling(m, k + 1),
+            colour: colour(k + 1),
+        });
+        s += own ? 2 : 1;
+    }
+    return { layers, ambient, shadow };
+}
+
+// --- what a material does with its diffuse map's alpha ------------------------------------------------------------------
+
+// The parameter block's header holds the material's alpha state (read from the data: leaves / fences / decals have an
+// alpha reference, glass / decals / water a blend word, everything solid has neither - checked over all 15 levels'
+// materials):
+//   +0x30  the blend mode: 0 none, 1 add (glows, light shafts), 3 alpha blend (glass, decals, water, paint shells)
+//   +0x38  top byte: the alpha test reference (0 = no alpha test): leaves, fences, wire, flowers, banners
+// A texture's alpha in a material with neither is not transparency - the specular / gloss mask of the NormalMap /
+// EnvMap templates, atlas padding or nothing at all (the fun park's gold piles: DXT5 maps of mean alpha 196 / 104 / 59
+// on opaque DiffuseTerrain / DiffuseSpec / NormalMapEnvMap materials).
+export const PARAM_BLEND = 0x30;
+export const PARAM_ALPHA_REF = 0x38;
+export const BLEND_ADD = 1;
+export const BLEND_ALPHA = 3;
+
+export interface AlphaState {
+    blend: number;
+    ref: number; // 0 = off
+}
+
+export function alphaState(m: geom.GeomMaterial): AlphaState | null {
+    if (m.params.length < PARAM_ALPHA_REF + 4) return null;
+    return { blend: m.params.readUInt32BE(PARAM_BLEND), ref: m.params.readUInt32BE(PARAM_ALPHA_REF) >>> 24 };
+}
+
+// Templates that are layers over a surface by their nature (decals, water, billboards, shadows, soft edges): their
+// alpha is kept whatever their state words say.
+export const ALPHA_BY_NATURE: ReadonlySet<number> = new Set(
+    [
+        "Decal",
+        "NormalMapEnvMap_Decal",
+        "Texture_Decal",
+        "Color_and_Texture_Decal",
+        "Diffuse_Cubemap_Decal",
+        "Water",
+        "WaterCubeRefraction",
+        "WaterCubeRefractionInteractive",
+        "WaterCubeRefractionNonInteractive",
+        "WaterRealRefraction",
+        "WaterRippleDecomposeNormal",
+        "Billboard",
+        "TranslucentFloatyShadow",
+        "SoftEdge",
+        "SoftEdgeWithDepthMap",
+        "ParticleCubemap",
+        "ParticleLighting",
+        "Atmosphere",
+    ].map(checksum),
+);
+
+// Whether the material's diffuse alpha is transparency (blended or alpha-tested, kept) - else the material is solid and
+// its alpha is not drawn. A block too short to read keeps its alpha (as before).
+export function drawsAlpha(m: geom.GeomMaterial): boolean {
+    const a = alphaState(m);
+    return a === null || ALPHA_BY_NATURE.has(m.template) || a.blend !== 0 || a.ref !== 0;
+}
+
+// --- the material library ----------------------------------------------------------------------------------------
+
+// FXFILES\MaterialLibrary.bin (big-endian): "MATL", u32 2, u32 template count, ..., from 0x108 0x28 bytes per
+// template (+0x0C its name's checksum, +0x1C its technique count, +0x20 where its techniques' 0x140-byte
+// descriptions start, from 0x108); a technique's +0x08 is its name's checksum ("_ENGINE_Default_Pass0_Pass1",
+// "..._InteriorLighting"). A material's parameter block names its technique by number (+0x20). The names are among
+// the file's own strings. Returns template checksum -> technique names (the checksum in hex where none matches).
+export const LIBRARY_TEMPLATES = 0x108;
+export function readTechniques(data: Buffer): Map<number, string[]> {
+    if (data.toString("latin1", 0, 4) !== "MATL") throw new Error("MaterialLibrary: no MATL");
+    const strings = new Map<number, string>();
+    let start = -1;
+    for (let i = 0; i <= data.length; i++) {
+        const c = i < data.length ? data[i]! : 0;
+        if (c >= 0x20 && c < 0x7f) {
+            if (start < 0) start = i;
+        } else if (start >= 0) {
+            if (i - start >= 2) {
+                const s = data.toString("latin1", start, i);
+                strings.set(checksum(s), s);
+            }
+            start = -1;
+        }
+    }
+    const out = new Map<number, string[]>();
+    const count = data.readUInt32BE(8);
+    for (let k = 0; k < count; k++) {
+        const at = LIBRARY_TEMPLATES + 0x28 * k;
+        const n = data.readUInt32BE(at + 0x1c);
+        const first = LIBRARY_TEMPLATES + data.readUInt32BE(at + 0x20);
+        const names: string[] = [];
+        for (let i = 0; i < n && first + 0x140 * (i + 1) <= data.length; i++) {
+            const c = data.readUInt32BE(first + 0x140 * i + 8);
+            names.push(strings.get(c) ?? c.toString(16));
+        }
+        out.set(data.readUInt32BE(at + 0x0c), names);
+    }
+    return out;
+}
+
+// Whether the material's technique lights it as an interior: by its ambient map alone (no sun - its shadow map is the
+// white stand-in).
+export function interior(m: geom.GeomMaterial, techniques: ReadonlyMap<number, readonly string[]>): boolean {
+    if (m.params.length < 0x24) return false;
+    const name = techniques.get(m.template)?.[m.params.readUInt32BE(0x20)] ?? "";
+    return /InteriorLighting/i.test(name);
+}
+
+// --- light maps -------------------------------------------------------------------------------------------------
+
+// A texture decoded (B, G, R, A bytes), for sampling.
+export interface Decoded {
+    width: number;
+    height: number;
+    bgra: Buffer;
+}
+
+export function decode(t: xenos.XenosTexture): Decoded | null {
+    if (t.format === xenos.FMT_DXN) return null;
+    const base = xenos.baseLevel(t);
+    const kind =
+        t.format === xenos.FMT_DXT1 ? 1 : t.format === xenos.FMT_DXT3 ? 3 : t.format === xenos.FMT_DXT5 ? 5 : 0;
+    if (!kind && t.format !== xenos.FMT_8888) return null;
+    return { width: t.width, height: t.height, bgra: kind ? dxt.decode(base, t.width, t.height, kind) : base };
+}
+
+// Whether a texture is a blank: one flat colour, or one of THP8's tiny see-through dither placeholders (16 x 16 texels
+// alternating see-through / opaque), by texture_check's look. (null: neither, or not decodable.)
+const blankKinds = new WeakMap<xenos.XenosTexture, "flat" | "stipple" | null>();
+export function blankKind(t: xenos.XenosTexture): "flat" | "stipple" | null {
+    let kind = blankKinds.get(t);
+    if (kind === undefined) {
+        let d: Decoded | null = null;
+        try {
+            d = decode(t);
+        } catch {
+            // (data too short: not a blank)
+        }
+        const look = d ? lookOf(d.bgra, d.width, d.height) : null;
+        kind = look?.stipple ? "stipple" : look?.flat ? "flat" : null;
+        blankKinds.set(t, kind);
+    }
+    return kind;
+}
+
+// THP8's neutral mid-grey stand-in for a missing map (129, 128, 129: the suburb lawns' 2511D697): a flat texture of that
+// grey. (Other flat colours are real: the school hall's cream wall base BD9DFC57 is 170, 170, 150 under a tint.)
+const greyStandIns = new WeakMap<xenos.XenosTexture, boolean>();
+export function greyStandIn(t: xenos.XenosTexture): boolean {
+    let v = greyStandIns.get(t);
+    if (v === undefined) {
+        v = false;
+        try {
+            const d = decode(t);
+            if (d) {
+                const n = d.width * d.height;
+                let r = 0,
+                    g = 0,
+                    b = 0;
+                for (let i = 0; i < n; i++) {
+                    b += d.bgra[4 * i]!;
+                    g += d.bgra[4 * i + 1]!;
+                    r += d.bgra[4 * i + 2]!;
+                }
+                r /= n;
+                g /= n;
+                b /= n;
+                v = Math.abs(r - g) < 4 && Math.abs(g - b) < 4 && r > 116 && r < 142;
+            }
+        } catch {
+            // (not decodable: not a stand-in)
+        }
+        greyStandIns.set(t, v);
+    }
+    return v;
+}
+
+// A near-black texture (mean of R, G, B under DARK_MEAN): a mask or occlusion map, not a surface colour.
+export const DARK_MEAN = 40;
+const darkKinds = new WeakMap<xenos.XenosTexture, boolean>();
+export function darkTexture(t: xenos.XenosTexture): boolean {
+    let dark = darkKinds.get(t);
+    if (dark === undefined) {
+        let d: Decoded | null = null;
+        try {
+            d = decode(t);
+        } catch {
+            // (data too short: not dark)
+        }
+        const look = d ? lookOf(d.bgra, d.width, d.height) : null;
+        dark = look !== null && (look.mean[0]! + look.mean[1]! + look.mean[2]!) / 3 < DARK_MEAN;
+        darkKinds.set(t, dark);
+    }
+    return dark;
+}
+
+// Bilinear sample (wrapping) -> [B, G, R, A] 0-1.
+export function sample(d: Decoded, u: number, v: number): number[] {
+    if (!Number.isFinite(u) || !Number.isFinite(v)) return [1, 1, 1, 1];
+    const x = u * d.width - 0.5;
+    const y = v * d.height - 0.5;
+    const x0 = Math.floor(x);
+    const y0 = Math.floor(y);
+    const fx = x - x0;
+    const fy = y - y0;
+    const out = [0, 0, 0, 0];
+    for (const [dx, dy, w] of [
+        [0, 0, (1 - fx) * (1 - fy)],
+        [1, 0, fx * (1 - fy)],
+        [0, 1, (1 - fx) * fy],
+        [1, 1, fx * fy],
+    ] as const) {
+        const px = (((x0 + dx) % d.width) + d.width) % d.width;
+        const py = (((y0 + dy) % d.height) + d.height) % d.height;
+        const o = 4 * (py * d.width + px);
+        for (let c = 0; c < 4; c++) out[c]! += (w * d.bgra[o + c]!) / 255;
+    }
+    return out;
+}
+
+export interface Lighting {
+    sun: number[]; // R, G, B 0-1 (the zone's time-of-day sun colour)
+    ambientScale: number;
+    sunScale: number;
+    ambientKnee?: number; // the ambient term rolled off: scale x a / (1 + knee x a) - bright spots not burnt out
+}
+
+// THP8's light at a vertex from its light maps: the ambient map (sky light) scaled, plus the sun's colour times the
+// shadow map. The scales are ours (THP8's shaders weren't read): set so that sunlit ground comes out near THUG2's
+// full brightness and shade at about half - see docs/level-port-compromises.md section 10. R, G, B.
+export function light(ambient: number[], shadow: number[], l: Lighting): number[] {
+    const s = shadow[2]!; // (grey: red)
+    const k = l.ambientKnee ?? 0;
+    return [0, 1, 2].map((c) => {
+        const a = ambient[2 - c]!;
+        return (a * l.ambientScale) / (1 + k * a) + l.sun[c]! * s * l.sunScale;
+    });
+}
+
+// Light baked into vertex colours is only as fine as the mesh: a big floor triangle under a tree spans hundreds of
+// shadow-map texels. `refine` splits triangles where the light inside them isn't what the corners' light, blended,
+// gives: an edge is split at its middle when the light along it (at 1/4, 1/2, 3/4) differs from the blend by more
+// than `threshold`, or when a triangle's inside (its middle and the middles of its halves) does - then all three of
+// its edges. A split edge is split for both triangles on it (edges by their vertex numbers), so no cracks open
+// inside a mesh; triangles are cut into 2, 3 or 4 keeping their winding. Rounds until nothing is split, `depth`
+// rounds, or `maxVertices`.
+export interface RefineOptions {
+    threshold: number; // light difference that splits
+    minLength: number; // edges shorter than this (texels) never split
+    depth: number;
+    maxVertices: number;
+}
+
+export function refine<V>(
+    verts: V[],
+    tris: number[][],
+    mid: (a: V, b: V) => V,
+    value: (v: V) => number, // the light at a vertex
+    at: (a: V, b: V, c: V, wa: number, wb: number) => number, // the light inside (barycentric wa, wb, 1 - wa - wb)
+    length: (a: V, b: V) => number, // an edge's length in light-map texels
+    opts: RefineOptions,
+): number[][] {
+    const values = verts.map(value);
+    let current = tris;
+    for (let round = 0; round < opts.depth; round++) {
+        const split = new Set<string>();
+        const key = (i: number, j: number): string => (i < j ? `${i},${j}` : `${j},${i}`);
+        const edgeVaries = (i: number, j: number): boolean => {
+            const a = verts[i]!;
+            const b = verts[j]!;
+            if (length(a, b) < opts.minLength) return false;
+            for (const t of [0.25, 0.5, 0.75]) {
+                const blend = values[i]! * (1 - t) + values[j]! * t;
+                if (Math.abs(at(a, b, b, 1 - t, t) - blend) > opts.threshold) return true;
+            }
+            return false;
+        };
+        for (const [a, b, c] of current as [number, number, number][]) {
+            const longest = Math.max(
+                length(verts[a]!, verts[b]!),
+                length(verts[b]!, verts[c]!),
+                length(verts[c]!, verts[a]!),
+            );
+            if (longest < opts.minLength) continue;
+            let inside = false;
+            for (const [wa, wb] of [
+                [1 / 3, 1 / 3],
+                [2 / 3, 1 / 6],
+                [1 / 6, 2 / 3],
+                [1 / 6, 1 / 6],
+            ] as const) {
+                const blend = values[a]! * wa + values[b]! * wb + values[c]! * (1 - wa - wb);
+                if (Math.abs(at(verts[a]!, verts[b]!, verts[c]!, wa, wb) - blend) > opts.threshold) inside = true;
+            }
+            for (const [i, j] of [
+                [a, b],
+                [b, c],
+                [c, a],
+            ] as const) {
+                if (inside ? length(verts[i]!, verts[j]!) >= opts.minLength : edgeVaries(i, j)) split.add(key(i, j));
+            }
+        }
+        if (!split.size || verts.length + split.size > opts.maxVertices) break;
+        const middle = new Map<string, number>();
+        for (const k of split) {
+            const [i, j] = k.split(",").map(Number) as [number, number];
+            const v = mid(verts[i]!, verts[j]!);
+            middle.set(k, verts.length);
+            verts.push(v);
+            values.push(value(v));
+        }
+        const out: number[][] = [];
+        for (const t of current) {
+            // rotate so the split edges come first: (a b), then (b c)
+            let [a, b, c] = t as [number, number, number];
+            const m = (i: number, j: number): number | undefined => middle.get(key(i, j));
+            const count = [m(a, b), m(b, c), m(c, a)].filter((x) => x !== undefined).length;
+            for (let r = 0; r < 3; r++) {
+                const ok =
+                    count === 0 ||
+                    count === 3 ||
+                    (count === 1 && m(a, b) !== undefined) ||
+                    (count === 2 && m(c, a) === undefined);
+                if (ok) break;
+                [a, b, c] = [b, c, a];
+            }
+            if (count === 0) out.push([a, b, c]);
+            else if (count === 1) {
+                const ab = m(a, b)!;
+                out.push([a, ab, c], [ab, b, c]);
+            } else if (count === 2) {
+                const ab = m(a, b)!;
+                const bc = m(b, c)!;
+                out.push([a, ab, bc], [ab, b, bc], [a, bc, c]);
+            } else {
+                const ab = m(a, b)!;
+                const bc = m(b, c)!;
+                const ca = m(c, a)!;
+                out.push([a, ab, ca], [ab, b, bc], [ca, bc, c], [ab, bc, ca]);
+            }
+        }
+        current = out;
+    }
+    return current;
+}
+
+// A layer's texture for THUG2: its diffuse map's colour, alpha = its alpha times its mask's brightness (the mask read
+// at the same place - they share the uv field). B, G, R, A at the diffuse map's size.
+export function maskedLayer(diffuse: Decoded, mask: Decoded, opacity = 1): Buffer {
+    const out = Buffer.from(diffuse.bgra);
+    for (let y = 0; y < diffuse.height; y++) {
+        for (let x = 0; x < diffuse.width; x++) {
+            const mx = Math.min(mask.width - 1, Math.floor(((x + 0.5) * mask.width) / diffuse.width));
+            const my = Math.min(mask.height - 1, Math.floor(((y + 0.5) * mask.height) / diffuse.height));
+            const o = 4 * (my * mask.width + mx);
+            const lum = (mask.bgra[o]! + mask.bgra[o + 1]! + mask.bgra[o + 2]!) / 3;
+            const at = 4 * (y * diffuse.width + x) + 3;
+            out[at] = Math.round((out[at]! * lum * opacity) / 255);
+        }
+    }
+    return out;
+}
+
+// --- environment maps -----------------------------------------------------------------------------------------------
+//
+// The reflective templates (NormalMapEnvMap_3Pass / _Decal, EnvironmentMap, and the water ones) list a CUBE map: the
+// fourth texture of the list, 8:8:8:8, 32 or 64 texels a face (the texture's fetch constant says "cube": xenos.ts).
+// The shader reads it by the reflection vector. THUG2's own environment passes (the pass flag 0x08) are a 2D lookup by
+// the camera-space reflection vector instead - Direct3D's D3DTSS_TCI_CAMERASPACEREFLECTIONVECTOR with the texture
+// matrix u = 0.5 + 0.5 x tiling x rx, v = 0.5 + 0.5 x tiling x ry (read at 0x004D1F00; it needs vertex normals) - so a
+// cube map is turned into the 2D map that lookup wants: texel (u, v) holds what the cube shows in the direction
+// (rx, ry, +sqrt(1 - rx^2 - ry^2)), the camera looking along +z with y up (tiling 1: the map is the unit disc). The
+// camera turns, the cube does not - the picture is the cube as seen from a camera looking level, which is what a floor or
+// a wall under a level camera reflects; it swims as the view tilts, as THUG2's own do.
+//
+// How strong THP8 draws it was not read from its pixel shaders (Xenos microcode): the template's parameter block lists,
+// after the specular power, pass 0's colour, the tiling and the specular colour, one float4 the library's constant table
+// calls m_optimizedVector0 (RemapX, RemapY, RemapZ, RemapW) - NormalMapEnvMap_*: (0..2, 0.2..1, 0..1, 0..50) -, and a
+// mask map (m_sampPass0Mask) right after the cube map. We take RemapX (clamped to 0..1) as the reflectivity and the mask's
+// mean brightness as its share of the surface, times ENV_STRENGTH: a moderate fixed strength, drawn as a blend of the
+// reflection over the lit surface. The water ones have no such value (their float4s are wave and colour terms):
+// WATER_REFLECTION.
+
+export const T_ENV_MAP = new Set(["NormalMapEnvMap_3Pass", "NormalMapEnvMap_Decal", "EnvironmentMap"].map(checksum));
+export const T_WATER = new Set(
+    ["Water", "WaterCubeRefraction", "WaterCubeRefractionInteractive", "WaterCubeRefractionNonInteractive"].map(
+        checksum,
+    ),
+);
+const T_ENV_REMAP = new Set(["NormalMapEnvMap_3Pass", "NormalMapEnvMap_Decal"].map(checksum)); // (their 5th float4: Remap)
+export const ENV_STRENGTH = 0.5; // the blend of the reflection at reflectivity 1 and a fully white mask
+export const ENV_MIN = 0.05; // under this a material reflects nothing (RemapX 0.01, black masks)
+export const ENV_MAX = 0.6;
+export const ENV_UNKNOWN_REFLECTIVITY = 0.5; // EnvironmentMap: no Remap float4
+export const WATER_REFLECTION = 0.5;
+export const ENV_CUBE_INDEX = 3; // (every cube map of the install stands fourth in its list)
+export const ENV_STEPS = 10; // strengths are rounded to 1 / ENV_STEPS (one 2D map per cube map and step)
+export const ENV_SIZE = 64;
+
+export interface EnvLayer {
+    cube: number; // the cube map's checksum
+    strength: number; // the reflection's blend 0..1 (rounded to ENV_STEPS)
+    water: boolean;
+    body: number[] | null; // water: its body colour R, G, B 0..1 (the mean of the shallow and deep colour float4s)
+}
+
+const maskMeans = new WeakMap<xenos.XenosTexture, number | null>();
+// A map's mean brightness 0..1 (null: not a plain 2D map we can read).
+function meanBrightness(t: xenos.XenosTexture): number | null {
+    let mean = maskMeans.get(t);
+    if (mean === undefined) {
+        let d: Decoded | null = null;
+        try {
+            d = t.cube ? null : decode(t);
+        } catch {
+            // (data too short)
+        }
+        if (d) {
+            let sum = 0;
+            for (let i = 0; i < d.width * d.height; i++)
+                sum += d.bgra[4 * i]! + d.bgra[4 * i + 1]! + d.bgra[4 * i + 2]!;
+            mean = sum / (3 * 255 * d.width * d.height);
+        } else mean = null;
+        maskMeans.set(t, mean);
+    }
+    return mean;
+}
+
+// The environment layer a material draws over its surface, or null: a reflective template whose list holds a cube map
+// (not alpha-tested: the reflection is drawn over the whole surface, a cut-out's holes would show it) and a reflectivity
+// above ENV_MIN.
+export function envLayer(m: geom.GeomMaterial, textures: ReadonlyMap<number, xenos.XenosTexture>): EnvLayer | null {
+    const water = T_WATER.has(m.template);
+    if (!water && !T_ENV_MAP.has(m.template)) return null;
+    const cube = m.textures[ENV_CUBE_INDEX];
+    if (cube === undefined || !textures.get(cube)?.cube || !textures.get(cube)!.faces) return null;
+    const round = (s: number): number => Math.round(Math.min(s, ENV_MAX) * ENV_STEPS) / ENV_STEPS;
+    if (water) {
+        const f = float4s(m);
+        const body = f[2] && f[3] ? [0, 1, 2].map((c) => Math.min(1, Math.max(0, (f[2]![c]! + f[3]![c]!) / 2))) : null;
+        return { cube, strength: round(WATER_REFLECTION), water, body };
+    }
+    const state = alphaState(m);
+    if (state && state.blend === 0 && state.ref > 1) return null;
+    let reflectivity = ENV_UNKNOWN_REFLECTIVITY;
+    if (T_ENV_REMAP.has(m.template)) {
+        const remap = float4s(m)[4];
+        reflectivity = remap && Number.isFinite(remap[0]!) ? Math.min(1, Math.max(0, remap[0]!)) : 1;
+    }
+    // the mask map after the cube map (not the zone's light maps, which close the list)
+    let share = 1;
+    const n = m.textures.length;
+    const mask = n >= 3 && ENV_CUBE_INDEX + 1 < n - 2 ? m.textures[ENV_CUBE_INDEX + 1] : undefined;
+    const mx = mask !== undefined ? textures.get(mask) : undefined;
+    if (mx && !mx.cube) share = meanBrightness(mx) ?? 1;
+    const strength = round(reflectivity * share * ENV_STRENGTH);
+    return strength + 1e-9 >= ENV_MIN ? { cube, strength, water, body: null } : null;
+}
+
+// A cube map's six faces decoded (B, G, R, A), or null.
+export function decodeCube(t: xenos.XenosTexture): Decoded[] | null {
+    const faces = xenos.cubeFaces(t);
+    if (!faces) return null;
+    const kind =
+        t.format === xenos.FMT_DXT1 ? 1 : t.format === xenos.FMT_DXT3 ? 3 : t.format === xenos.FMT_DXT5 ? 5 : 0;
+    if (!kind && t.format !== xenos.FMT_8888) return null;
+    return faces.map((f) => ({
+        width: t.width,
+        height: t.height,
+        bgra: kind ? dxt.decode(f, t.width, t.height, kind) : f,
+    }));
+}
+
+// What the cube map shows in the direction (x, y, z): Direct3D's face choice (+X, -X, +Y, -Y, +Z, -Z) and uv, nearest
+// texel. [B, G, R, A].
+export function sampleCube(faces: readonly Decoded[], x: number, y: number, z: number): number[] {
+    const ax = Math.abs(x);
+    const ay = Math.abs(y);
+    const az = Math.abs(z);
+    let face: number;
+    let sc: number;
+    let tc: number;
+    let ma: number;
+    if (ax >= ay && ax >= az) {
+        face = x > 0 ? 0 : 1;
+        sc = x > 0 ? -z : z;
+        tc = -y;
+        ma = ax;
+    } else if (ay >= az) {
+        face = y > 0 ? 2 : 3;
+        sc = x;
+        tc = y > 0 ? z : -z;
+        ma = ay;
+    } else {
+        face = z > 0 ? 4 : 5;
+        sc = z > 0 ? x : -x;
+        tc = -y;
+        ma = az;
+    }
+    const d = faces[face]!;
+    const px = Math.min(d.width - 1, Math.max(0, Math.floor(0.5 * (sc / ma + 1) * d.width)));
+    const py = Math.min(d.height - 1, Math.max(0, Math.floor(0.5 * (tc / ma + 1) * d.height)));
+    const o = 4 * (py * d.width + px);
+    return [d.bgra[o]!, d.bgra[o + 1]!, d.bgra[o + 2]!, d.bgra[o + 3]!];
+}
+
+// The 2D map for THUG2's environment pass (see above): size x size, B, G, R and `alpha` (0..1) as the blend of the
+// reflection over the surface. The texel's direction is (rx, ry, sqrt(1 - rx^2 - ry^2)); outside the unit disc the
+// edge's. (v grows with ry - the texture matrix's sign - so the top row looks down.)
+export function sphereMap(faces: readonly Decoded[], alpha: number, size = ENV_SIZE): Buffer {
+    const out = Buffer.alloc(size * size * 4);
+    const a = Math.round(Math.min(1, Math.max(0, alpha)) * 255);
+    for (let j = 0; j < size; j++) {
+        for (let i = 0; i < size; i++) {
+            let rx = ((i + 0.5) / size - 0.5) * 2;
+            let ry = ((j + 0.5) / size - 0.5) * 2;
+            const len = Math.hypot(rx, ry);
+            if (len > 1) {
+                rx /= len;
+                ry /= len;
+            }
+            const rz = Math.sqrt(Math.max(0, 1 - rx * rx - ry * ry));
+            const c = sampleCube(faces, rx, ry, rz);
+            const o = 4 * (j * size + i);
+            out[o] = c[0]!;
+            out[o + 1] = c[1]!;
+            out[o + 2] = c[2]!;
+            out[o + 3] = a;
+        }
+    }
+    return out;
+}

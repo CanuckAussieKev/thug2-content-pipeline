@@ -1,0 +1,2823 @@
+{
+ "game": "thp8",
+ "levels": {
+  "thp8_training": {
+   "candidates": [
+    {
+     "id": 0,
+     "pose": {
+      "pos": [
+       -2576,
+       1155,
+       1640
+      ],
+      "heading": 135,
+      "pitch": 52
+     },
+     "target": [
+      -2468,
+      960,
+      1532
+     ],
+     "score": {
+      "score": 2.5866,
+      "rails": 0,
+      "interest": 0.9621,
+      "spread": 1,
+      "depth": 0.2211,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0015,
+      "near": 0,
+      "occl": 0,
+      "blocked": false
+     },
+     "ground": 926
+    },
+    {
+     "id": 1,
+     "pose": {
+      "pos": [
+       -2576,
+       1155,
+       1424
+      ],
+      "heading": 45,
+      "pitch": 52
+     },
+     "target": [
+      -2468,
+      960,
+      1532
+     ],
+     "score": {
+      "score": 2.5792,
+      "rails": 0,
+      "interest": 0.9284,
+      "spread": 1,
+      "depth": 0.4273,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0023,
+      "near": 0,
+      "occl": 0,
+      "blocked": false
+     },
+     "ground": 981
+    },
+    {
+     "id": 2,
+     "pose": {
+      "pos": [
+       -285,
+       1228,
+       2756
+      ],
+      "heading": 180,
+      "pitch": 32
+     },
+     "target": [
+      -285,
+      736,
+      1969
+     ],
+     "score": {
+      "score": 2.4797,
+      "rails": 0.4667,
+      "interest": 0.7483,
+      "spread": 1,
+      "depth": 0.3542,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0386,
+      "near": 0,
+      "occl": 0,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 3,
+     "pose": {
+      "pos": [
+       -2360,
+       1155,
+       1424
+      ],
+      "heading": 315,
+      "pitch": 52
+     },
+     "target": [
+      -2468,
+      960,
+      1532
+     ],
+     "score": {
+      "score": 2.3617,
+      "rails": 0,
+      "interest": 0.8259,
+      "spread": 1,
+      "depth": 0.4048,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0046,
+      "near": 0,
+      "occl": 0,
+      "blocked": false
+     },
+     "ground": 981
+    },
+    {
+     "id": 4,
+     "pose": {
+      "pos": [
+       -2360,
+       1155,
+       1640
+      ],
+      "heading": 225,
+      "pitch": 52
+     },
+     "target": [
+      -2468,
+      960,
+      1532
+     ],
+     "score": {
+      "score": 2.2939,
+      "rails": 0,
+      "interest": 0.8529,
+      "spread": 0.9167,
+      "depth": 0.1655,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0046,
+      "near": 0,
+      "occl": 0,
+      "blocked": false
+     },
+     "ground": 926
+    },
+    {
+     "id": 5,
+     "pose": {
+      "pos": [
+       -1245,
+       1296,
+       2756
+      ],
+      "heading": 180,
+      "pitch": 32
+     },
+     "target": [
+      -1245,
+      804,
+      1969
+     ],
+     "score": {
+      "score": 2.1919,
+      "rails": 0.0667,
+      "interest": 0.7902,
+      "spread": 1,
+      "depth": 0.3431,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0579,
+      "near": 0,
+      "occl": 0,
+      "blocked": false
+     },
+     "ground": null
+    }
+   ],
+   "chosen": 2,
+   "why": "the training hall from above through the roof trusses: the pillars and the ramp floors (weak: the roof girders cross every view; the low views are all walls)"
+  },
+  "thp8_skateshop": {
+   "candidates": [
+    {
+     "id": 0,
+     "pose": {
+      "pos": [
+       57,
+       119,
+       -17
+      ],
+      "heading": 315,
+      "pitch": 32
+     },
+     "target": [
+      -33,
+      40,
+      73
+     ],
+     "score": {
+      "score": 0.897,
+      "rails": 0,
+      "interest": 0.1864,
+      "spread": 0.9167,
+      "depth": 0.2023,
+      "sky": 0,
+      "void": 0.0077,
+      "back": 0,
+      "near": 0.0185,
+      "occl": 0.0054,
+      "blocked": false
+     },
+     "ground": 0
+    },
+    {
+     "id": 1,
+     "pose": {
+      "pos": [
+       14,
+       121,
+       104
+      ],
+      "heading": 315,
+      "pitch": 32
+     },
+     "target": [
+      -76,
+      42,
+      194
+     ],
+     "score": {
+      "score": -0.0453,
+      "rails": 0,
+      "interest": 0.2175,
+      "spread": 1,
+      "depth": 0.1491,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0.375,
+      "occl": 0.0008,
+      "blocked": false
+     },
+     "ground": 0
+    },
+    {
+     "id": 2,
+     "pose": {
+      "pos": [
+       19,
+       127,
+       67
+      ],
+      "heading": 0,
+      "pitch": 32
+     },
+     "target": [
+      19,
+      48,
+      194
+     ],
+     "score": {
+      "score": -0.5585,
+      "rails": 0,
+      "interest": 0.1464,
+      "spread": 0.75,
+      "depth": 0.2249,
+      "sky": 0,
+      "void": 0.2739,
+      "back": 0,
+      "near": 0.091,
+      "occl": 0.0008,
+      "blocked": false
+     },
+     "ground": 0
+    },
+    {
+     "id": 3,
+     "pose": {
+      "pos": [
+       -33,
+       119,
+       200
+      ],
+      "heading": 180,
+      "pitch": 32
+     },
+     "target": [
+      -33,
+      40,
+      73
+     ],
+     "score": {
+      "score": -1.1697,
+      "rails": 0,
+      "interest": 0.1371,
+      "spread": 0.5833,
+      "depth": 0.318,
+      "sky": 0,
+      "void": 0.2716,
+      "back": 0.0656,
+      "near": 0.213,
+      "occl": 0.0015,
+      "blocked": false
+     },
+     "ground": 0
+    },
+    {
+     "id": 4,
+     "pose": {
+      "pos": [
+       146,
+       127,
+       194
+      ],
+      "heading": 270,
+      "pitch": 32
+     },
+     "target": [
+      19,
+      48,
+      194
+     ],
+     "score": {
+      "score": -1.3809,
+      "rails": 0,
+      "interest": 0.0972,
+      "spread": 0.3333,
+      "depth": 0.3286,
+      "sky": 0,
+      "void": 0.4205,
+      "back": 0.0008,
+      "near": 0.0633,
+      "occl": 0.0216,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 5,
+     "pose": {
+      "pos": [
+       -93,
+       148,
+       -183
+      ],
+      "heading": 0,
+      "pitch": 32
+     },
+     "target": [
+      -93,
+      69,
+      -56
+     ],
+     "score": {
+      "score": -2.3586,
+      "rails": 0,
+      "interest": 0.0603,
+      "spread": 0.1667,
+      "depth": 0.5421,
+      "sky": 0,
+      "void": 0.5918,
+      "back": 0.0748,
+      "near": 0.0625,
+      "occl": 0.0015,
+      "blocked": false
+     },
+     "ground": null
+    }
+   ],
+   "chosen": 0,
+   "why": "the shop floor with the counter, the shoe wall and the deck wall under the Skate Shop banner"
+  },
+  "thp8_bedroom": {
+   "candidates": [
+    {
+     "id": 0,
+     "pose": {
+      "pos": [
+       251,
+       263,
+       -419
+      ],
+      "heading": 225,
+      "pitch": 32
+     },
+     "target": [
+      -49,
+      -2,
+      -719
+     ],
+     "score": {
+      "score": -0.9914,
+      "rails": 0,
+      "interest": 0.0707,
+      "spread": 0.1667,
+      "depth": 0.1484,
+      "sky": 0,
+      "void": 0.2585,
+      "back": 0,
+      "near": 0,
+      "occl": 0.1211,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 1,
+     "pose": {
+      "pos": [
+       -136,
+       156,
+       -632
+      ],
+      "heading": 135,
+      "pitch": 52
+     },
+     "target": [
+      -49,
+      -2,
+      -719
+     ],
+     "score": {
+      "score": -1.2729,
+      "rails": 0,
+      "interest": 0.1203,
+      "spread": 0.5,
+      "depth": 0.2293,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0.1682,
+      "occl": 0.1659,
+      "blocked": true
+     },
+     "ground": null
+    },
+    {
+     "id": 2,
+     "pose": {
+      "pos": [
+       -261,
+       187,
+       686
+      ],
+      "heading": 135,
+      "pitch": 32
+     },
+     "target": [
+      -141,
+      81,
+      566
+     ],
+     "score": {
+      "score": -1.8237,
+      "rails": 0,
+      "interest": 0.0371,
+      "spread": 0,
+      "depth": 1.0473,
+      "sky": 0,
+      "void": 0.125,
+      "back": 0.304,
+      "near": 0.0571,
+      "occl": 0.2955,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 3,
+     "pose": {
+      "pos": [
+       -54,
+       239,
+       653
+      ],
+      "heading": 225,
+      "pitch": 52
+     },
+     "target": [
+      -141,
+      81,
+      566
+     ],
+     "score": {
+      "score": -2.1516,
+      "rails": 0,
+      "interest": 0.0512,
+      "spread": 0.0833,
+      "depth": 0.1218,
+      "sky": 0,
+      "void": 0.314,
+      "back": 0.0309,
+      "near": 0,
+      "occl": 0.3758,
+      "blocked": false
+     },
+     "ground": 0
+    }
+   ],
+   "chosen": 2,
+   "why": "the bedroom: the checkerboard floor, the posters and the green chair under the roof beams (weak: a stub room with grey out-of-world planes)"
+  },
+  "thp8_net_beavervalley": {
+   "candidates": [
+    {
+     "id": 0,
+     "pose": {
+      "pos": [
+       2815,
+       3087,
+       5701
+      ],
+      "heading": 270,
+      "pitch": 42
+     },
+     "target": [
+      -754,
+      -127,
+      5701
+     ],
+     "score": {
+      "score": 2.2143,
+      "rails": 0.8991,
+      "interest": 0.3832,
+      "spread": 1,
+      "depth": 0.435,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0008,
+      "near": 0,
+      "occl": 0.0355,
+      "blocked": false
+     },
+     "ground": -279
+    },
+    {
+     "id": 1,
+     "pose": {
+      "pos": [
+       -5955,
+       4528,
+       -2929
+      ],
+      "heading": 0,
+      "pitch": 52
+     },
+     "target": [
+      -5955,
+      744,
+      28
+     ],
+     "score": {
+      "score": 2.1981,
+      "rails": 1,
+      "interest": 0.36,
+      "spread": 1,
+      "depth": 0.2991,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0046,
+      "near": 0,
+      "occl": 0.0177,
+      "blocked": false
+     },
+     "ground": 665
+    },
+    {
+     "id": 2,
+     "pose": {
+      "pos": [
+       -754,
+       5032,
+       14331
+      ],
+      "heading": 180,
+      "pitch": 52
+     },
+     "target": [
+      -754,
+      1248,
+      11374
+     ],
+     "score": {
+      "score": 2.1567,
+      "rails": 1,
+      "interest": 0.3394,
+      "spread": 1,
+      "depth": 0.2791,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0023,
+      "near": 0,
+      "occl": 0.0131,
+      "blocked": false
+     },
+     "ground": -2593
+    },
+    {
+     "id": 3,
+     "pose": {
+      "pos": [
+       -9524,
+       3958,
+       28
+      ],
+      "heading": 90,
+      "pitch": 42
+     },
+     "target": [
+      -5955,
+      744,
+      28
+     ],
+     "score": {
+      "score": 2.1064,
+      "rails": 1,
+      "interest": 0.3091,
+      "spread": 1,
+      "depth": 0.3617,
+      "sky": 0,
+      "void": 0.0008,
+      "back": 0.0069,
+      "near": 0,
+      "occl": 0.0216,
+      "blocked": false
+     },
+     "ground": 347
+    },
+    {
+     "id": 4,
+     "pose": {
+      "pos": [
+       -754,
+       5095,
+       11501
+      ],
+      "heading": 180,
+      "pitch": 42
+     },
+     "target": [
+      -754,
+      -127,
+      5701
+     ],
+     "score": {
+      "score": 2.0866,
+      "rails": 1,
+      "interest": 0.331,
+      "spread": 0.9167,
+      "depth": 0.3782,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0108,
+      "near": 0,
+      "occl": 0.044,
+      "blocked": false
+     },
+     "ground": 1023
+    },
+    {
+     "id": 5,
+     "pose": {
+      "pos": [
+       -5559,
+       6023,
+       5701
+      ],
+      "heading": 90,
+      "pitch": 52
+     },
+     "target": [
+      -754,
+      -127,
+      5701
+     ],
+     "score": {
+      "score": 2.0005,
+      "rails": 1,
+      "interest": 0.2984,
+      "spread": 1,
+      "depth": 0.2566,
+      "sky": 0,
+      "void": 0.0085,
+      "back": 0.0054,
+      "near": 0,
+      "occl": 0.0486,
+      "blocked": false
+     },
+     "ground": 160
+    }
+   ],
+   "chosen": 4,
+   "why": "the whole valley down its main axis: the Capitol, the school, the town and the funpark in one view"
+  },
+  "thp8_net_skatepark": {
+   "candidates": [
+    {
+     "id": 0,
+     "pose": {
+      "pos": [
+       -1339,
+       1108,
+       -1179
+      ],
+      "heading": 135,
+      "pitch": 42
+     },
+     "target": [
+      -612,
+      182,
+      -1906
+     ],
+     "score": {
+      "score": 2.3188,
+      "rails": 1,
+      "interest": 0.4017,
+      "spread": 1,
+      "depth": 0.3914,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0008,
+      "near": 0,
+      "occl": 0.0208,
+      "blocked": false
+     },
+     "ground": 35
+    },
+    {
+     "id": 1,
+     "pose": {
+      "pos": [
+       227,
+       1756,
+       3396
+      ],
+      "heading": 225,
+      "pitch": 42
+     },
+     "target": [
+      -955,
+      251,
+      2214
+     ],
+     "score": {
+      "score": 2.2968,
+      "rails": 1,
+      "interest": 0.3903,
+      "spread": 1,
+      "depth": 0.4453,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0069,
+      "near": 0,
+      "occl": 0.0355,
+      "blocked": false
+     },
+     "ground": 832
+    },
+    {
+     "id": 2,
+     "pose": {
+      "pos": [
+       -9,
+       1273,
+       -2509
+      ],
+      "heading": 315,
+      "pitch": 52
+     },
+     "target": [
+      -612,
+      182,
+      -1906
+     ],
+     "score": {
+      "score": 2.2484,
+      "rails": 1,
+      "interest": 0.3769,
+      "spread": 1,
+      "depth": 0.3157,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0,
+      "occl": 0.0046,
+      "blocked": false
+     },
+     "ground": 315
+    },
+    {
+     "id": 3,
+     "pose": {
+      "pos": [
+       218,
+       915,
+       -1076
+      ],
+      "heading": 225,
+      "pitch": 32
+     },
+     "target": [
+      -612,
+      182,
+      -1906
+     ],
+     "score": {
+      "score": 2.2404,
+      "rails": 1,
+      "interest": 0.3765,
+      "spread": 1,
+      "depth": 0.2979,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0008,
+      "near": 0,
+      "occl": 0.0162,
+      "blocked": false
+     },
+     "ground": 49
+    },
+    {
+     "id": 4,
+     "pose": {
+      "pos": [
+       389,
+       690,
+       -676
+      ],
+      "heading": 315,
+      "pitch": 32
+     },
+     "target": [
+      -441,
+      -43,
+      154
+     ],
+     "score": {
+      "score": 2.2296,
+      "rails": 1,
+      "interest": 0.3685,
+      "spread": 1,
+      "depth": 0.3986,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0108,
+      "near": 0,
+      "occl": 0.0131,
+      "blocked": false
+     },
+     "ground": 145
+    },
+    {
+     "id": 5,
+     "pose": {
+      "pos": [
+       -1215,
+       1273,
+       -2509
+      ],
+      "heading": 45,
+      "pitch": 52
+     },
+     "target": [
+      -612,
+      182,
+      -1906
+     ],
+     "score": {
+      "score": 2.2237,
+      "rails": 1,
+      "interest": 0.3579,
+      "spread": 1,
+      "depth": 0.3661,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0008,
+      "near": 0,
+      "occl": 0.0039,
+      "blocked": false
+     },
+     "ground": 315
+    }
+   ],
+   "chosen": 0,
+   "why": "the park: the red-striped rail ledge, the stair set and the bowl"
+  },
+  "thp8_net_factory": {
+   "candidates": [
+    {
+     "id": 0,
+     "pose": {
+      "pos": [
+       3896,
+       1119,
+       -4794
+      ],
+      "heading": 90,
+      "pitch": 32
+     },
+     "target": [
+      5590,
+      60,
+      -4794
+     ],
+     "score": {
+      "score": 1.422,
+      "rails": 0.2808,
+      "interest": 0.205,
+      "spread": 0.9167,
+      "depth": 0.7909,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0,
+      "occl": 0.034,
+      "blocked": false
+     },
+     "ground": 209
+    },
+    {
+     "id": 1,
+     "pose": {
+      "pos": [
+       4351,
+       1374,
+       3893
+      ],
+      "heading": 0,
+      "pitch": 52
+     },
+     "target": [
+      4351,
+      -200,
+      5123
+     ],
+     "score": {
+      "score": 1.4094,
+      "rails": 0.2854,
+      "interest": 0.2979,
+      "spread": 0.9167,
+      "depth": 0.2962,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0139,
+      "near": 0,
+      "occl": 0.0463,
+      "blocked": false
+     },
+     "ground": -177
+    },
+    {
+     "id": 2,
+     "pose": {
+      "pos": [
+       5581,
+       1374,
+       5123
+      ],
+      "heading": 270,
+      "pitch": 52
+     },
+     "target": [
+      4351,
+      -200,
+      5123
+     ],
+     "score": {
+      "score": 1.3981,
+      "rails": 0.3135,
+      "interest": 0.2842,
+      "spread": 1,
+      "depth": 0.2963,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0123,
+      "near": 0,
+      "occl": 0.0664,
+      "blocked": false
+     },
+     "ground": -261
+    },
+    {
+     "id": 3,
+     "pose": {
+      "pos": [
+       5993,
+       1200,
+       5618
+      ],
+      "heading": 90,
+      "pitch": 42
+     },
+     "target": [
+      7078,
+      223,
+      5618
+     ],
+     "score": {
+      "score": 1.3152,
+      "rails": 0.1965,
+      "interest": 0.2835,
+      "spread": 1,
+      "depth": 0.7339,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0008,
+      "near": 0.0278,
+      "occl": 0.088,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 4,
+     "pose": {
+      "pos": [
+       6086,
+       439,
+       3824
+      ],
+      "heading": 180,
+      "pitch": 32
+     },
+     "target": [
+      6086,
+      166,
+      3387
+     ],
+     "score": {
+      "score": 1.2431,
+      "rails": 1,
+      "interest": 0.2448,
+      "spread": 0.9167,
+      "depth": 0.4649,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0008,
+      "near": 0,
+      "occl": 0.2847,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 5,
+     "pose": {
+      "pos": [
+       5546,
+       604,
+       704
+      ],
+      "heading": 315,
+      "pitch": 52
+     },
+     "target": [
+      5094,
+      -213,
+      1156
+     ],
+     "score": {
+      "score": 1.2118,
+      "rails": 0.5101,
+      "interest": 0.3626,
+      "spread": 0.9167,
+      "depth": 0.3578,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0008,
+      "near": 0,
+      "occl": 0.2323,
+      "blocked": false
+     },
+     "ground": -65
+    }
+   ],
+   "chosen": 5,
+   "why": "the factory floor: the conveyor tracks and ramps across the shaft (weak: an indoor level, every view is partly walls)"
+  },
+  "thp8_net_slums": {
+   "candidates": [
+    {
+     "id": 0,
+     "pose": {
+      "pos": [
+       4940,
+       1219,
+       -2694
+      ],
+      "heading": 270,
+      "pitch": 52
+     },
+     "target": [
+      3982,
+      -7,
+      -2694
+     ],
+     "score": {
+      "score": 2.2292,
+      "rails": 1,
+      "interest": 0.3377,
+      "spread": 1,
+      "depth": 0.5131,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0,
+      "occl": 0.0378,
+      "blocked": false
+     },
+     "ground": 167
+    },
+    {
+     "id": 1,
+     "pose": {
+      "pos": [
+       4367,
+       1656,
+       -2694
+      ],
+      "heading": 270,
+      "pitch": 42
+     },
+     "target": [
+      2488,
+      -36,
+      -2694
+     ],
+     "score": {
+      "score": 2.2195,
+      "rails": 1,
+      "interest": 0.2937,
+      "spread": 1,
+      "depth": 0.7738,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0,
+      "occl": 0.0116,
+      "blocked": false
+     },
+     "ground": 166
+    },
+    {
+     "id": 2,
+     "pose": {
+      "pos": [
+       931,
+       1957,
+       -2694
+      ],
+      "heading": 90,
+      "pitch": 52
+     },
+     "target": [
+      2488,
+      -36,
+      -2694
+     ],
+     "score": {
+      "score": 2.1947,
+      "rails": 1,
+      "interest": 0.2817,
+      "spread": 1,
+      "depth": 0.7709,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0,
+      "occl": 0.0247,
+      "blocked": false
+     },
+     "ground": -54
+    },
+    {
+     "id": 3,
+     "pose": {
+      "pos": [
+       3534,
+       1506,
+       679
+      ],
+      "heading": 0,
+      "pitch": 52
+     },
+     "target": [
+      3534,
+      -487,
+      2236
+     ],
+     "score": {
+      "score": 2.142,
+      "rails": 0.7869,
+      "interest": 0.3726,
+      "spread": 1,
+      "depth": 0.5643,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0008,
+      "near": 0,
+      "occl": 0.0177,
+      "blocked": false
+     },
+     "ground": -66
+    },
+    {
+     "id": 4,
+     "pose": {
+      "pos": [
+       1091,
+       2596,
+       -2694
+      ],
+      "heading": 90,
+      "pitch": 42
+     },
+     "target": [
+      3982,
+      -7,
+      -2694
+     ],
+     "score": {
+      "score": 2.0812,
+      "rails": 1,
+      "interest": 0.2288,
+      "spread": 0.9167,
+      "depth": 0.912,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0,
+      "occl": 0.0054,
+      "blocked": false
+     },
+     "ground": -54
+    },
+    {
+     "id": 5,
+     "pose": {
+      "pos": [
+       3613,
+       2427,
+       1568
+      ],
+      "heading": 225,
+      "pitch": 52
+     },
+     "target": [
+      2936,
+      1201,
+      891
+     ],
+     "score": {
+      "score": 2.0779,
+      "rails": 1,
+      "interest": 0.2807,
+      "spread": 1,
+      "depth": 0.3882,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0,
+      "occl": 0.0069,
+      "blocked": false
+     },
+     "ground": -329
+    }
+   ],
+   "chosen": 1,
+   "why": "the Slums rooftops: the liquor store, the fenced tops and the street between the towers"
+  },
+  "thp8_net_suburbia": {
+   "candidates": [
+    {
+     "id": 0,
+     "pose": {
+      "pos": [
+       -429,
+       913,
+       -1934
+      ],
+      "heading": 0,
+      "pitch": 52
+     },
+     "target": [
+      -429,
+      92,
+      -1293
+     ],
+     "score": {
+      "score": 2.5158,
+      "rails": 1,
+      "interest": 0.5092,
+      "spread": 1,
+      "depth": 0.3438,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0023,
+      "near": 0,
+      "occl": 0.034,
+      "blocked": false
+     },
+     "ground": 96
+    },
+    {
+     "id": 1,
+     "pose": {
+      "pos": [
+       1110,
+       1097,
+       -780
+      ],
+      "heading": 0,
+      "pitch": 52
+     },
+     "target": [
+      1110,
+      276,
+      -139
+     ],
+     "score": {
+      "score": 2.3771,
+      "rails": 1,
+      "interest": 0.457,
+      "spread": 1,
+      "depth": 0.2488,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0046,
+      "near": 0,
+      "occl": 0.0201,
+      "blocked": false
+     },
+     "ground": 7
+    },
+    {
+     "id": 2,
+     "pose": {
+      "pos": [
+       -429,
+       913,
+       -652
+      ],
+      "heading": 180,
+      "pitch": 52
+     },
+     "target": [
+      -429,
+      92,
+      -1293
+     ],
+     "score": {
+      "score": 2.3444,
+      "rails": 0.9751,
+      "interest": 0.4444,
+      "spread": 1,
+      "depth": 0.2709,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0023,
+      "near": 0,
+      "occl": 0.0239,
+      "blocked": false
+     },
+     "ground": 13
+    },
+    {
+     "id": 3,
+     "pose": {
+      "pos": [
+       1110,
+       1097,
+       502
+      ],
+      "heading": 180,
+      "pitch": 52
+     },
+     "target": [
+      1110,
+      276,
+      -139
+     ],
+     "score": {
+      "score": 2.2758,
+      "rails": 1,
+      "interest": 0.4055,
+      "spread": 1,
+      "depth": 0.3109,
+      "sky": 0,
+      "void": 0.0023,
+      "back": 0.0077,
+      "near": 0,
+      "occl": 0.027,
+      "blocked": false
+     },
+     "ground": 89
+    },
+    {
+     "id": 4,
+     "pose": {
+      "pos": [
+       1751,
+       1097,
+       -139
+      ],
+      "heading": 270,
+      "pitch": 52
+     },
+     "target": [
+      1110,
+      276,
+      -139
+     ],
+     "score": {
+      "score": 2.2385,
+      "rails": 1,
+      "interest": 0.399,
+      "spread": 0.9167,
+      "depth": 0.3017,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0,
+      "occl": 0.0278,
+      "blocked": false
+     },
+     "ground": 94
+    },
+    {
+     "id": 5,
+     "pose": {
+      "pos": [
+       469,
+       1097,
+       -139
+      ],
+      "heading": 90,
+      "pitch": 52
+     },
+     "target": [
+      1110,
+      276,
+      -139
+     ],
+     "score": {
+      "score": 2.1954,
+      "rails": 0.918,
+      "interest": 0.4081,
+      "spread": 1,
+      "depth": 0.2782,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0154,
+      "near": 0,
+      "occl": 0.0116,
+      "blocked": false
+     },
+     "ground": 92
+    }
+   ],
+   "chosen": 1,
+   "why": "a suburban house with its pond, table and driveway (the whole zone is such yards)"
+  },
+  "thp8_net_mainstreet": {
+   "candidates": [
+    {
+     "id": 0,
+     "pose": {
+      "pos": [
+       -65,
+       652,
+       -558
+      ],
+      "heading": 45,
+      "pitch": 32
+     },
+     "target": [
+      756,
+      -74,
+      263
+     ],
+     "score": {
+      "score": 2.2132,
+      "rails": 1,
+      "interest": 0.3487,
+      "spread": 0.9167,
+      "depth": 0.5915,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0046,
+      "near": 0,
+      "occl": 0.0347,
+      "blocked": false
+     },
+     "ground": 3
+    },
+    {
+     "id": 1,
+     "pose": {
+      "pos": [
+       440,
+       742,
+       -53
+      ],
+      "heading": 315,
+      "pitch": 32
+     },
+     "target": [
+      -381,
+      16,
+      768
+     ],
+     "score": {
+      "score": 2.1561,
+      "rails": 1,
+      "interest": 0.3212,
+      "spread": 1,
+      "depth": 0.5665,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0039,
+      "near": 0,
+      "occl": 0.0556,
+      "blocked": false
+     },
+     "ground": 0
+    },
+    {
+     "id": 2,
+     "pose": {
+      "pos": [
+       -2363,
+       978,
+       175
+      ],
+      "heading": 45,
+      "pitch": 42
+     },
+     "target": [
+      -1644,
+      62,
+      894
+     ],
+     "score": {
+      "score": 2.1264,
+      "rails": 1,
+      "interest": 0.3299,
+      "spread": 1,
+      "depth": 0.3815,
+      "sky": 0,
+      "void": 0.0015,
+      "back": 0.0008,
+      "near": 0,
+      "occl": 0.0532,
+      "blocked": false
+     },
+     "ground": -108
+    },
+    {
+     "id": 3,
+     "pose": {
+      "pos": [
+       124,
+       1001,
+       2747
+      ],
+      "heading": 180,
+      "pitch": 52
+     },
+     "target": [
+      124,
+      -78,
+      1904
+     ],
+     "score": {
+      "score": 2.1081,
+      "rails": 1,
+      "interest": 0.3353,
+      "spread": 1,
+      "depth": 0.3501,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0,
+      "occl": 0.0625,
+      "blocked": false
+     },
+     "ground": 135
+    },
+    {
+     "id": 4,
+     "pose": {
+      "pos": [
+       -977,
+       1095,
+       172
+      ],
+      "heading": 45,
+      "pitch": 52
+     },
+     "target": [
+      -381,
+      16,
+      768
+     ],
+     "score": {
+      "score": 2.0955,
+      "rails": 1,
+      "interest": 0.3035,
+      "spread": 1,
+      "depth": 0.3012,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0008,
+      "near": 0,
+      "occl": 0.0394,
+      "blocked": false
+     },
+     "ground": -40
+    },
+    {
+     "id": 5,
+     "pose": {
+      "pos": [
+       215,
+       1095,
+       1364
+      ],
+      "heading": 225,
+      "pitch": 52
+     },
+     "target": [
+      -381,
+      16,
+      768
+     ],
+     "score": {
+      "score": 2.0896,
+      "rails": 1,
+      "interest": 0.3178,
+      "spread": 1,
+      "depth": 0.2508,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0,
+      "occl": 0.0471,
+      "blocked": false
+     },
+     "ground": -238
+    }
+   ],
+   "chosen": 3,
+   "why": "Main Street: the roof-top planters, the Liquor sign, the park and the giant coffee cup and pizza props over the road"
+  },
+  "thp8_net_funpark": {
+   "candidates": [
+    {
+     "id": 0,
+     "pose": {
+      "pos": [
+       -973,
+       2850,
+       -399
+      ],
+      "heading": 180,
+      "pitch": 52
+     },
+     "target": [
+      -973,
+      1421,
+      -1516
+     ],
+     "score": {
+      "score": 1.9128,
+      "rails": 1,
+      "interest": 0.2571,
+      "spread": 1,
+      "depth": 0.2257,
+      "sky": 0,
+      "void": 0.0023,
+      "back": 0.0239,
+      "near": 0,
+      "occl": 0.0216,
+      "blocked": false
+     },
+     "ground": 945
+    },
+    {
+     "id": 1,
+     "pose": {
+      "pos": [
+       -2971,
+       3150,
+       -2034
+      ],
+      "heading": 0,
+      "pitch": 52
+     },
+     "target": [
+      -2971,
+      1721,
+      -917
+     ],
+     "score": {
+      "score": 1.911,
+      "rails": 1,
+      "interest": 0.2271,
+      "spread": 1,
+      "depth": 0.4518,
+      "sky": 0,
+      "void": 0.0046,
+      "back": 0.01,
+      "near": 0,
+      "occl": 0.0517,
+      "blocked": false
+     },
+     "ground": 1196
+    },
+    {
+     "id": 2,
+     "pose": {
+      "pos": [
+       -973,
+       2635,
+       -2864
+      ],
+      "heading": 0,
+      "pitch": 42
+     },
+     "target": [
+      -973,
+      1421,
+      -1516
+     ],
+     "score": {
+      "score": 1.871,
+      "rails": 1,
+      "interest": 0.2296,
+      "spread": 0.9167,
+      "depth": 0.3333,
+      "sky": 0,
+      "void": 0.0023,
+      "back": 0.0116,
+      "near": 0,
+      "occl": 0.0378,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 3,
+     "pose": {
+      "pos": [
+       219,
+       3237,
+       2279
+      ],
+      "heading": 270,
+      "pitch": 42
+     },
+     "target": [
+      -1972,
+      1265,
+      2279
+     ],
+     "score": {
+      "score": 1.8645,
+      "rails": 1,
+      "interest": 0.2149,
+      "spread": 1,
+      "depth": 0.2815,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0123,
+      "near": 0,
+      "occl": 0.0463,
+      "blocked": false
+     },
+     "ground": 962
+    },
+    {
+     "id": 4,
+     "pose": {
+      "pos": [
+       1527,
+       2983,
+       -1516
+      ],
+      "heading": 270,
+      "pitch": 32
+     },
+     "target": [
+      -973,
+      1421,
+      -1516
+     ],
+     "score": {
+      "score": 1.8577,
+      "rails": 1,
+      "interest": 0.2148,
+      "spread": 0.75,
+      "depth": 0.7095,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0139,
+      "near": 0,
+      "occl": 0.0193,
+      "blocked": false
+     },
+     "ground": 1068
+    },
+    {
+     "id": 5,
+     "pose": {
+      "pos": [
+       -1942,
+       2752,
+       -488
+      ],
+      "heading": 45,
+      "pitch": 32
+     },
+     "target": [
+      -174,
+      1190,
+      1280
+     ],
+     "score": {
+      "score": 1.8391,
+      "rails": 1,
+      "interest": 0.2094,
+      "spread": 1,
+      "depth": 0.285,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0093,
+      "near": 0,
+      "occl": 0.054,
+      "blocked": false
+     },
+     "ground": 946
+    }
+   ],
+   "chosen": 4,
+   "why": "the Fun Park: the pink plaza, the pirate fronts and the roller coaster rail around the mountain"
+  },
+  "thp8_net_school": {
+   "candidates": [
+    {
+     "id": 0,
+     "pose": {
+      "pos": [
+       -4342,
+       1803,
+       5276
+      ],
+      "heading": 270,
+      "pitch": 42
+     },
+     "target": [
+      -5782,
+      506,
+      5276
+     ],
+     "score": {
+      "score": 2.2457,
+      "rails": 1,
+      "interest": 0.3656,
+      "spread": 1,
+      "depth": 0.3881,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0008,
+      "near": 0,
+      "occl": 0.0023,
+      "blocked": false
+     },
+     "ground": 794
+    },
+    {
+     "id": 1,
+     "pose": {
+      "pos": [
+       -6626,
+       2033,
+       4432
+      ],
+      "heading": 45,
+      "pitch": 52
+     },
+     "target": [
+      -5782,
+      506,
+      5276
+     ],
+     "score": {
+      "score": 2.1612,
+      "rails": 1,
+      "interest": 0.3348,
+      "spread": 1,
+      "depth": 0.305,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0,
+      "occl": 0.0131,
+      "blocked": false
+     },
+     "ground": 347
+    },
+    {
+     "id": 2,
+     "pose": {
+      "pos": [
+       -4218,
+       2454,
+       4500
+      ],
+      "heading": 0,
+      "pitch": 42
+     },
+     "target": [
+      -4218,
+      347,
+      6840
+     ],
+     "score": {
+      "score": 2.1356,
+      "rails": 0.9936,
+      "interest": 0.3372,
+      "spread": 1,
+      "depth": 0.2985,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0093,
+      "near": 0,
+      "occl": 0.0216,
+      "blocked": false
+     },
+     "ground": 148
+    },
+    {
+     "id": 3,
+     "pose": {
+      "pos": [
+       329,
+       1148,
+       4829
+      ],
+      "heading": 270,
+      "pitch": 32
+     },
+     "target": [
+      -1314,
+      121,
+      4829
+     ],
+     "score": {
+      "score": 2.1334,
+      "rails": 1,
+      "interest": 0.3071,
+      "spread": 1,
+      "depth": 0.4037,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0008,
+      "near": 0,
+      "occl": 0.0363,
+      "blocked": false
+     },
+     "ground": 96
+    },
+    {
+     "id": 4,
+     "pose": {
+      "pos": [
+       -6800,
+       1803,
+       6294
+      ],
+      "heading": 135,
+      "pitch": 42
+     },
+     "target": [
+      -5782,
+      506,
+      5276
+     ],
+     "score": {
+      "score": 2.1101,
+      "rails": 1,
+      "interest": 0.309,
+      "spread": 1,
+      "depth": 0.3196,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0015,
+      "near": 0,
+      "occl": 0.0093,
+      "blocked": false
+     },
+     "ground": 96
+    },
+    {
+     "id": 5,
+     "pose": {
+      "pos": [
+       -4966,
+       4257,
+       7511
+      ],
+      "heading": 90,
+      "pitch": 52
+     },
+     "target": [
+      -1984,
+      440,
+      7511
+     ],
+     "score": {
+      "score": 2.0993,
+      "rails": 1,
+      "interest": 0.2324,
+      "spread": 0.9167,
+      "depth": 1.0181,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0062,
+      "near": 0,
+      "occl": 0.0085,
+      "blocked": false
+     },
+     "ground": 853
+    }
+   ],
+   "chosen": 3,
+   "why": "the school: the courtyard with the basketball court, the stairs and the long auditorium"
+  },
+  "thp8_net_industrial": {
+   "candidates": [
+    {
+     "id": 0,
+     "pose": {
+      "pos": [
+       3613,
+       2068,
+       -4544
+      ],
+      "heading": 270,
+      "pitch": 52
+     },
+     "target": [
+      1974,
+      -29,
+      -4544
+     ],
+     "score": {
+      "score": 2.1806,
+      "rails": 1,
+      "interest": 0.3156,
+      "spread": 1,
+      "depth": 0.4977,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0,
+      "occl": 0.0224,
+      "blocked": false
+     },
+     "ground": 166
+    },
+    {
+     "id": 1,
+     "pose": {
+      "pos": [
+       -689,
+       3379,
+       -4544
+      ],
+      "heading": 90,
+      "pitch": 52
+     },
+     "target": [
+      1974,
+      -29,
+      -4544
+     ],
+     "score": {
+      "score": 2.1342,
+      "rails": 1,
+      "interest": 0.2777,
+      "spread": 1,
+      "depth": 0.6151,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0023,
+      "near": 0,
+      "occl": 0.0046,
+      "blocked": false
+     },
+     "ground": -48
+    },
+    {
+     "id": 2,
+     "pose": {
+      "pos": [
+       2851,
+       1883,
+       -284
+      ],
+      "heading": 225,
+      "pitch": 52
+     },
+     "target": [
+      1692,
+      -214,
+      -1443
+     ],
+     "score": {
+      "score": 2.1252,
+      "rails": 0.9467,
+      "interest": 0.3371,
+      "spread": 1,
+      "depth": 0.3121,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0,
+      "occl": 0.0177,
+      "blocked": false
+     },
+     "ground": -48
+    },
+    {
+     "id": 3,
+     "pose": {
+      "pos": [
+       1692,
+       2078,
+       -5111
+      ],
+      "heading": 0,
+      "pitch": 32
+     },
+     "target": [
+      1692,
+      -214,
+      -1443
+     ],
+     "score": {
+      "score": 2.0253,
+      "rails": 1,
+      "interest": 0.2795,
+      "spread": 1,
+      "depth": 0.2745,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0054,
+      "near": 0,
+      "occl": 0.0409,
+      "blocked": false
+     },
+     "ground": -8
+    },
+    {
+     "id": 4,
+     "pose": {
+      "pos": [
+       2541,
+       2272,
+       -4544
+      ],
+      "heading": 270,
+      "pitch": 32
+     },
+     "target": [
+      -1127,
+      -20,
+      -4544
+     ],
+     "score": {
+      "score": 1.9406,
+      "rails": 0.7717,
+      "interest": 0.27,
+      "spread": 1,
+      "depth": 0.6104,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0,
+      "occl": 0.0039,
+      "blocked": false
+     },
+     "ground": 9
+    },
+    {
+     "id": 5,
+     "pose": {
+      "pos": [
+       1974,
+       3379,
+       -1881
+      ],
+      "heading": 180,
+      "pitch": 52
+     },
+     "target": [
+      1974,
+      -29,
+      -4544
+     ],
+     "score": {
+      "score": 1.8575,
+      "rails": 0.9615,
+      "interest": 0.2492,
+      "spread": 0.9167,
+      "depth": 0.1623,
+      "sky": 0,
+      "void": 0.0008,
+      "back": 0.0023,
+      "near": 0,
+      "occl": 0.0247,
+      "blocked": false
+     },
+     "ground": -39
+    }
+   ],
+   "chosen": 0,
+   "why": "the industrial yard: the loading sheds, the big fan roof pad and the warehouse wall"
+  },
+  "thp8_net_capitol": {
+   "candidates": [
+    {
+     "id": 0,
+     "pose": {
+      "pos": [
+       -5026,
+       2641,
+       -1738
+      ],
+      "heading": 270,
+      "pitch": 42
+     },
+     "target": [
+      -7169,
+      712,
+      -1738
+     ],
+     "score": {
+      "score": 2.2519,
+      "rails": 0.9376,
+      "interest": 0.4163,
+      "spread": 1,
+      "depth": 0.2306,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0,
+      "occl": 0.0069,
+      "blocked": false
+     },
+     "ground": 276
+    },
+    {
+     "id": 1,
+     "pose": {
+      "pos": [
+       -8684,
+       2641,
+       -3253
+      ],
+      "heading": 45,
+      "pitch": 42
+     },
+     "target": [
+      -7169,
+      712,
+      -1738
+     ],
+     "score": {
+      "score": 2.2419,
+      "rails": 1,
+      "interest": 0.3631,
+      "spread": 1,
+      "depth": 0.3983,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0015,
+      "near": 0,
+      "occl": 0.0324,
+      "blocked": false
+     },
+     "ground": 869
+    },
+    {
+     "id": 2,
+     "pose": {
+      "pos": [
+       -8424,
+       2984,
+       -483
+      ],
+      "heading": 135,
+      "pitch": 52
+     },
+     "target": [
+      -7169,
+      712,
+      -1738
+     ],
+     "score": {
+      "score": 2.2187,
+      "rails": 1,
+      "interest": 0.3702,
+      "spread": 1,
+      "depth": 0.2801,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0023,
+      "near": 0,
+      "occl": 0.0108,
+      "blocked": false
+     },
+     "ground": 869
+    },
+    {
+     "id": 3,
+     "pose": {
+      "pos": [
+       -4839,
+       6751,
+       -3845
+      ],
+      "heading": 270,
+      "pitch": 52
+     },
+     "target": [
+      -9277,
+      1071,
+      -3845
+     ],
+     "score": {
+      "score": 2.0215,
+      "rails": 1,
+      "interest": 0.245,
+      "spread": 1,
+      "depth": 0.4385,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0,
+      "occl": 0.0062,
+      "blocked": false
+     },
+     "ground": 176
+    },
+    {
+     "id": 4,
+     "pose": {
+      "pos": [
+       -1216,
+       7250,
+       -3611
+      ],
+      "heading": 225,
+      "pitch": 52
+     },
+     "target": [
+      -3256,
+      3558,
+      -5651
+     ],
+     "score": {
+      "score": 2.0214,
+      "rails": 1,
+      "interest": 0.2352,
+      "spread": 1,
+      "depth": 0.5099,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0008,
+      "near": 0,
+      "occl": 0.0015,
+      "blocked": false
+     },
+     "ground": 99
+    },
+    {
+     "id": 5,
+     "pose": {
+      "pos": [
+       -8323,
+       5730,
+       1323
+      ],
+      "heading": 225,
+      "pitch": 52
+     },
+     "target": [
+      -9578,
+      3458,
+      68
+     ],
+     "score": {
+      "score": 1.9802,
+      "rails": 0.8621,
+      "interest": 0.2553,
+      "spread": 1,
+      "depth": 0.5996,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0,
+      "occl": 0,
+      "blocked": false
+     },
+     "ground": 1899
+    }
+   ],
+   "chosen": 1,
+   "why": "the Capitol: the dome behind the Fun Park flag, the plaza ramp and the parking lot"
+  },
+  "thp8_net_skatefunparks": {
+   "candidates": [
+    {
+     "id": 0,
+     "pose": {
+      "pos": [
+       -2518,
+       2335,
+       -3749
+      ],
+      "heading": 0,
+      "pitch": 32
+     },
+     "target": [
+      -2518,
+      770,
+      -1244
+     ],
+     "score": {
+      "score": 2.2289,
+      "rails": 1,
+      "interest": 0.3666,
+      "spread": 0.9167,
+      "depth": 0.5757,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0108,
+      "near": 0,
+      "occl": 0.0147,
+      "blocked": false
+     },
+     "ground": -118
+    },
+    {
+     "id": 1,
+     "pose": {
+      "pos": [
+       -2154,
+       1941,
+       -7083
+      ],
+      "heading": 0,
+      "pitch": 42
+     },
+     "target": [
+      -2154,
+      -36,
+      -4888
+     ],
+     "score": {
+      "score": 2.1872,
+      "rails": 1,
+      "interest": 0.3381,
+      "spread": 1,
+      "depth": 0.3829,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0015,
+      "near": 0,
+      "occl": 0.0046,
+      "blocked": false
+     },
+     "ground": 297
+    },
+    {
+     "id": 2,
+     "pose": {
+      "pos": [
+       -2154,
+       2508,
+       -817
+      ],
+      "heading": 180,
+      "pitch": 32
+     },
+     "target": [
+      -2154,
+      -36,
+      -4888
+     ],
+     "score": {
+      "score": 2.0281,
+      "rails": 0.8743,
+      "interest": 0.3072,
+      "spread": 1,
+      "depth": 0.4062,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0031,
+      "near": 0,
+      "occl": 0.0139,
+      "blocked": false
+     },
+     "ground": 940
+    },
+    {
+     "id": 3,
+     "pose": {
+      "pos": [
+       -2518,
+       3098,
+       575
+      ],
+      "heading": 180,
+      "pitch": 52
+     },
+     "target": [
+      -2518,
+      770,
+      -1244
+     ],
+     "score": {
+      "score": 2.0281,
+      "rails": 1,
+      "interest": 0.2854,
+      "spread": 0.9167,
+      "depth": 0.5996,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0085,
+      "near": 0,
+      "occl": 0.0571,
+      "blocked": false
+     },
+     "ground": 960
+    },
+    {
+     "id": 4,
+     "pose": {
+      "pos": [
+       1444,
+       2620,
+       2035
+      ],
+      "heading": 270,
+      "pitch": 32
+     },
+     "target": [
+      -1061,
+      1055,
+      2035
+     ],
+     "score": {
+      "score": 2.004,
+      "rails": 1,
+      "interest": 0.2405,
+      "spread": 1,
+      "depth": 0.5757,
+      "sky": 0,
+      "void": 0.0023,
+      "back": 0.0162,
+      "near": 0,
+      "occl": 0.0185,
+      "blocked": false
+     },
+     "ground": 945
+    },
+    {
+     "id": 5,
+     "pose": {
+      "pos": [
+       -335,
+       2292,
+       -4888
+      ],
+      "heading": 270,
+      "pitch": 52
+     },
+     "target": [
+      -2154,
+      -36,
+      -4888
+     ],
+     "score": {
+      "score": 1.9668,
+      "rails": 0.7015,
+      "interest": 0.3852,
+      "spread": 1,
+      "depth": 0.1687,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0062,
+      "near": 0,
+      "occl": 0.0054,
+      "blocked": false
+     },
+     "ground": 124
+    }
+   ],
+   "chosen": 2,
+   "why": "the skate park laid out under the hill with the suburb and the water behind (both zones in one view)"
+  },
+  "thp8_net_skatecentral": {
+   "candidates": [
+    {
+     "id": 0,
+     "pose": {
+      "pos": [
+       705,
+       1902,
+       -2005
+      ],
+      "heading": 225,
+      "pitch": 32
+     },
+     "target": [
+      -1289,
+      140,
+      -3999
+     ],
+     "score": {
+      "score": 2.2195,
+      "rails": 0.9191,
+      "interest": 0.3771,
+      "spread": 1,
+      "depth": 0.4332,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0,
+      "occl": 0.0247,
+      "blocked": false
+     },
+     "ground": -108
+    },
+    {
+     "id": 1,
+     "pose": {
+      "pos": [
+       -7796,
+       2961,
+       1873
+      ],
+      "heading": 135,
+      "pitch": 42
+     },
+     "target": [
+      -6049,
+      736,
+      126
+     ],
+     "score": {
+      "score": 2.2076,
+      "rails": 1,
+      "interest": 0.3445,
+      "spread": 1,
+      "depth": 0.4078,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0015,
+      "near": 0,
+      "occl": 0.0177,
+      "blocked": false
+     },
+     "ground": 911
+    },
+    {
+     "id": 2,
+     "pose": {
+      "pos": [
+       -1039,
+       2219,
+       -6221
+      ],
+      "heading": 270,
+      "pitch": 42
+     },
+     "target": [
+      -3510,
+      -6,
+      -6221
+     ],
+     "score": {
+      "score": 2.173,
+      "rails": 1,
+      "interest": 0.3359,
+      "spread": 1,
+      "depth": 0.3505,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0015,
+      "near": 0,
+      "occl": 0.0378,
+      "blocked": false
+     },
+     "ground": -227
+    },
+    {
+     "id": 3,
+     "pose": {
+      "pos": [
+       -7796,
+       2961,
+       -1621
+      ],
+      "heading": 45,
+      "pitch": 42
+     },
+     "target": [
+      -6049,
+      736,
+      126
+     ],
+     "score": {
+      "score": 2.1603,
+      "rails": 0.9068,
+      "interest": 0.3556,
+      "spread": 1,
+      "depth": 0.4118,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0,
+      "occl": 0.0332,
+      "blocked": false
+     },
+     "ground": 898
+    },
+    {
+     "id": 4,
+     "pose": {
+      "pos": [
+       -4957,
+       2614,
+       -7668
+      ],
+      "heading": 45,
+      "pitch": 52
+     },
+     "target": [
+      -3510,
+      -6,
+      -6221
+     ],
+     "score": {
+      "score": 2.1572,
+      "rails": 1,
+      "interest": 0.3465,
+      "spread": 1,
+      "depth": 0.2268,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0015,
+      "near": 0,
+      "occl": 0.0185,
+      "blocked": false
+     },
+     "ground": 211
+    },
+    {
+     "id": 5,
+     "pose": {
+      "pos": [
+       -2558,
+       4729,
+       2808
+      ],
+      "heading": 180,
+      "pitch": 52
+     },
+     "target": [
+      -2558,
+      2109,
+      761
+     ],
+     "score": {
+      "score": 2.1513,
+      "rails": 1,
+      "interest": 0.3312,
+      "spread": 1,
+      "depth": 0.3222,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0031,
+      "near": 0,
+      "occl": 0.0062,
+      "blocked": false
+     },
+     "ground": 397
+    }
+   ],
+   "chosen": 5,
+   "why": "the whole town centre: the cross-shaped Capitol dome with the plaza, the pool deck and the streets round it"
+  }
+ }
+}

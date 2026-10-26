@@ -1,0 +1,71 @@
+# level_port - shared code of the level converters
+
+Used by `tools/pipeline/thps4_levels` (THPS4), `tools/pipeline/thug1_levels` (THUG1), `tools/pipeline/thps3_levels` and `tools/pipeline/thaw_levels` (THAW); `ported_levels.ts` also by
+`tools/pipeline/menu_level/make_menu_level.ts`, which installs what they convert.
+
+- `binio.ts` - little-endian reading / writing.
+- `prx.ts` - THUG2 `.prx` / THUG1 `.pre` archives (same format), LZSS.
+- `thug2_scene.ts`, `thug2_col.ts`, `tex.ts` - THUG2's scene, collision (version 10; reads THUG1's 9) and texture
+  files, read and written field by field: THUG2's own files come out byte-identical (each tool's `selfcheck`).
+- `geometry.ts` - scenes with one vertex array per sector (THPS4, THUG1) to THUG2's per-mesh vertex buffers;
+  collision objects to THUG2's (fixed-point vertices, BSP trees, reaches) for THPS4.
+- `overlay_bias.ts` - z bias for the layers lying on other surfaces in scenes whose source has none (THPS3, THPS4):
+  found from the geometry (coplanar, overlapping, same facing); without it they z-fight - shimmer - with the surface
+  under them. THUG2 applies a material's z bias as D3DRS_DEPTHBIAS (0x004D1F51 / 0x004D2420).
+- `zfight.ts` - CLI: z-fighting in converted levels - pairs of meshes (different sectors or materials) whose
+  triangles lie in one plane within a tolerance (default 2 inches) and overlap, ranked by the area that fights within
+  a view distance (default 100 m) at THUG2's depth precision (24-bit, near plane 12: `fightDistance`); pairs whose z
+  biases differ and opposite-facing ones counted apart (the same triangles are not safe: each copy is lit and
+  triangulated on its own - the report's FLICKER line counts everything a player sees fight, coplanar copies, gap ~0, apart); a `try_spot.ts` spot each
+  (`node tools/pipeline/level_port/zfight.ts <levels folder> [<level> ...] [--top N] [--tolerance IN] [--view M] [--near IN]
+  [--min-area M2] [--csv FILE]`). `findZFights` takes a Scene - a .scn.xbx read, or a converter's output before
+  it's written. `tools/pipeline/thp8_levels/render_audit.ts zfight` names THP8's pairs and their causes.
+- `zfight_raster.ts` - CLI (`npm run zfight-raster -- ...`): z-fighting as the player sees it - a software rasterizer
+  drawing the level from the skater camera at a few hundred spots over its ground (or `--at` / `--camera`) with
+  THUG2's projection (near 2, far 96000, the widened 72-degree lens), 24-bit LESSEQUAL depth, material z bias,
+  culling and draw order (passes 0x55 / 0x46); a pixel whose result flips with one depth step is a z-fight pixel,
+  per mesh pair (class: layer / copy / opposite / duplicate / overlap / self), level and view; `--png` draws a view.
+  Not the same thing as zfight.ts' geometric pairs: crossings, hidden, covered or far-off overlaps don't count.
+  `assertNoZFight(level, maxPixels)` is the gate for converter tests. Header: what is taken from which function.
+  Class `states`: two sectors the level's scripts show and hide apart (script_toggles.ts) - alternate states.
+- `zfight_resolve.ts` - CLI and library (every converter, `common.resolveZFight`, once a level's scene and qb are
+  written): coplanar overlaps resolved by class - copies of one look cut away (dropped, or cut by polygon subtraction
+  and re-triangulated), opposite sides made one-sided (a one-sided copy of the material), layers biased over their
+  bases (the smaller snapped onto the other's plane; draw order raised over an opaque base), alternate states left
+  alone; only the .scn.xbx is rewritten. A note per level in `<staging>\zfight\<level>.json` (what was done, the
+  see-through materials left for step 2's slope-scaled bias). `node tools/pipeline/level_port/zfight_resolve.ts <levels
+  folder> [<level> ...] [--out FOLDER] [--dry-run] [--explain HEX]`. Header: the rules.
+- `script_toggles.ts` - which sectors a level's scripts show and hide, in runs of statements (`thereWhenever`: one
+  sector there whenever another is).
+- `zfight_gate.ts` - the converters' z-fight gates (`zfightGates(port, limits)` in each converter's tests): a staged
+  level resolved by its converter (its note newer than its scene) at most its limit (400 views); the game folder from
+  `THUG2_ZFIGHT_GAME` (default C:\Games\THUG2\Game).
+- `texture_check.ts` - CLI: surfaces drawn without a real texture - a pass's checksum not in the level's .tex.xbx, no
+  texture, a flat colour, a tiny see-through dither (a source's placeholder) - by cause and texture, with area and a
+  spot (`node tools/pipeline/level_port/texture_check.ts <levels folder> [<level> ...] [--top N]`).
+- `layer_check.ts` - CLI: per level, mip chains that stop short and how much layer area has a z bias between -
+  a port compared with THUG2's own (`node tools/pipeline/level_port/layer_check.ts <levels folder> [<level> ...]`).
+- `qb.ts` - THPS4 / THUG1 qb files: globals, names, script statements; values as NeverScript text.
+- `nodes.ts` - node arrays: what's kept, kill zones, THUG1's included structures.
+- `ped_rigs.ts` - every ported human ped on the skeleton its THUG2 profile's model is rigged to (Ped_Female for
+  women, else THPS6_human) and the level's load_level_anims for Ped_Female's animations; `ped_rig_check.ts` audits
+  converted levels (`node tools/pipeline/level_port/ped_rig_check.ts <overlay folders>`).
+- `peds_cars.ts` - THPS4's peds and cars made again as THUG2's own (THUG2's ped AI walking / vert skating, its
+  Car_Generic01 on the same paths, THUG2's profiles and models).
+- `script_port.ts` - the script translator (all four games); its TriggerType translation (`triggerType`) is shared.
+- `thug2_members.ts` - THUG2's script member functions and the components that run them, generated from the exe
+  by `node tools/extract_members.ts` (committed: the converters don't need data/derived).
+- `common.ts` - NeverScript compiling, writing a level's files, lighting keys, THUG2 round trips.
+- `ported_levels.ts` - the staging folders' `levels.json` (format at its top), the Levels.qb structures, the level
+  select signs, copying into the overlay.
+- `col_check.ts`, `script_diff.ts` - CLIs: a collision file's BSP check; converted scripts compared between two
+  staging folders.
+- `ramp_collision.ts` - collision flags for ramps of ports whose source decides skatability itself (THPS2): steep
+  faces continuing a ramp made skatable, faces lying on a more rideable one given its flags (THUG2's rules in its
+  header). `ramp_check.ts` - CLI: per level, concave ramp joins by bend and what ramp_collision would still change
+  (`node tools/pipeline/level_port/ramp_check.ts <col.xbx | folder>...`; `--list` face by face; `--spot <col.xbx> <x,y,z>
+  [radius]` the faces near a screenshot sidecar's position). Faces of LevelObjects (each in its own space) are
+  counted as if in the level's.
+
+These were Python until 2026-10-20 (docs/typescript.md); tools/parity/level_port has the cases that proved the
+TypeScript equal to the Python on the games' data (check out commit 57d7b5e, the last with the Python, to run them).

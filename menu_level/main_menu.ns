@@ -1,0 +1,16 @@
+main_menu_list_pos = (229.0, 98.0)
+main_menu_list_width = 220.0
+main_menu_list_spacing = 2
+main_menu_text_scale = 0.85
+main_menu_backing_pad_x = 16.0
+main_menu_backing_pad_y = 9.0
+main_menu_list_index = 0
+main_menu_list_items = 0
+main_menu_skating = 0
+//@unit create_main_menu
+//@unit add_main_menu_list_items
+//@unit main_menu_list_item
+//@unit main_menu_choose
+//@unit main_menu_skate_now
+//@unit main_menu_skater_skate
+//@unit main_menu_skate_stop

@@ -1,0 +1,256 @@
+// THAW's Skater_Playanim: an animation tree branch on the rider and (Skater_Anim_Command) the bike - here PlayAnim
+// on the rider, Obj_PlayAnim on the bike when it has the animation (they pair by name).
+script thaw_bmx_playanim {
+    if GotParam NoRestart {
+        if AnimEquals <anim> {
+            return
+        }
+    }
+    PlayAnim <...>
+    if ObjectExists id=ThawBmx {
+        if ThawBmx:AnimExists <anim> {
+            ThawBmx:Obj_PlayAnim <...>
+        }
+    }
+}
+script thaw_bmx_waitanim {
+    Obj_WaitAnimFinished
+}
+// THAW's Skater_PlayBarspinAnim / Skater_BarspinAnimOff: a partial branch (BarspinSwitch) on the rider and the bike -
+// here the anim subset Barspin on both.
+script thaw_bmx_playbarspin {
+    if ! Obj_AnimSubsetExists SubsetId=Barspin {
+        Obj_AddAnimSubset SubsetId=Barspin Stage=3
+        Obj_SetAnimSubsetWeight SubsetId=Barspin BlendWeight=1
+    }
+    PlayAnim SubsetId=Barspin <...>
+    if ObjectExists id=ThawBmx {
+        if ThawBmx:AnimExists <anim> {
+            if ! ThawBmx:Obj_AnimSubsetExists SubsetId=Barspin {
+                ThawBmx:Obj_AddAnimSubset SubsetId=Barspin Stage=3
+                ThawBmx:Obj_SetAnimSubsetWeight SubsetId=Barspin BlendWeight=1
+            }
+            ThawBmx:Obj_PlayAnim SubsetId=Barspin <...>
+        }
+    }
+}
+script thaw_bmx_waitbarspin {
+    Obj_WaitAnimFinished SubsetId=Barspin
+}
+//@unit Skater_BarspinAnimOff
+// THAW's bike_scripts.qb Skater_PlayBikeAnim: the x-up's own version (<anim>_xup) while in an x-up, if there is one.
+//@unit Skater_PlayBikeAnim
+//@unit Play_BikeSFX_Brake
+// (THAW: SetSpawnedScriptNoRepeatFor 0.6 / SetSpawnInstanceLimits 2 - THAW-only; played as it comes)
+//@unit Brake_SFX_Instance_Limiting
+//@unit Play_BikeSFX_Skid
+//@unit Play_BikeSFX_Bike_Fall
+//@unit bike_play_looping_sounds
+//@unit StopBikeLoopingSounds
+//@unit Play_BikeSFX_Pedal_on
+//@unit Bike_SFX_Pedal_On_Instance_Limiting
+//@unit Play_BikeSFX_Pedal
+//@unit Play_BikeSFX_Freewheel
+//@unit GetBikeLoopingPitch
+//@unit bike_pedaling
+thaw_bmx_spot_components = [
+    {component=suspend}
+    {component=motion}
+    {component=skeleton skeletonName=THAW_SI_BMX}
+    {component=model UseModelLights model="specialitems/thaw_bmx/si_bmx.skin"}
+    {component=animblender AnimName=animload_thaw_bmx_bike skeletonName=THAW_SI_BMX}
+]
+//@unit bmx_finish_on
+//@unit bmx_finish_off
+//@unit create_bike_spot
+//@unit bike_start
+//@unit bike_onground
+//@unit bike_onground_loop
+// (THAW's off-the-bike combo: SwitchControl_Trigger -> toggle_bike_on_off off; ours, the player's walk key)
+//@unit BikeToWalkTricks
+//@unit bike_OnGroundAi
+//@unit bike_getpedalanimspeed
+// (THAW's Skater_PlayTurnAnim blends <anim> and <turn_anim> by the steering; here the turn animation - its cycle
+// played whole: THUG2's PlayAnim Cycle from=current loops from the time it starts at to the end, and started near
+// the end that loop is next to nothing - the timeline's wrap-around then never ends (phase 6: the wheels' hang))
+//@unit bike_playturnanim
+//@unit bike_blenturnanims_exit
+//@unit bike_handbrake
+//@unit bike_skidTrail
+//@unit bike_skid
+//@unit bail_bike_manual
+//@unit bail_bike_nosemanual
+//@unit bike_enter_manual
+//@unit bike_enter_nosemanual
+//@unit bike_manual
+//@unit SetBikeTrickName
+//@unit create_bike_manual_meter
+//@unit destroy_bike_manual_meter
+//@unit bike_manual_state
+//@unit bike_nosemanual_state
+// (bike_manual_state's and bike_nosemanual_state's own loop body: the pad shakes with the manual angle)
+script thaw_bmx_manual_vibration {
+    GetBikeManualAngle
+    if InTireTap {
+        manual_angle = (<manual_angle> - 50)
+        if (<manual_angle> < 0) {
+            manual_angle = (-4 * <manual_angle>)
+        } else {
+            manual_angle = (4 * <manual_angle>)
+        }
+    }
+    if (<manual_angle> < 0) {
+        manual_angle = (-1 * <manual_angle>)
+    }
+    if (<manual_angle> > 99) {
+        manual_angle = 99
+    }
+    Vibrate Actuator=1 Percent=<manual_angle>
+}
+//@unit bike_manual_pivot
+//@unit bike_exit_endo
+//@unit bike_backwards_balance_trick
+//@unit bike_backwards_revert
+// (ours, the user's request: the manuals on THUG2's input as well - up then down a manual, down then up a nose manual,
+// THUG2's ManualTricks / GroundManualTricks timings; in the air the press is kept for the landing (bike_land2), so
+// manuals link into combos as the skater's do. THAW's own way - the stick held back / forward half a second, the
+// physics' manual pitch - stays.)
+thaw_bmx_AirManualTricks = [
+    {Trigger={InOrder, Up, Down, 400} Duration=700 Scr=thaw_bmx_manual}
+    {Trigger={InOrder, Down, Up, 400} Duration=700 Scr=thaw_bmx_manual Params={nose}}
+]
+thaw_bmx_GroundManualTricks = [
+    {Trigger={InOrder, Up, Down, 220} Scr=thaw_bmx_manual}
+    {Trigger={InOrder, Down, Up, 220} Scr=thaw_bmx_manual Params={nose}}
+]
+script thaw_bmx_manual {
+    if GotParam nose {
+        EnterWheelieFromAir nose
+        Goto bike_manual params={nose}
+    } else {
+        EnterWheelieFromAir
+        Goto bike_manual
+    }
+}
+// (ours, the user's request: THUG2's revert on the bike - R2 / L2 as it lands from vert (bike_land2 opens the window,
+// THUG2's Reverts triggers), a pivot round with THAW's bmx_pivot_frombackwards as its bike_backwards_revert plays it;
+// THUG2's revert's name and score, the combo going on - a manual can follow, as the skater's revert)
+thaw_bmx_Reverts = [
+    {Trigger={Press, R2, 200} Scr=bike_revert}
+    {Trigger={Press, L2, 200} Scr=bike_revert}
+]
+script bike_revert {
+    KillExtraTricks
+    StopBalanceTrick
+    OnExitRun bike_exit_revert
+    InRevert
+    ResetLandedFromVert
+    ClearException Ollied
+    LaunchStateChangeEvent State=Skater_InRevert
+    SetQueueTricks NoTricks
+    SetManualTricks thaw_bmx_AirManualTricks
+    if LastSpinWas Frontside {
+        SetTrickName %"FS Revert"
+    } else {
+        SetTrickName %"BS Revert"
+    }
+    SetTrickScore 100
+    Display Blockspin
+    Vibrate Actuator=1 Percent=80 duration=0.1
+    Rotate
+    if LastSpinWas Frontside {
+        Flip
+    }
+    Skater_PlayBikeAnim anim=bmx_pivot_frombackwards BlendPeriod=0
+    if LastSpinWas Frontside {
+        FlipAfter
+    }
+    SetException Ex=Ollied Scr=BIKE_OLLIE
+    while {
+        if AnimFinished {
+            break
+        }
+        wait 1 gameframe
+    }
+    Goto bike_land2 params={no_anim}
+}
+script bike_exit_revert {
+    OutRevert
+}
+//@unit bike_empty_trick
+//@unit bike_manual_barspin
+//@unit bike_nosewheelie_whip
+//@unit bike_flatland_decade
+//@unit bike_manual_crankflip
+//@unit bike_manual_xup
+// (THAW's physics spawns it - 0x5C9380's thunk; ours runs it at once from the physics (RunBikeScript): it spawns
+// its body, which waits for an animation)
+//@unit bike_release_partial_xup
+//@unit thaw_bmx_release_partial_xup
+//@unit bike_partial_barspin
+//@unit bike_partial_barspin_cleanup
+//@unit bike_xup
+//@unit bike_grab_trick
+//@unit bike_grab_trick2
+//@unit bike_ExitGrabTrick_flip
+//@unit bike_ExitGrabTrick
+//@unit bike_set_multiple_trick_text
+//@unit bike_ExitFlipTrick
+//@unit BIKE_OLLIE
+//@unit bike_GroundGone
+//@unit bike_Airborne
+//@unit bike_air_state
+//@unit WaitAnimFinishedOrBikeTrick
+//@unit BIKE_LAND
+//@unit bike_land2
+//@unit bike_DoFakieCheck
+//@unit bike_wallride
+//@unit bike_wallride_cleanup
+//@unit bike_WallrideEnd
+//@unit bike_Wallie
+//@unit bike_wallplant
+// (THAW's bike_skitch starts with Goto bike_OnGroundAi - its skitching was switched off there, and no bike exception
+// table has Skitched; the user asked for skitching on R2: the rest of THAW's script, and Skitched in the on-ground
+// table, Bike_OnGroundExceptionTable's - thaw_bmx_onground_exceptions)
+//@unit bike_skitch
+//@unit bike_SkitchOut
+//@unit Bike_Bail_Cleanup
+//@unit force_bike_bail
+//@unit bike_bail
+// (THAW's BailBoardControl and CreateBailBoard on the bike: a frame on, the ridden bike hidden and a rigid body one
+// thrown in its place - at the rider's position and orientation with his velocity (THAW: spawned at his board bone, plus
+// 100 along his facing - our rider's board bone isn't where the bike is); kill_bail_bike takes it away again)
+script thaw_bmx_bail_bike_control {
+    wait 1 gameframe
+    if ObjectExists id=ThawBmx {
+        ThawBmx:Hide
+    }
+    Obj_GetId
+    MangleChecksums a=BailBike b=<objId>
+    if ObjectExists id=<mangled_id> {
+        <mangled_id>:Die
+    }
+    Obj_GetPosition
+    Obj_GetQuat
+    GetSkaterVelocity
+    vel = (<vel_x> * (1.0, 0.0, 0.0) + <vel_y> * (0.0, 1.0, 0.0) + <vel_z> * (0.0, 0.0, 1.0))
+    // (ours: a roll about the rider's facing, so the bike falls over at a standstill too - THAW's always has its push)
+    Obj_GetOrientation
+    rotvel = (<x> * (3.0, 0.0, 0.0) + <z> * (0.0, 0.0, 3.0))
+    CreateCompositeObject Components=thaw_bmx_bail_bike_components Params={Name=<mangled_id> Pos=<Pos> Orientation=<Quat> NeverSuspend}
+    if ObjectExists id=<mangled_id> {
+        <mangled_id>:Obj_PlayAnim Anim=bmx_idle Speed=0 BlendPeriod=0
+        // (the rigid body takes the object's orientation when made, before the composite's own is set: set it and
+        // have the body read it again, then its velocities)
+        <mangled_id>:Obj_SetOrientation quat=<Quat>
+        <mangled_id>:RigidBody_Enable
+        <mangled_id>:RigidBody_SetVelocities vel=<vel> rotvel=<rotvel>
+        <mangled_id>:RigidBody_IgnoreSkater 15 frames
+        <mangled_id>:RigidBody_Wake
+    }
+}
+//@unit kill_bail_bike
+//@unit bike_Flail
+//@unit BIKE_GRIND
+//@unit bike_OffRail
+//@unit bike_rail_exit

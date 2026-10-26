@@ -1,0 +1,553 @@
+// NOT ORIGINAL - HD menu UI (an experiment the user asked for, 2026-10-24): the menus' 2D images (.img.xbx sprites)
+// and bitmap fonts (.fnt.xbx glyph pages) upscaled with the HD texture pass (tools/pipeline/level_port/hd_textures.ts:
+// Real-ESRGAN, the cache, back-projection to the original's colours) into the data overlay. Off by default:
+// tools/pipeline/menu_level/make_menu_level.ts --hd-ui [2|4] adds them, a run without it leaves the overlay without them.
+//
+// The files are written into the overlay's hd_ui folder, which the DLL reads only with [features] hd_ui=1
+// (default 0; src/game/gfx/hd_ui.h), and the images keep their on-screen size: a sprite's size comes from its texture's image size, a glyph's from the font's rectangles,
+// so the upscaled files carry a marker the DLL reads and divides by:
+//   .img.xbx  header +0x14 (0 in every game file) = HD_IMG_MARKER | scale; the texels are 32-bit (format 0, the
+//             8-bit paletted ones expanded - the game makes every image A8R8G8B8 anyway), every size in the header
+//             `scale` times the original's. The DLL divides the texture's sizes again after loading.
+//   .fnt.xbx  the glyph page's header +8 = HD_FNT_MARKER, +0xC the scale; the page `scale` times the original's,
+//             32-bit BGRA texels (no palette: the final alpha, the game's doubled PS2 alpha applied); the glyph
+//             rectangles, height and base unchanged (the original's pixels): the DLL makes the texture coordinates
+//             from the page's original size.
+//
+// Which files: every image and font in the archives the front end and the pause menus load (UI_PACKS), and the
+// overlay's own images (the level select's added signs - written first by make_menu_level, upscaled here); then
+//   - the loading screens (loose Data\images\loadscrn*.img.xbx, 640 x 448: the picture is drawn full screen whatever
+//     its size, so the same .img.xbx marker is all they need; the 2048 cap makes them x2, 1280 x 896);
+//   - the menus' 3D models' texture dictionaries (MENU_MODELS: the black paint strokes behind the level select
+//     and the menus - UI_bg / mainmenu_bg, 128 x 64 stretched over the screen -, the clouds, the logo, the cat /
+//     gradient backgrounds, the per-level menu3d pieces, and the original front end's scene levels\mainmenu): a
+//     model's texture coordinates are normalised, so the dictionary is simply upscaled in place (format kept, mips
+//     rebuilt: the level converters' --hd-textures pass) - no marker.
+// Not included: Create-A-Graphic's pieces (edited texel by texel), PermTex / Bits (skater
+// scuffs, car lights, particles, debris: in-game, not menu), skater / ped model textures, the localised loading
+// screens (Data\images\fr, gr).
+//
+//   node tools/pipeline/hd_textures/ui.ts <game folder> <out folder> [--scale 4] [--model M] [--max N]
+// writes the upscaled files under <out folder> (what make_menu_level --hd-ui does into the overlay).
+
+import * as fs from "node:fs";
+import * as path from "node:path";
+import * as dxt from "../level_port/dxt.ts";
+import * as hd from "../level_port/hd_textures.ts";
+import { entries } from "../level_port/prx.ts";
+import type { TexFile, Texture } from "../level_port/tex.ts";
+import { readTex, unswizzleOrder, writeTex } from "../level_port/tex.ts";
+import { parseCli } from "../lib/cli.ts";
+import { resolveInstall } from "../lib/install.ts";
+import { isMain, print, runMain } from "../lib/py.ts";
+import { redrawnTiles } from "./globe/redraw.ts";
+
+export const HD_IMG_MARKER = 0x48440000; // "HD" in the high half; the low byte the scale (src/game/gfx/hd_ui.h)
+export const HD_FNT_MARKER = 0x49554448; // "HDUI"
+export const HD_IMG_DXT1 = 0x31545844; // header format "DXT1": one level of blocks (src/game/gfx/hd_ui.h)
+// Archives the front end and the pause menus load their images and fonts from.
+export const UI_PACKS = [
+    "mainmenusprites.prx",
+    "panelsprites.prx",
+    "Levelselect.prx",
+    "multiplayersprites.prx",
+    "Themes.prx",
+    "fonts.prx",
+] as const;
+
+// The defaults for UI: the anime model (flat colours, outlines, text), the longer side up to 2048.
+export function uiOptions(scale = 4): hd.HdOptions {
+    // (never DXT: text and edges show the artefacts)
+    return {
+        ...hd.defaultOptions(scale),
+        model: "realesrgan-x4plus-anime",
+        maxSize: 2048,
+        minSize: 8,
+        compress: false,
+    };
+}
+
+// The loading screens' own limits: the longer side up to 4096 (640 x 448 at x4 is 2560 x 1792; any D3D9 card takes
+// 4096). Their opaque ones are written as DXT1 by encodeImg (one level), so the pass itself stays 32-bit. The model is
+// realesrgan-x4plus, not the UI's anime one: they are photos / art collages (grain, brick, grass, torn paper), where the
+// anime model smears texture into plastic smooth patches (compared on airport / australia / 2player, 2026-10-24); the
+// text edges come out a touch rougher with x4plus, which the 1:1 on-screen size hides.
+export function loadingOptions(base: hd.HdOptions): hd.HdOptions {
+    return {
+        ...base,
+        maxSize: 4096,
+        compress: false,
+        model: "realesrgan-x4plus",
+    };
+}
+
+// The texture dictionaries of the menus' 3D models (names as the game asks for them, any case, \ or /).
+export const MENU_MODELS =
+    /(^|[\\/])(models[\\/](ui_bg|mainmenu_bg|options_clouds|logo|gradient_bg|cat_bg|menu3d)[\\/]|levels[\\/]mainmenu[\\/]mainmenu\.tex\.xbx$)/i;
+// The ones scrolled / tiled (padded with the opposite edge); the others are drawn clamped.
+const TILED_MODELS = /options_clouds/i;
+// (and the new front end's text-free versions of the ported levels' pictures: menu_level/frontend_art.ts)
+const LOADING_SCREEN = /(^|[\\/])(loadscrn|frontend_art_)[^\\/]*\.img\.xbx$/i;
+
+const isPow2 = (n: number): boolean => n > 0 && (n & (n - 1)) === 0;
+
+// An image's texels top-down (the stored rows are bottom-up: the sprite's top samples v = 1), the picture at the top
+// left: tw x th BGRA.
+export interface UiImage {
+    tw: number;
+    th: number;
+    iw: number;
+    ih: number;
+    bgra: Buffer;
+}
+
+function storedOrder(w: number, h: number): number[] {
+    // swizzled when both sides are powers of two (the loader's "plain" test), rows as stored otherwise
+    if (isPow2(w) && isPow2(h)) return unswizzleOrder(w, h);
+    return Array.from({ length: w * h }, (_, i) => i);
+}
+
+export function decodeImg(data: Buffer): UiImage {
+    const tw = data.readUInt32LE(8);
+    const th = data.readUInt32LE(12);
+    const format = data.readUInt32LE(16);
+    const iw = data.readUInt16LE(24);
+    const ih = data.readUInt16LE(26);
+    const paletteSize = data.readUInt32LE(28);
+    const bgra = Buffer.alloc(tw * th * 4);
+    const order = storedOrder(tw, th);
+    if (format === 0) {
+        const texels = data.subarray(32);
+        for (let y = 0; y < th; y++)
+            for (let x = 0; x < tw; x++) {
+                const s = order[(th - 1 - y) * tw + x]! * 4;
+                texels.copy(bgra, (y * tw + x) * 4, s, s + 4);
+            }
+    } else if (format === 0x13 || format === 8) {
+        const palette = data.subarray(32, 32 + paletteSize);
+        const indices = data.subarray(32 + paletteSize);
+        for (let y = 0; y < th; y++)
+            for (let x = 0; x < tw; x++) {
+                const p = indices[order[(th - 1 - y) * tw + x]!]! * 4;
+                palette.copy(bgra, (y * tw + x) * 4, p, p + 4);
+            }
+    } else throw new Error(`img format 0x${format.toString(16)} not handled`);
+    return { tw, th, iw, ih, bgra };
+}
+
+// The picture alone (iw x ih).
+export function picture(img: UiImage): Buffer {
+    const out = Buffer.alloc(img.iw * img.ih * 4);
+    for (let y = 0; y < img.ih; y++) img.bgra.copy(out, y * img.iw * 4, y * img.tw * 4, (y * img.tw + img.iw) * 4);
+    return out;
+}
+
+// An HD image file: the upscaled picture (iw * scale x ih * scale BGRA) at the top left of a texture `scale` times
+// the original's, the rest its edge texels repeated (what bilinear filtering at the picture's edge sees).
+export function encodeImg(original: UiImage, hdPicture: Buffer, scale: number, asDxt1 = false): Buffer {
+    const tw = original.tw * scale;
+    const th = original.th * scale;
+    const iw = original.iw * scale;
+    const ih = original.ih * scale;
+    if (hdPicture.length !== iw * ih * 4) throw new Error("upscaled picture of the wrong size");
+    const head = Buffer.alloc(32);
+    head.writeUInt32LE(2, 0);
+    head.writeUInt32LE(8, 4);
+    head.writeUInt32LE(tw, 8);
+    head.writeUInt32LE(th, 12);
+    head.writeUInt32LE(asDxt1 ? HD_IMG_DXT1 : 0, 16);
+    head.writeUInt32LE((HD_IMG_MARKER | scale) >>> 0, 20);
+    head.writeUInt16LE(iw, 24);
+    head.writeUInt16LE(ih, 26);
+    head.writeUInt32LE(0, 28);
+    const texels = Buffer.alloc(tw * th * 4);
+    if (asDxt1) {
+        // rows bottom-up like the 32-bit ones, not swizzled: the loader copies the blocks as they are
+        if (tw % 4 || th % 4) throw new Error("DXT1 image: the sides must be multiples of 4");
+        for (let y = 0; y < th; y++) {
+            const sy = Math.min(y, ih - 1);
+            for (let x = 0; x < tw; x++) {
+                const s = (sy * iw + Math.min(x, iw - 1)) * 4;
+                hdPicture.copy(texels, ((th - 1 - y) * tw + x) * 4, s, s + 4);
+            }
+        }
+        return Buffer.concat([head, dxt.encode(texels, tw, th, 1)]);
+    }
+    const order = storedOrder(tw, th);
+    for (let y = 0; y < th; y++) {
+        const sy = Math.min(y, ih - 1);
+        for (let x = 0; x < tw; x++) {
+            const s = (sy * iw + Math.min(x, iw - 1)) * 4;
+            hdPicture.copy(texels, order[(th - 1 - y) * tw + x]! * 4, s, s + 4);
+        }
+    }
+    return Buffer.concat([head, texels]);
+}
+
+// A font: everything before the glyph page's header, the page (w x h BGRA, rows as stored = as drawn), and the glyph
+// rectangles after it.
+export interface UiFont {
+    head: Buffer;
+    pageHeader: Buffer;
+    w: number;
+    h: number;
+    bgra: Buffer;
+    rects: Buffer;
+}
+
+export function decodeFnt(data: Buffer): UiFont {
+    const count = data.readUInt32LE(8);
+    const at = 0x14 + count * 6;
+    const pageHeader = data.subarray(at, at + 0x10);
+    const w = pageHeader.readUInt16LE(4);
+    const h = pageHeader.readUInt16LE(6);
+    if (pageHeader.readUInt32LE(8) === HD_FNT_MARKER) throw new Error("already an HD font");
+    const size = (w * h + 3) & ~3;
+    const indices = data.subarray(at + 0x10, at + 0x10 + size);
+    const palette = data.subarray(at + 0x10 + size, at + 0x10 + size + 0x400);
+    const rects = data.subarray(at + 0x10 + size + 0x400);
+    if (rects.length !== 4 + count * 8) throw new Error(`font layout: ${rects.length} bytes of rectangles`);
+    // the palette's RGBA (PS2 alpha) as the game makes it: BGRA, alpha doubled (0x80 and over opaque)
+    const colours = Buffer.alloc(0x400);
+    for (let i = 0; i < 256; i++) {
+        const a = palette[i * 4 + 3]!;
+        colours[i * 4] = palette[i * 4 + 2]!;
+        colours[i * 4 + 1] = palette[i * 4 + 1]!;
+        colours[i * 4 + 2] = palette[i * 4]!;
+        colours[i * 4 + 3] = a >= 0x80 ? 0xff : a << 1;
+    }
+    const bgra = Buffer.alloc(w * h * 4);
+    for (let i = 0; i < w * h; i++) colours.copy(bgra, i * 4, indices[i]! * 4, indices[i]! * 4 + 4);
+    return { head: data.subarray(0, at), pageHeader, w, h, bgra, rects };
+}
+
+export function encodeFnt(font: UiFont, hdPage: Buffer, scale: number): Buffer {
+    const w = font.w * scale;
+    const h = font.h * scale;
+    if (hdPage.length !== w * h * 4) throw new Error("upscaled page of the wrong size");
+    const pageHeader = Buffer.from(font.pageHeader);
+    pageHeader.writeUInt32LE(0x10 + hdPage.length + font.rects.length, 0); // (the page's own size, as the game's)
+    pageHeader.writeUInt16LE(w, 4);
+    pageHeader.writeUInt16LE(h, 6);
+    pageHeader.writeUInt32LE(HD_FNT_MARKER, 8);
+    pageHeader.writeUInt32LE(scale, 12);
+    return Buffer.concat([font.head, pageHeader, hdPage, font.rects]);
+}
+
+export interface UiStats {
+    images: number;
+    fonts: number;
+    upscaled: number;
+    kept: number; // too small / one colour: the original file, unmarked
+    loadingScreens: number; // of `upscaled`: loading screen images
+    texFiles: number; // texture dictionaries of 3D models
+    texTextures: number;
+    texUpscaled: number; // of their textures
+    models: number; // the dictionaries written (at least one texture upscaled)
+    bytesBefore: number;
+    bytesAfter: number;
+    hd: hd.HdStats;
+}
+
+// The upscaled files for `files` (game file name -> data): only the ones upscaled are returned.
+export function upscaleUi(
+    files: ReadonlyMap<string, Buffer>,
+    options: hd.HdOptions,
+    upscaler: hd.Upscaler = hd.realEsrgan,
+    loading: hd.HdOptions = loadingOptions(options),
+    loadingDxt = true,
+): { out: Map<string, Buffer>; stats: UiStats } {
+    type Item = { name: string; texture: Texture } & ({ img: UiImage } | { font: UiFont } | { source: Texture });
+    const items: Item[] = [];
+    const dictionaries: { name: string; file: TexFile; first: number }[] = [];
+    const wrapped = new Set<number>();
+    const stats: UiStats = {
+        images: 0,
+        fonts: 0,
+        upscaled: 0,
+        kept: 0,
+        loadingScreens: 0,
+        texFiles: 0,
+        texTextures: 0,
+        texUpscaled: 0,
+        models: 0,
+        bytesBefore: 0,
+        bytesAfter: 0,
+        hd: hd.newStats(),
+    };
+    const texture = (n: number, w: number, h: number, bgra: Buffer): Texture => ({
+        checksum: n,
+        width: w,
+        height: h,
+        texelDepth: 32,
+        paletteDepth: 0,
+        dxt: 0,
+        palette: Buffer.alloc(0),
+        levels: [bgra],
+    });
+    for (const [name, data] of files) {
+        const lower = name.toLowerCase();
+        if (lower.endsWith(".img.xbx")) {
+            stats.images += 1;
+            const img = decodeImg(data);
+            if (data.readUInt32LE(20) !== 0) throw new Error(`${name}: already marked`);
+            items.push({
+                name,
+                img,
+                texture: texture(items.length, img.iw, img.ih, picture(img)),
+            });
+        } else if (lower.endsWith(".fnt.xbx")) {
+            stats.fonts += 1;
+            const font = decodeFnt(data);
+            items.push({
+                name,
+                font,
+                texture: texture(items.length, font.w, font.h, font.bgra),
+            });
+        } else if (lower.endsWith(".tex.xbx")) {
+            // a model's dictionary: each texture goes through the pass as a copy under a number of its own (the
+            // checksums repeat from file to file) and is copied back
+            stats.texFiles += 1;
+            const file = readTex(data, name);
+            dictionaries.push({ name, file, first: items.length });
+            for (const source of file.textures) {
+                stats.texTextures += 1;
+                if (TILED_MODELS.test(name)) wrapped.add(items.length);
+                items.push({
+                    name,
+                    source,
+                    texture: { ...source, checksum: items.length },
+                });
+            }
+        } else continue;
+        stats.bytesBefore += data.length;
+    }
+    // (UI pieces and the menus' models are drawn clamped - no wrapping when padding - but the clouds)
+    const addressing = new Map(
+        items.map((item) => {
+            const wrap = wrapped.has(item.texture.checksum);
+            return [item.texture.checksum, { wrapU: wrap, wrapV: wrap }];
+        }),
+    );
+    const before = new Map(items.map((item) => [item, item.texture.width]));
+    // (the loading screens in a pass of their own: another size cap, and another model if asked)
+    const isLoading = (item: Item): boolean => !("source" in item) && LOADING_SCREEN.test(item.name);
+    const pass = (mine: Item[], opts: hd.HdOptions): void => {
+        if (mine.length)
+            hd.upscaleTexFile(
+                { version: 1, textures: mine.map((i) => i.texture) },
+                addressing,
+                opts,
+                stats.hd,
+                upscaler,
+            );
+    };
+    pass(
+        items.filter((i) => !isLoading(i)),
+        options,
+    );
+    pass(items.filter(isLoading), loading);
+    const out = new Map<string, Buffer>();
+    for (const item of items) {
+        const scale = item.texture.width / before.get(item)!;
+        if ("source" in item) {
+            if (scale > 1) {
+                Object.assign(item.source, {
+                    width: item.texture.width,
+                    height: item.texture.height,
+                    levels: item.texture.levels,
+                });
+                stats.texUpscaled += 1;
+            }
+            continue;
+        }
+        if (scale <= 1) {
+            stats.kept += 1;
+            continue;
+        }
+        if (LOADING_SCREEN.test(item.name)) stats.loadingScreens += 1;
+        // loading screens: opaque ones as DXT1 (sides multiples of 4)
+        const asDxt1 =
+            "img" in item &&
+            isLoading(item) &&
+            loadingDxt &&
+            hd.alphaKind(item.texture.levels[0]!) === "opaque" &&
+            item.texture.width % 4 === 0 &&
+            item.texture.height % 4 === 0;
+        const data =
+            "img" in item
+                ? encodeImg(item.img, item.texture.levels[0]!, scale, asDxt1)
+                : encodeFnt(item.font, item.texture.levels[0]!, scale);
+        out.set(item.name, data);
+        stats.upscaled += 1;
+        stats.bytesAfter += data.length;
+    }
+    for (const { name, file, first } of dictionaries) {
+        const mine = items.slice(first, first + file.textures.length);
+        if (!mine.some((item) => item.texture.width / before.get(item)! > 1)) continue;
+        const data = writeTex(file);
+        out.set(name, data);
+        stats.models += 1;
+        stats.bytesAfter += data.length;
+    }
+    return { out, stats };
+}
+
+// The UI files of a game folder: its UI archives' images and fonts, the loading screens (`loadingScreens`: the loose
+// Data\images\loadscrn*.img.xbx) and the menu models' texture dictionaries (`models`: MENU_MODELS, from the loose
+// Data\models and the archives that hold them), by the names the game asks for them.
+export function gameUiFiles(
+    game: string,
+    extras: { loadingScreens?: boolean; models?: boolean } = {},
+): Map<string, Buffer> {
+    const { loadingScreens = true, models = true } = extras;
+    const files = new Map<string, Buffer>();
+    for (const pack of UI_PACKS) {
+        const file = path.join(game, "Data", "pre", pack);
+        if (!fs.existsSync(file)) continue;
+        for (const [name, data] of entries(file, (n) => /\.(img|fnt)\.xbx$/i.test(n))) files.set(name, data);
+    }
+    if (models) {
+        for (const pack of ["mainmenu_scripts.prx", "mainmenuscn.prx"]) {
+            const file = path.join(game, "Data", "pre", pack);
+            if (!fs.existsSync(file)) continue;
+            for (const [name, data] of entries(file, (n) => /\.tex\.xbx$/i.test(n) && MENU_MODELS.test(n)))
+                files.set(name, data);
+        }
+        const root = path.join(game, "Data", "models");
+        if (fs.existsSync(root))
+            for (const entry of fs.readdirSync(root, {
+                recursive: true,
+                withFileTypes: true,
+            })) {
+                if (!entry.isFile()) continue;
+                const name = path.join("models", path.relative(root, path.join(entry.parentPath, entry.name)));
+                if (/\.tex\.xbx$/i.test(name) && MENU_MODELS.test(name))
+                    files.set(name, fs.readFileSync(path.join(entry.parentPath, entry.name)));
+            }
+    }
+    if (loadingScreens) {
+        const images = path.join(game, "Data", "images");
+        if (fs.existsSync(images))
+            for (const name of fs.readdirSync(images))
+                if (LOADING_SCREEN.test(name))
+                    files.set(path.join("images", name), fs.readFileSync(path.join(images, name)));
+    }
+    return files;
+}
+
+// The overlay's own images (relative names), which win over the game's.
+function overlayImages(overlay: string): Map<string, Buffer> {
+    const files = new Map<string, Buffer>();
+    const images = path.join(overlay, "images");
+    if (!fs.existsSync(images)) return files;
+    for (const entry of fs.readdirSync(images, {
+        recursive: true,
+        withFileTypes: true,
+    })) {
+        if (!entry.isFile() || !/\.img\.xbx$/i.test(entry.name)) continue;
+        const full = path.join(entry.parentPath, entry.name);
+        files.set(path.relative(overlay, full), fs.readFileSync(full));
+    }
+    return files;
+}
+
+// The level select globe's tiles (LevelSelectSprites\map0..map21): redrawn from map data (globe/redraw.ts) instead of
+// upscaled - the 64 px art is too soft for the model. Returns the HD files by name; `scale` x 64 px.
+const GLOBE_TILE = /(^|[\\/])LevelSelectSprites[\\/]map(\d+)\.img\.xbx$/i;
+export function globeFiles(files: ReadonlyMap<string, Buffer>, scale: number): Map<string, Buffer> {
+    const out = new Map<string, Buffer>();
+    const tiles = redrawnTiles(scale);
+    for (const [name, data] of files) {
+        const m = GLOBE_TILE.exec(name);
+        if (!m) continue;
+        const n = Number(m[2]);
+        const tile = tiles[n];
+        if (!tile) continue;
+        out.set(name, encodeImg(decodeImg(data), tile, scale));
+    }
+    return out;
+}
+
+// Upscales the game's UI files and the overlay's own images into `overlay` (the overlay's own replaced in place).
+// The globe's tiles are redrawn (globe: "redraw", the default) or upscaled like the rest ("ai"). Returns the report's lines.
+export function install(
+    game: string,
+    overlay: string,
+    options: hd.HdOptions,
+    target = path.join(overlay, "hd_ui"),
+    loadingModel?: string,
+    globe: "redraw" | "ai" = "redraw",
+    // HD files made elsewhere (the level maps, menu_level/level_map.ts), by relative name: they replace the overlay's
+    // native image of that name instead of it being upscaled.
+    ownHd: ReadonlyMap<string, Buffer> = new Map(),
+): string[] {
+    const files = gameUiFiles(game);
+    const own = overlayImages(overlay);
+    // (one key per file whatever its case: the overlay's version replaces the game's)
+    const byKey = new Map<string, [string, Buffer]>();
+    for (const [name, data] of files) byKey.set(name.toLowerCase(), [name, data]);
+    for (const [name, data] of own) byKey.set(name.toLowerCase(), [name, data]);
+    const loading = loadingOptions(options);
+    if (loadingModel) loading.model = loadingModel;
+    const all = new Map([...byKey.values()]);
+    const redrawn = globe === "redraw" ? globeFiles(all, options.scale) : new Map<string, Buffer>();
+    for (const name of redrawn.keys()) all.delete(name);
+    for (const name of ownHd.keys()) all.delete(name);
+    const { out, stats } = upscaleUi(all, options, hd.realEsrgan, loading);
+    for (const [name, data] of redrawn) out.set(name, data);
+    for (const [name, data] of ownHd) out.set(name, data);
+    for (const [name, data] of out) {
+        const file = path.join(target, ...name.split(/[\\/]/));
+        fs.mkdirSync(path.dirname(file), { recursive: true });
+        fs.writeFileSync(file, data);
+    }
+    const mb = (n: number): string => (n / 1048576).toFixed(1);
+    return [
+        `HD UI (${options.model}, x${options.scale}): ${stats.upscaled} of ${stats.images} images + ${stats.fonts} fonts ` +
+            `upscaled (${stats.kept} left as they were: too small or one colour; ${own.size} of them the overlay's own)`,
+        `  of them ${stats.loadingScreens} loading screens; ${stats.texUpscaled} of ${stats.texTextures} model textures ` +
+            `in ${stats.models} of ${stats.texFiles} menu model dictionaries upscaled`,
+        `  ${mb(stats.bytesBefore)} MB ->${mb(stats.bytesAfter)} MB of files (texture memory: each image ${options.scale}x${options.scale} ` +
+            `times; 32-bit as before); ${stats.hd.cacheHits} from the cache, ${stats.hd.generated} made, ` +
+            `${stats.hd.seconds.toFixed(1)} s (upscaler ${stats.hd.toolSeconds.toFixed(1)} s)`,
+        `  the globe: ${redrawn.size ? `${redrawn.size} tiles redrawn from map data (tools/pipeline/hd_textures/globe)` : "upscaled like the rest"}`,
+        "  in the overlay's hd_ui folder: used only with thug2-decomp.ini [features] hd_ui=1",
+    ];
+}
+
+const USAGE = "usage: ui.ts game out [--scale 2|4] [--model M] [--max N]";
+
+function main(): number {
+    const { values, positionals } = parseCli(USAGE, {
+        options: {
+            scale: { type: "string", default: "4" },
+            model: { type: "string" },
+            "loading-model": { type: "string" },
+            "globe-ai": { type: "boolean" }, // the globe's tiles upscaled by the model, not redrawn
+            max: { type: "string" },
+        },
+        allowPositionals: true,
+    });
+    if (positionals.length !== 2) {
+        print(USAGE);
+        return 2;
+    }
+    const scale = Number(values.scale);
+    if (scale !== 2 && scale !== 4) throw new Error("--scale is 2 or 4");
+    const options = uiOptions(scale);
+    if (values.model) options.model = values.model;
+    if (values.max) options.maxSize = Number(values.max);
+    for (const line of install(
+        resolveInstall(positionals[0]!, "thug2"),
+        positionals[1]!,
+        options,
+        undefined,
+        values["loading-model"],
+        values["globe-ai"] ? "ai" : "redraw",
+    ))
+        print(line);
+    return 0;
+}
+
+if (isMain(import.meta.url)) await runMain(() => main());

@@ -1,0 +1,946 @@
+[
+ {
+  "thaw": "005C9A50",
+  "name": "SkaterOnBike",
+  "second": "005C98E0",
+  "delta": -368,
+  "share": 0.673,
+  "differences": 0
+ },
+ {
+  "thaw": "005C7630",
+  "name": "SkaterOffBike",
+  "second": "005C74C0",
+  "delta": -368,
+  "share": 0.748,
+  "differences": 0
+ },
+ {
+  "thaw": "005C7640",
+  "name": "IsSkaterOnBike",
+  "second": "005C74D0",
+  "delta": -368,
+  "share": 0.744,
+  "differences": 0
+ },
+ {
+  "thaw": "005C7650",
+  "name": "BikeIsInOverGrind",
+  "second": "005C74E0",
+  "delta": -368,
+  "share": 0.74,
+  "differences": 0
+ },
+ {
+  "thaw": "005C7660",
+  "name": "GetBikeManualAngle",
+  "second": "005C74F0",
+  "delta": -368,
+  "share": 0.762,
+  "differences": 0
+ },
+ {
+  "thaw": "005C7680",
+  "name": "ResetBikeManualAngle",
+  "second": "005C7510",
+  "delta": -368,
+  "share": 0.679,
+  "differences": 0
+ },
+ {
+  "thaw": "005C76A0",
+  "name": "BikeInManual",
+  "second": "005C7530",
+  "delta": -368,
+  "share": 0.671,
+  "differences": 0
+ },
+ {
+  "thaw": "005C76E0",
+  "name": "BikeInXup",
+  "second": "005C7570",
+  "delta": -368,
+  "share": 0.717,
+  "differences": 0
+ },
+ {
+  "thaw": "005C76F0",
+  "name": "BikeEnterXup",
+  "second": "005C7580",
+  "delta": -368,
+  "share": 0.718,
+  "differences": 0
+ },
+ {
+  "thaw": "005C7700",
+  "name": "BikeExitXup",
+  "second": "005C7590",
+  "delta": -368,
+  "share": 0.715,
+  "differences": 0
+ },
+ {
+  "thaw": "005C7710",
+  "name": "bikeinskid",
+  "second": "005C75A0",
+  "delta": -368,
+  "share": 0.73,
+  "differences": 0
+ },
+ {
+  "thaw": "005C7720",
+  "name": "BikeCanSkid",
+  "second": "005C75B0",
+  "delta": -368,
+  "share": 0.781,
+  "differences": 0
+ },
+ {
+  "thaw": "005C7730",
+  "name": "BikeEnterSkid",
+  "second": "005C75C0",
+  "delta": -368,
+  "share": 0.778,
+  "differences": 0
+ },
+ {
+  "thaw": "005C7740",
+  "name": "BikeExitSkid",
+  "second": "005C75D0",
+  "delta": -368,
+  "share": 0.776,
+  "differences": 0
+ },
+ {
+  "thaw": "005C7760",
+  "name": "BikeInTireTap",
+  "second": "005C75F0",
+  "delta": -368,
+  "share": 0.758,
+  "differences": 0
+ },
+ {
+  "thaw": "005C77A0",
+  "name": "BikeExitTireTap",
+  "second": "005C7630",
+  "delta": -368,
+  "share": 0.696,
+  "differences": 0
+ },
+ {
+  "thaw": "005C83D0",
+  "name": "exitbikeendo",
+  "second": "005C8260",
+  "delta": -368,
+  "share": 0.68,
+  "differences": 0
+ },
+ {
+  "thaw": "005CA520",
+  "name": "EnterWheelieFromAir",
+  "second": "005CA3B0",
+  "delta": -368,
+  "share": 0.764,
+  "differences": 0
+ },
+ {
+  "thaw": "005CA600",
+  "name": "DisplayPitchGreaterThan",
+  "second": "005CA490",
+  "delta": -368,
+  "share": 0.687,
+  "differences": 0
+ },
+ {
+  "thaw": "005C7C60",
+  "name": "LandedFromTireTap",
+  "second": "005C7AF0",
+  "delta": -368,
+  "share": 0.755,
+  "differences": 0
+ },
+ {
+  "thaw": "005C8580",
+  "name": "ShouldRunStallScript",
+  "second": "005C8410",
+  "delta": -368,
+  "share": 0.58,
+  "differences": 0
+ },
+ {
+  "thaw": "005C8590",
+  "name": "ClearStallScriptFlag",
+  "second": "005C8420",
+  "delta": -368,
+  "share": 0.58,
+  "differences": 0
+ },
+ {
+  "thaw": "005C8540",
+  "name": "ExitStallBoost",
+  "second": "005C83D0",
+  "delta": -368,
+  "share": 0.544,
+  "differences": 0
+ },
+ {
+  "thaw": "005CAE10",
+  "name": "Brake",
+  "second": "005CACA0",
+  "delta": -368,
+  "share": 0.842,
+  "differences": 0
+ },
+ {
+  "thaw": "005D4830",
+  "name": "rolling_friction",
+  "second": "005D46C0",
+  "delta": -368,
+  "share": 0.758,
+  "differences": 1
+ },
+ {
+  "thaw": "005CB060",
+  "name": "may_pedal",
+  "second": "005CAEF0",
+  "delta": -368,
+  "share": 0.787,
+  "differences": 0
+ },
+ {
+  "thaw": "005CB1C0",
+  "name": "pedal_push",
+  "second": "005CB050",
+  "delta": -368,
+  "share": 0.836,
+  "differences": 1
+ },
+ {
+  "thaw": "005CB590",
+  "name": "display_normal_lerp",
+  "second": "005CB420",
+  "delta": -368,
+  "share": 0.838,
+  "differences": 0
+ },
+ {
+  "thaw": "005C9880",
+  "name": "wheel_points_from_matrix",
+  "second": "005C9710",
+  "delta": -368,
+  "share": 0.617,
+  "differences": 0
+ },
+ {
+  "thaw": "005CDBC0",
+  "name": "manual_pitch",
+  "second": "005CDA50",
+  "delta": -368,
+  "share": 0.808,
+  "differences": 0
+ },
+ {
+  "thaw": "005C3C50",
+  "name": "wobble_online",
+  "second": "005C3AF0",
+  "delta": -352,
+  "share": 0.58,
+  "differences": 0
+ },
+ {
+  "thaw": "005CD1C0",
+  "name": "air_spin",
+  "second": "005CD050",
+  "delta": -368,
+  "share": 0.972,
+  "differences": 0
+ },
+ {
+  "thaw": "005D7E20",
+  "name": "bike_air_rotation",
+  "second": "005D7CB0",
+  "delta": -368,
+  "share": 0.906,
+  "differences": 0
+ },
+ {
+  "thaw": "005D6360",
+  "name": "bike_ground_turn",
+  "second": "005D61F0",
+  "delta": -368,
+  "share": 0.911,
+  "differences": 0
+ },
+ {
+  "thaw": "005DDF30",
+  "name": "jump",
+  "second": "005DDDC0",
+  "delta": -368,
+  "share": 0.775,
+  "differences": 0
+ },
+ {
+  "thaw": "005D97C0",
+  "name": "wheel_snap",
+  "second": "005D9650",
+  "delta": -368,
+  "share": 0.898,
+  "differences": 0
+ },
+ {
+  "thaw": "005DCC30",
+  "name": "air_collision",
+  "second": "005DCAC0",
+  "delta": -368,
+  "share": 0.875,
+  "differences": 0
+ },
+ {
+  "thaw": "005C2980",
+  "name": "adjust_physics_update",
+  "second": "005C2820",
+  "delta": -352,
+  "share": 0.839,
+  "differences": 0
+ },
+ {
+  "thaw": "005D6AD0",
+  "name": "vert_wallplant",
+  "second": "005D6960",
+  "delta": -368,
+  "share": 0.696,
+  "differences": 0
+ },
+ {
+  "thaw": "005D7070",
+  "name": "wallride_start",
+  "second": "005D6F00",
+  "delta": -368,
+  "share": 0.698,
+  "differences": 0
+ },
+ {
+  "thaw": "005E7300",
+  "name": "wallride",
+  "second": "005E7190",
+  "delta": -368,
+  "share": 0.526,
+  "differences": 0
+ },
+ {
+  "thaw": "005DF9F0",
+  "name": "air_update",
+  "second": "005DF880",
+  "delta": -368,
+  "share": 0.823,
+  "differences": 0
+ },
+ {
+  "thaw": "005E3184",
+  "name": "rails",
+  "second": "005E3014",
+  "delta": -368,
+  "share": 0.581,
+  "differences": 0
+ },
+ {
+  "thaw": "005E2CD0",
+  "name": "rail_lip",
+  "second": "005E2B60",
+  "delta": -368,
+  "share": 0.568,
+  "differences": 0
+ },
+ {
+  "thaw": "005CF460",
+  "name": "bike_grind_trick",
+  "second": "005CF2F0",
+  "delta": -368,
+  "share": 0.625,
+  "differences": 1
+ },
+ {
+  "thaw": "005CF180",
+  "name": "rail_jump_angle",
+  "second": "005CF010",
+  "delta": -368,
+  "share": 0.696,
+  "differences": 7
+ },
+ {
+  "thaw": "005D34A0",
+  "name": "skitch",
+  "second": "005D3330",
+  "delta": -368,
+  "share": 0.795,
+  "differences": 2
+ },
+ {
+  "thaw": "005CB970",
+  "name": "bank_pop",
+  "second": "005CB800",
+  "delta": -368,
+  "share": 0.882,
+  "differences": 0
+ },
+ {
+  "thaw": "005CE150",
+  "name": "aerial_flips",
+  "second": "005CDFE0",
+  "delta": -368,
+  "share": 0.786,
+  "differences": 0
+ },
+ {
+  "thaw": "005CEA90",
+  "name": "tire_tap_in_air",
+  "second": "005CE920",
+  "delta": -368,
+  "share": 0.898,
+  "differences": 0
+ },
+ {
+  "thaw": "005E4370",
+  "name": "ground_reset",
+  "second": "005E4200",
+  "delta": -368,
+  "share": 0.432,
+  "differences": 0
+ },
+ {
+  "thaw": "005DC400",
+  "name": "tire_tap_enter",
+  "second": "005DC290",
+  "delta": -368,
+  "share": 0.8,
+  "differences": 0
+ },
+ {
+  "thaw": "005DDB00",
+  "name": "tire_tap_end",
+  "second": "005DD990",
+  "delta": -368,
+  "share": 0.607,
+  "differences": 0
+ },
+ {
+  "thaw": "005CF810",
+  "name": "constructor",
+  "second": "005CF6A0",
+  "delta": -368,
+  "share": 0.797,
+  "differences": 0
+ },
+ {
+  "thaw": "005C93F0",
+  "name": "field_18C9",
+  "second": "005C9280",
+  "delta": -368,
+  "share": 0.688,
+  "differences": 0
+ },
+ {
+  "thaw": "005C9380",
+  "name": "xup_release",
+  "second": "005C9210",
+  "delta": -368,
+  "share": 0.724,
+  "differences": 0
+ },
+ {
+  "thaw": "005CACD0",
+  "name": "ShouldBrake",
+  "second": "005CAB60",
+  "delta": -368,
+  "share": 0.779,
+  "differences": 0
+ },
+ {
+  "thaw": "005C8CA0",
+  "name": "brake_button_held",
+  "second": "005C8B30",
+  "delta": -368,
+  "share": 0.648,
+  "differences": 0
+ },
+ {
+  "thaw": "005DA890",
+  "name": "ground_turn_dispatch",
+  "second": "005DA720",
+  "delta": -368,
+  "share": 0.859,
+  "differences": 0
+ },
+ {
+  "thaw": "005DF1C0",
+  "name": "bike_ground_check",
+  "second": "005DF050",
+  "delta": -368,
+  "share": 0.843,
+  "differences": 0
+ },
+ {
+  "thaw": "005DF550",
+  "name": "bike_ground_check_on",
+  "second": "005DF3E0",
+  "delta": -368,
+  "share": 0.858,
+  "differences": 0
+ },
+ {
+  "thaw": "005E534A",
+  "name": "ground_update_bike_check",
+  "second": "005E51DA",
+  "delta": -368,
+  "share": 0.711,
+  "differences": 0
+ },
+ {
+  "thaw": "005E4900",
+  "name": "ground_gravity",
+  "second": "005E4790",
+  "delta": -368,
+  "share": 0.801,
+  "differences": 0
+ },
+ {
+  "thaw": "005E48C2",
+  "name": "ground_reset_tiretap",
+  "second": "005E4752",
+  "delta": -368,
+  "share": 0.805,
+  "differences": 0
+ },
+ {
+  "thaw": "005E4EB7",
+  "name": "manual_kinds_brake",
+  "second": "005E4D47",
+  "delta": -368,
+  "share": 0.874,
+  "differences": 0
+ },
+ {
+  "thaw": "005E87B0",
+  "name": "frame_update",
+  "second": "005E8640",
+  "delta": -368,
+  "share": 0.786,
+  "differences": 0
+ },
+ {
+  "thaw": "005E87F4",
+  "name": "frame_update_wheels",
+  "second": "005E8684",
+  "delta": -368,
+  "share": 0.916,
+  "differences": 0
+ },
+ {
+  "thaw": "005D5060",
+  "name": "wheel_feeler_VM",
+  "second": "005D4EF0",
+  "delta": -368,
+  "share": 0.917,
+  "differences": 0
+ },
+ {
+  "thaw": "005D0D40",
+  "name": "set_ground_normal_thunk",
+  "second": "005D0BD0",
+  "delta": -368,
+  "share": 0.896,
+  "differences": 0
+ },
+ {
+  "thaw": "005CB8E0",
+  "name": "ride_hit_object_thunk",
+  "second": "005CB770",
+  "delta": -368,
+  "share": 0.706,
+  "differences": 0
+ },
+ {
+  "thaw": "005D66E9",
+  "name": "query_after_ground_turn_VM",
+  "second": "005D6579",
+  "delta": -368,
+  "share": 0.82,
+  "differences": 0
+ },
+ {
+  "thaw": "005E2B7C",
+  "name": "grind_extra_trick_query_VM",
+  "second": "005E2A0C",
+  "delta": -368,
+  "share": 0.818,
+  "differences": 0
+ },
+ {
+  "thaw": "005E2965",
+  "name": "bad_ledge_side",
+  "second": "005E27F5",
+  "delta": -368,
+  "share": 0.969,
+  "differences": 0
+ },
+ {
+  "thaw": "005E2221",
+  "name": "bike_side_from_position",
+  "second": "005E20B1",
+  "delta": -368,
+  "share": 0.95,
+  "differences": 0
+ },
+ {
+  "thaw": "005E2A5D",
+  "name": "grind_sideways_read",
+  "second": "005E28ED",
+  "delta": -368,
+  "share": 0.936,
+  "differences": 0
+ },
+ {
+  "thaw": "005E2CA9",
+  "name": "grind_trick_call",
+  "second": "005E2B39",
+  "delta": -368,
+  "share": 0.636,
+  "differences": 0
+ },
+ {
+  "thaw": "005E2AC8",
+  "name": "ability16_flags",
+  "second": "005E2958",
+  "delta": -368,
+  "share": 0.935,
+  "differences": 0
+ },
+ {
+  "thaw": "005D1A00",
+  "name": "acid_drop_search",
+  "second": "005D1890",
+  "delta": -368,
+  "share": 0.826,
+  "differences": 0
+ },
+ {
+  "thaw": "005DA6CF",
+  "name": "spine_transfer_gate",
+  "second": "005DA55F",
+  "delta": -368,
+  "share": 0.542,
+  "differences": 0
+ },
+ {
+  "thaw": "005DABC2",
+  "name": "wallride_start_2",
+  "second": "005DAA52",
+  "delta": -368,
+  "share": 0.905,
+  "differences": 0
+ },
+ {
+  "thaw": "005DB1B0",
+  "name": "wallplant",
+  "second": "005DB040",
+  "delta": -368,
+  "share": 0.834,
+  "differences": 0
+ },
+ {
+  "thaw": "005DB35D",
+  "name": "wallplant_square",
+  "second": "005DB1ED",
+  "delta": -368,
+  "share": 0.949,
+  "differences": 1
+ },
+ {
+  "thaw": "005DBD0E",
+  "name": "wallplant_sticker",
+  "second": "005DBB9E",
+  "delta": -368,
+  "share": 0.951,
+  "differences": 0
+ },
+ {
+  "thaw": "005E1A8D",
+  "name": "lip_tricks",
+  "second": "005E191D",
+  "delta": -368,
+  "share": 0.856,
+  "differences": 0
+ },
+ {
+  "thaw": "005E101B",
+  "name": "ability_C",
+  "second": "005E0EAB",
+  "delta": -368,
+  "share": 0.885,
+  "differences": 0
+ },
+ {
+  "thaw": "005E1CA1",
+  "name": "lip_start",
+  "second": "005E1B31",
+  "delta": -368,
+  "share": 0.776,
+  "differences": 0
+ },
+ {
+  "thaw": "005DCA1D",
+  "name": "tire_tap_setup",
+  "second": "005DC8AD",
+  "delta": -368,
+  "share": 0.7,
+  "differences": 1
+ },
+ {
+  "thaw": "005DCB59",
+  "name": "tire_tap_pitch",
+  "second": "005DC9E9",
+  "delta": -368,
+  "share": 0.887,
+  "differences": 0
+ },
+ {
+  "thaw": "005DFAFB",
+  "name": "air_update_tire_tap",
+  "second": "005DF98B",
+  "delta": -368,
+  "share": 0.811,
+  "differences": 0
+ },
+ {
+  "thaw": "005DFB4B",
+  "name": "air_keep_upright_skip",
+  "second": "005DF9DB",
+  "delta": -368,
+  "share": 0.828,
+  "differences": 0
+ },
+ {
+  "thaw": "005DE890",
+  "name": "skater_ground_check",
+  "second": "005DE720",
+  "delta": -368,
+  "share": 0.475,
+  "differences": 0
+ },
+ {
+  "thaw": "005DEC78",
+  "name": "ground_check_steepness",
+  "second": "005DEB08",
+  "delta": -368,
+  "share": 0.9,
+  "differences": 0
+ },
+ {
+  "thaw": "005CB8E0",
+  "name": "ground_terrain_tail",
+  "second": "005CB770",
+  "delta": -368,
+  "share": 0.706,
+  "differences": 0
+ },
+ {
+  "thaw": "005CCF40",
+  "name": "thaw_ground_move",
+  "second": "005CCDD0",
+  "delta": -368,
+  "share": 0.81,
+  "differences": 0
+ },
+ {
+  "thaw": "005E3A74",
+  "name": "rail_backwards",
+  "second": "005E3904",
+  "delta": -368,
+  "share": 0.805,
+  "differences": 0
+ },
+ {
+  "thaw": "005E6389",
+  "name": "field_729",
+  "second": "005E6219",
+  "delta": -368,
+  "share": 0.819,
+  "differences": 1
+ },
+ {
+  "thaw": "005D3517",
+  "name": "skitch_r2",
+  "second": "005D33A7",
+  "delta": -368,
+  "share": 0.86,
+  "differences": 0
+ },
+ {
+  "thaw": "005D711F",
+  "name": "wallride_square",
+  "second": "005D6FAF",
+  "delta": -368,
+  "share": 0.825,
+  "differences": 0
+ },
+ {
+  "thaw": "005D713F",
+  "name": "wallride_button",
+  "second": "005D6FCF",
+  "delta": -368,
+  "share": 0.854,
+  "differences": 0
+ },
+ {
+  "thaw": "005CE980",
+  "name": "keep_upright",
+  "second": "005CE810",
+  "delta": -368,
+  "share": 0.84,
+  "differences": 0
+ },
+ {
+  "thaw": "0058C9A0",
+  "name": "ledge_search",
+  "second": "0058C850",
+  "delta": -336,
+  "share": 0.892,
+  "differences": 1
+ },
+ {
+  "thaw": "005CAA60",
+  "name": "LimitSpeed",
+  "second": "005CA8F0",
+  "delta": -368,
+  "share": 0.632,
+  "differences": 0
+ },
+ {
+  "thaw": "005E46E9",
+  "name": "ground_update_vert_time",
+  "second": "005E4579",
+  "delta": -368,
+  "share": 0.824,
+  "differences": 0
+ },
+ {
+  "thaw": "005E562A",
+  "name": "ground_update_site",
+  "second": "005E54BA",
+  "delta": -368,
+  "share": 0.698,
+  "differences": 0
+ },
+ {
+  "thaw": "00620940",
+  "name": "balance_online_wobble",
+  "second": "00620780",
+  "delta": -448,
+  "share": 0.939,
+  "differences": 0
+ },
+ {
+  "thaw": "0056C1B4",
+  "name": "combo_bike",
+  "second": "0056C0D4",
+  "delta": -224,
+  "share": 0.847,
+  "differences": 0
+ },
+ {
+  "thaw": "0056D170",
+  "name": "special_bike",
+  "second": "0056D090",
+  "delta": -224,
+  "share": 0.829,
+  "differences": 0
+ },
+ {
+  "thaw": "0056CC00",
+  "name": "manual_score",
+  "second": "0056CB20",
+  "delta": -224,
+  "share": 0.459,
+  "differences": 6
+ },
+ {
+  "thaw": "00595820",
+  "name": "careerbikecomborecord",
+  "second": "005956F0",
+  "delta": -304,
+  "share": 0.617,
+  "differences": 0
+ },
+ {
+  "thaw": "005F1A9B",
+  "name": "bike_land_sound",
+  "second": "005F197B",
+  "delta": -288,
+  "share": 0.465,
+  "differences": 0
+ },
+ {
+  "thaw": "005F1B30",
+  "name": "bike_ollie_sound",
+  "second": "005F1A10",
+  "delta": -288,
+  "share": 0.6,
+  "differences": 0
+ },
+ {
+  "thaw": "005F1BD0",
+  "name": "bike_bonk_sound",
+  "second": "005F1AB0",
+  "delta": -288,
+  "share": 0.481,
+  "differences": 0
+ },
+ {
+  "thaw": "0046A1B7",
+  "name": "looping_sound_bike",
+  "second": "0046A097",
+  "delta": -288,
+  "share": 0.985,
+  "differences": 3
+ },
+ {
+  "thaw": "0046A1F3",
+  "name": "looping_sound_bike_air",
+  "second": "0046A0D3",
+  "delta": -288,
+  "share": 0.992,
+  "differences": 3
+ },
+ {
+  "thaw": "005C438E",
+  "name": "camera_bike_array",
+  "second": "005C422E",
+  "delta": -352,
+  "share": 0.754,
+  "differences": 1
+ },
+ {
+  "thaw": "0058EED0",
+  "name": "GetPhysicsStructure",
+  "second": "0058ED90",
+  "delta": -320,
+  "share": 0.644,
+  "differences": 0
+ },
+ {
+  "thaw": "0058F3B0",
+  "name": "stat_scaling",
+  "second": "0058F270",
+  "delta": -320,
+  "share": 0.741,
+  "differences": 0
+ },
+ {
+  "thaw": "00596580",
+  "name": "pad_init",
+  "second": "00596450",
+  "delta": -304,
+  "share": 0.659,
+  "differences": 0
+ }
+]

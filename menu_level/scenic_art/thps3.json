@@ -1,0 +1,5530 @@
+{
+ "game": "thps3",
+ "levels": {
+  "foun": {
+   "candidates": [
+    {
+     "id": 0,
+     "pose": {
+      "pos": [
+       -4914,
+       467,
+       -64
+      ],
+      "heading": 45,
+      "pitch": 32
+     },
+     "target": [
+      -4048,
+      -298,
+      802
+     ],
+     "score": {
+      "score": 1.699,
+      "rails": 1,
+      "interest": 0.2788,
+      "spread": 1,
+      "depth": 0.4062,
+      "sky": 0,
+      "void": 0.071,
+      "back": 0.0386,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -300
+    },
+    {
+     "id": 1,
+     "pose": {
+      "pos": [
+       -3182,
+       467,
+       -64
+      ],
+      "heading": 315,
+      "pitch": 32
+     },
+     "target": [
+      -4048,
+      -298,
+      802
+     ],
+     "score": {
+      "score": 1.6356,
+      "rails": 1,
+      "interest": 0.2536,
+      "spread": 1,
+      "depth": 0.422,
+      "sky": 0,
+      "void": 0.061,
+      "back": 0.0617,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -300
+    },
+    {
+     "id": 2,
+     "pose": {
+      "pos": [
+       -3534,
+       1471,
+       4553
+      ],
+      "heading": 225,
+      "pitch": 42
+     },
+     "target": [
+      -4767,
+      -99,
+      3320
+     ],
+     "score": {
+      "score": 1.6175,
+      "rails": 1,
+      "interest": 0.2321,
+      "spread": 1,
+      "depth": 0.8572,
+      "sky": 0,
+      "void": 0.1019,
+      "back": 0.0386,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": 163
+    },
+    {
+     "id": 3,
+     "pose": {
+      "pos": [
+       -4767,
+       1073,
+       633
+      ],
+      "heading": 180,
+      "pitch": 32
+     },
+     "target": [
+      -4767,
+      -170,
+      -1357
+     ],
+     "score": {
+      "score": 1.5921,
+      "rails": 0.7974,
+      "interest": 0.2645,
+      "spread": 1,
+      "depth": 0.4816,
+      "sky": 0,
+      "void": 0.0625,
+      "back": 0.0278,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -300
+    },
+    {
+     "id": 4,
+     "pose": {
+      "pos": [
+       -4767,
+       1144,
+       1330
+      ],
+      "heading": 0,
+      "pitch": 32
+     },
+     "target": [
+      -4767,
+      -99,
+      3320
+     ],
+     "score": {
+      "score": 1.5137,
+      "rails": 1,
+      "interest": 0.2559,
+      "spread": 1,
+      "depth": 0.5864,
+      "sky": 0,
+      "void": 0.1165,
+      "back": 0.0432,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -300
+    },
+    {
+     "id": 5,
+     "pose": {
+      "pos": [
+       -4959,
+       1124,
+       2240
+      ],
+      "heading": 90,
+      "pitch": 32
+     },
+     "target": [
+      -2969,
+      -119,
+      2240
+     ],
+     "score": {
+      "score": 1.3613,
+      "rails": 0.8931,
+      "interest": 0.2613,
+      "spread": 1,
+      "depth": 0.2029,
+      "sky": 0,
+      "void": 0.1096,
+      "back": 0.0394,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -390
+    },
+    {
+     "id": 6,
+     "pose": {
+      "pos": [
+       -4914,
+       467,
+       1668
+      ],
+      "heading": 135,
+      "pitch": 32
+     },
+     "target": [
+      -4048,
+      -298,
+      802
+     ],
+     "score": {
+      "score": 1.1047,
+      "rails": 1,
+      "interest": 0.2518,
+      "spread": 0.8333,
+      "depth": 0.4583,
+      "sky": 0,
+      "void": 0.1782,
+      "back": 0.0494,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 7,
+     "pose": {
+      "pos": [
+       -3289,
+       668,
+       1561
+      ],
+      "heading": 225,
+      "pitch": 42
+     },
+     "target": [
+      -4048,
+      -298,
+      802
+     ],
+     "score": {
+      "score": 1.0284,
+      "rails": 0.8453,
+      "interest": 0.2511,
+      "spread": 0.8333,
+      "depth": 0.5221,
+      "sky": 0,
+      "void": 0.1674,
+      "back": 0.0548,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 100,
+     "pose": {
+      "pos": [
+       -2996,
+       1059,
+       3737
+      ],
+      "heading": 315,
+      "pitch": 30
+     },
+     "target": [
+      -4017,
+      225,
+      4758
+     ],
+     "score": {
+      "score": 1.2874,
+      "interest": 0.2969,
+      "spread": 1,
+      "depth": 0.3313,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0023,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": 132
+    },
+    {
+     "id": 101,
+     "pose": {
+      "pos": [
+       -3298,
+       765,
+       694
+      ],
+      "heading": 180,
+      "pitch": 37
+     },
+     "target": [
+      -3298,
+      -238,
+      -637
+     ],
+     "score": {
+      "score": 1.2765,
+      "interest": 0.3006,
+      "spread": 1,
+      "depth": 0.6255,
+      "sky": 0,
+      "void": 0.0208,
+      "back": 0.0116,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -246
+    },
+    {
+     "id": 102,
+     "pose": {
+      "pos": [
+       -4017,
+       1228,
+       6089
+      ],
+      "heading": 180,
+      "pitch": 37
+     },
+     "target": [
+      -4017,
+      225,
+      4758
+     ],
+     "score": {
+      "score": 1.1016,
+      "interest": 0.2752,
+      "spread": 1,
+      "depth": 0.1975,
+      "sky": 0,
+      "void": 0.027,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": 676
+    },
+    {
+     "id": 103,
+     "pose": {
+      "pos": [
+       -4377,
+       1686,
+       -935
+      ],
+      "heading": 0,
+      "pitch": 45
+     },
+     "target": [
+      -4377,
+      -230,
+      981
+     ],
+     "score": {
+      "score": 1.084,
+      "interest": 0.2383,
+      "spread": 1,
+      "depth": 0.8171,
+      "sky": 0,
+      "void": 0.0478,
+      "back": 0.0185,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": 343
+    },
+    {
+     "id": 104,
+     "pose": {
+      "pos": [
+       -3298,
+       765,
+       -1968
+      ],
+      "heading": 0,
+      "pitch": 37
+     },
+     "target": [
+      -3298,
+      -238,
+      -637
+     ],
+     "score": {
+      "score": 1.0382,
+      "interest": 0.2803,
+      "spread": 1,
+      "depth": 0.5646,
+      "sky": 0,
+      "void": 0.0401,
+      "back": 0.0525,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": 276
+    },
+    {
+     "id": 105,
+     "pose": {
+      "pos": [
+       -4737,
+       967,
+       4584
+      ],
+      "heading": 180,
+      "pitch": 30
+     },
+     "target": [
+      -4737,
+      133,
+      3140
+     ],
+     "score": {
+      "score": 0.8885,
+      "interest": 0.2323,
+      "spread": 1,
+      "depth": 0.6155,
+      "sky": 0,
+      "void": 0.0656,
+      "back": 0.0394,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": 228
+    }
+   ],
+   "chosen": 1,
+   "why": "the glowing pool, the press with its kickers and the stairs - the foundry floor at a glance"
+  },
+  "can": {
+   "candidates": [
+    {
+     "id": 0,
+     "pose": {
+      "pos": [
+       3907,
+       2043,
+       8029
+      ],
+      "heading": 90,
+      "pitch": 52
+     },
+     "target": [
+      5453,
+      64,
+      8029
+     ],
+     "score": {
+      "score": 2.472,
+      "rails": 0.86,
+      "interest": 0.602,
+      "spread": 0.9167,
+      "depth": 0.4926,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0471,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": 10
+    },
+    {
+     "id": 1,
+     "pose": {
+      "pos": [
+       5453,
+       2043,
+       6483
+      ],
+      "heading": 0,
+      "pitch": 52
+     },
+     "target": [
+      5453,
+      64,
+      8029
+     ],
+     "score": {
+      "score": 2.1083,
+      "rails": 0.5528,
+      "interest": 0.6845,
+      "spread": 1,
+      "depth": 0.2071,
+      "sky": 0,
+      "void": 0.0787,
+      "back": 0.0201,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -417
+    },
+    {
+     "id": 2,
+     "pose": {
+      "pos": [
+       10231,
+       2492,
+       7491
+      ],
+      "heading": 270,
+      "pitch": 52
+     },
+     "target": [
+      8685,
+      513,
+      7491
+     ],
+     "score": {
+      "score": 2.0175,
+      "rails": 1,
+      "interest": 0.3191,
+      "spread": 0.9167,
+      "depth": 0.4721,
+      "sky": 0,
+      "void": 0.0093,
+      "back": 0.0301,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -2217
+    },
+    {
+     "id": 3,
+     "pose": {
+      "pos": [
+       6815,
+       2359,
+       4243
+      ],
+      "heading": 315,
+      "pitch": 52
+     },
+     "target": [
+      5722,
+      380,
+      5336
+     ],
+     "score": {
+      "score": 1.782,
+      "rails": 1,
+      "interest": 0.3627,
+      "spread": 0.9167,
+      "depth": 0.2476,
+      "sky": 0,
+      "void": 0.0586,
+      "back": 0.0532,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -2217
+    },
+    {
+     "id": 4,
+     "pose": {
+      "pos": [
+       4176,
+       2359,
+       5336
+      ],
+      "heading": 90,
+      "pitch": 52
+     },
+     "target": [
+      5722,
+      380,
+      5336
+     ],
+     "score": {
+      "score": 1.6124,
+      "rails": 1,
+      "interest": 0.2994,
+      "spread": 0.8333,
+      "depth": 0.4185,
+      "sky": 0,
+      "void": 0.0509,
+      "back": 0.0833,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -377
+    },
+    {
+     "id": 5,
+     "pose": {
+      "pos": [
+       6815,
+       2359,
+       6429
+      ],
+      "heading": 225,
+      "pitch": 52
+     },
+     "target": [
+      5722,
+      380,
+      5336
+     ],
+     "score": {
+      "score": 1.4207,
+      "rails": 1,
+      "interest": 0.2124,
+      "spread": 0.8333,
+      "depth": 0.4124,
+      "sky": 0,
+      "void": 0.0756,
+      "back": 0.0502,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -272
+    },
+    {
+     "id": 6,
+     "pose": {
+      "pos": [
+       -1565,
+       1692,
+       -66
+      ],
+      "heading": 45,
+      "pitch": 52
+     },
+     "target": [
+      -472,
+      -287,
+      1027
+     ],
+     "score": {
+      "score": 1.1707,
+      "rails": 1,
+      "interest": 0.1994,
+      "spread": 0.6667,
+      "depth": 0.417,
+      "sky": 0,
+      "void": 0.1296,
+      "back": 0.0139,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -2217
+    },
+    {
+     "id": 7,
+     "pose": {
+      "pos": [
+       6999,
+       2043,
+       8029
+      ],
+      "heading": 270,
+      "pitch": 52
+     },
+     "target": [
+      5453,
+      64,
+      8029
+     ],
+     "score": {
+      "score": 1.0277,
+      "rails": 1,
+      "interest": 0.4237,
+      "spread": 1,
+      "depth": 0.6394,
+      "sky": 0,
+      "void": 0.0802,
+      "back": 0.0363,
+      "near": 0,
+      "blocked": true
+     },
+     "ground": 1149
+    },
+    {
+     "id": 100,
+     "pose": {
+      "pos": [
+       8076,
+       2333,
+       2318
+      ],
+      "heading": 315,
+      "pitch": 45
+     },
+     "target": [
+      6152,
+      -388,
+      4242
+     ],
+     "score": {
+      "score": 0.9796,
+      "interest": 0.3392,
+      "spread": 1,
+      "depth": 0.232,
+      "sky": 0,
+      "void": 0.0694,
+      "back": 0.0363,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -2217
+    },
+    {
+     "id": 101,
+     "pose": {
+      "pos": [
+       11209,
+       2189,
+       9690
+      ],
+      "heading": 225,
+      "pitch": 45
+     },
+     "target": [
+      9285,
+      -532,
+      7766
+     ],
+     "score": {
+      "score": 0.8727,
+      "interest": 0.2896,
+      "spread": 0.9167,
+      "depth": 0.4706,
+      "sky": 0,
+      "void": 0.0941,
+      "back": 0.0085,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -2217
+    },
+    {
+     "id": 102,
+     "pose": {
+      "pos": [
+       4228,
+       2333,
+       2318
+      ],
+      "heading": 45,
+      "pitch": 45
+     },
+     "target": [
+      6152,
+      -388,
+      4242
+     ],
+     "score": {
+      "score": 0.654,
+      "interest": 0.3105,
+      "spread": 0.8333,
+      "depth": 0.3107,
+      "sky": 0,
+      "void": 0.1188,
+      "back": 0.034,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -2217
+    },
+    {
+     "id": 103,
+     "pose": {
+      "pos": [
+       6212,
+       1784,
+       7766
+      ],
+      "heading": 90,
+      "pitch": 37
+     },
+     "target": [
+      9285,
+      -532,
+      7766
+     ],
+     "score": {
+      "score": 0.5674,
+      "interest": 0.4129,
+      "spread": 0.9167,
+      "depth": 0.7648,
+      "sky": 0,
+      "void": 0.1968,
+      "back": 0.1003,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": 810
+    },
+    {
+     "id": 104,
+     "pose": {
+      "pos": [
+       7293,
+       2759,
+       6234
+      ],
+      "heading": 315,
+      "pitch": 45
+     },
+     "target": [
+      5369,
+      38,
+      8158
+     ],
+     "score": {
+      "score": 0.5614,
+      "interest": 0.42,
+      "spread": 0.8333,
+      "depth": 0.3395,
+      "sky": 0,
+      "void": 0.196,
+      "back": 0.0386,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -2217
+    },
+    {
+     "id": 105,
+     "pose": {
+      "pos": [
+       11209,
+       2189,
+       5842
+      ],
+      "heading": 315,
+      "pitch": 45
+     },
+     "target": [
+      9285,
+      -532,
+      7766
+     ],
+     "score": {
+      "score": 0.5444,
+      "interest": 0.3555,
+      "spread": 0.8333,
+      "depth": 0.2692,
+      "sky": 0,
+      "void": 0.169,
+      "back": 0.0285,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -2217
+    }
+   ],
+   "chosen": 3,
+   "why": "the round plaza with the big pine, the stairs and the park's bowls behind"
+  },
+  "rio": {
+   "candidates": [
+    {
+     "id": 0,
+     "pose": {
+      "pos": [
+       1446,
+       995,
+       4115
+      ],
+      "heading": 180,
+      "pitch": 52
+     },
+     "target": [
+      1446,
+      -271,
+      3126
+     ],
+     "score": {
+      "score": 2.0185,
+      "rails": 1,
+      "interest": 0.3219,
+      "spread": 1,
+      "depth": 0.2696,
+      "sky": 0,
+      "void": 0.0231,
+      "back": 0.0054,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -300
+    },
+    {
+     "id": 1,
+     "pose": {
+      "pos": [
+       -311,
+       1093,
+       1655
+      ],
+      "heading": 180,
+      "pitch": 52
+     },
+     "target": [
+      -311,
+      -173,
+      666
+     ],
+     "score": {
+      "score": 2.0132,
+      "rails": 1,
+      "interest": 0.3019,
+      "spread": 1,
+      "depth": 0.276,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0293,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -381
+    },
+    {
+     "id": 2,
+     "pose": {
+      "pos": [
+       -311,
+       902,
+       -528
+      ],
+      "heading": 0,
+      "pitch": 42
+     },
+     "target": [
+      -311,
+      -173,
+      666
+     ],
+     "score": {
+      "score": 1.9506,
+      "rails": 1,
+      "interest": 0.312,
+      "spread": 1,
+      "depth": 0.4033,
+      "sky": 0,
+      "void": 0.0216,
+      "back": 0.0432,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -307
+    },
+    {
+     "id": 3,
+     "pose": {
+      "pos": [
+       -2416,
+       1246,
+       3474
+      ],
+      "heading": 135,
+      "pitch": 52
+     },
+     "target": [
+      -1716,
+      -20,
+      2774
+     ],
+     "score": {
+      "score": 1.9415,
+      "rails": 1,
+      "interest": 0.2831,
+      "spread": 1,
+      "depth": 0.2879,
+      "sky": 0,
+      "void": 0.0239,
+      "back": 0.0062,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -307
+    },
+    {
+     "id": 4,
+     "pose": {
+      "pos": [
+       -1016,
+       1246,
+       3474
+      ],
+      "heading": 225,
+      "pitch": 52
+     },
+     "target": [
+      -1716,
+      -20,
+      2774
+     ],
+     "score": {
+      "score": 1.8676,
+      "rails": 1,
+      "interest": 0.2722,
+      "spread": 1,
+      "depth": 0.2278,
+      "sky": 0,
+      "void": 0.0363,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -311
+    },
+    {
+     "id": 5,
+     "pose": {
+      "pos": [
+       2435,
+       995,
+       3126
+      ],
+      "heading": 270,
+      "pitch": 52
+     },
+     "target": [
+      1446,
+      -271,
+      3126
+     ],
+     "score": {
+      "score": 1.8573,
+      "rails": 1,
+      "interest": 0.3042,
+      "spread": 0.9167,
+      "depth": 0.2806,
+      "sky": 0,
+      "void": 0.0424,
+      "back": 0.0062,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -307
+    },
+    {
+     "id": 6,
+     "pose": {
+      "pos": [
+       1446,
+       995,
+       2137
+      ],
+      "heading": 0,
+      "pitch": 52
+     },
+     "target": [
+      1446,
+      -271,
+      3126
+     ],
+     "score": {
+      "score": 1.8557,
+      "rails": 0.9651,
+      "interest": 0.2956,
+      "spread": 1,
+      "depth": 0.2493,
+      "sky": 0,
+      "void": 0.0355,
+      "back": 0.0162,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -392
+    },
+    {
+     "id": 7,
+     "pose": {
+      "pos": [
+       -1716,
+       1246,
+       1785
+      ],
+      "heading": 0,
+      "pitch": 52
+     },
+     "target": [
+      -1716,
+      -20,
+      2774
+     ],
+     "score": {
+      "score": 1.8529,
+      "rails": 1,
+      "interest": 0.2615,
+      "spread": 1,
+      "depth": 0.2458,
+      "sky": 0,
+      "void": 0.0355,
+      "back": 0.0008,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -300
+    },
+    {
+     "id": 100,
+     "pose": {
+      "pos": [
+       -2331,
+       3436,
+       -980
+      ],
+      "heading": 0,
+      "pitch": 30
+     },
+     "target": [
+      -2331,
+      -156,
+      5242
+     ],
+     "score": {
+      "score": -1.7522,
+      "interest": 0.1214,
+      "spread": 0.25,
+      "depth": 0.623,
+      "sky": 0,
+      "void": 0.5733,
+      "back": 0.0154,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -300
+    },
+    {
+     "id": 101,
+     "pose": {
+      "pos": [
+       -1941,
+       3443,
+       834
+      ],
+      "heading": 90,
+      "pitch": 30
+     },
+     "target": [
+      4281,
+      -149,
+      834
+     ],
+     "score": {
+      "score": -1.9495,
+      "interest": 0.1087,
+      "spread": 0.3333,
+      "depth": 0.4847,
+      "sky": 0,
+      "void": 0.6165,
+      "back": 0.0185,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -300
+    },
+    {
+     "id": 102,
+     "pose": {
+      "pos": [
+       10167,
+       4287,
+       17740
+      ],
+      "heading": 45,
+      "pitch": 30
+     },
+     "target": [
+      14567,
+      695,
+      22140
+     ],
+     "score": {
+      "score": -2.2512,
+      "interest": 0.0771,
+      "spread": 0.3333,
+      "depth": 0.1324,
+      "sky": 0,
+      "void": 0.6613,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 103,
+     "pose": {
+      "pos": [
+       3407,
+       4168,
+       5242
+      ],
+      "heading": 270,
+      "pitch": 37
+     },
+     "target": [
+      -2331,
+      -156,
+      5242
+     ],
+     "score": {
+      "score": -2.289,
+      "interest": 0.1096,
+      "spread": 0.4167,
+      "depth": 0.1748,
+      "sky": 0,
+      "void": 0.6983,
+      "back": 0.0069,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 104,
+     "pose": {
+      "pos": [
+       616,
+       4287,
+       20679
+      ],
+      "heading": 45,
+      "pitch": 30
+     },
+     "target": [
+      5016,
+      695,
+      25079
+     ],
+     "score": {
+      "score": -2.3729,
+      "interest": 0.0724,
+      "spread": 0.1667,
+      "depth": 0.3384,
+      "sky": 0,
+      "void": 0.6798,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    }
+   ],
+   "chosen": 2,
+   "why": "the whole competition park with the Quiksilver banner and the funbox, the street round it"
+  },
+  "sub": {
+   "candidates": [
+    {
+     "id": 0,
+     "pose": {
+      "pos": [
+       2965,
+       1310,
+       1465
+      ],
+      "heading": 270,
+      "pitch": 52
+     },
+     "target": [
+      1936,
+      -7,
+      1465
+     ],
+     "score": {
+      "score": 2.2957,
+      "rails": 1,
+      "interest": 0.4331,
+      "spread": 1,
+      "depth": 0.2796,
+      "sky": 0,
+      "void": 0.0093,
+      "back": 0.0069,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": 29
+    },
+    {
+     "id": 1,
+     "pose": {
+      "pos": [
+       41,
+       1642,
+       -3196
+      ],
+      "heading": 0,
+      "pitch": 52
+     },
+     "target": [
+      41,
+      325,
+      -2167
+     ],
+     "score": {
+      "score": 2.2483,
+      "rails": 1,
+      "interest": 0.3829,
+      "spread": 1,
+      "depth": 0.2878,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0015,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 2,
+     "pose": {
+      "pos": [
+       2807,
+       1890,
+       -114
+      ],
+      "heading": 270,
+      "pitch": 52
+     },
+     "target": [
+      1778,
+      573,
+      -114
+     ],
+     "score": {
+      "score": 2.1866,
+      "rails": 1,
+      "interest": 0.3942,
+      "spread": 1,
+      "depth": 0.3115,
+      "sky": 0,
+      "void": 0.0224,
+      "back": 0.0023,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": 39
+    },
+    {
+     "id": 3,
+     "pose": {
+      "pos": [
+       1936,
+       1310,
+       2494
+      ],
+      "heading": 180,
+      "pitch": 52
+     },
+     "target": [
+      1936,
+      -7,
+      1465
+     ],
+     "score": {
+      "score": 1.9283,
+      "rails": 1,
+      "interest": 0.3715,
+      "spread": 1,
+      "depth": 0.2619,
+      "sky": 0,
+      "void": 0.0733,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": 29
+    },
+    {
+     "id": 4,
+     "pose": {
+      "pos": [
+       1655,
+       731,
+       -114
+      ],
+      "heading": 90,
+      "pitch": 52
+     },
+     "target": [
+      1778,
+      573,
+      -114
+     ],
+     "score": {
+      "score": 1.912,
+      "rails": 0.1427,
+      "interest": 0.8695,
+      "spread": 1,
+      "depth": 0.5574,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0.2361,
+      "blocked": false
+     },
+     "ground": 597
+    },
+    {
+     "id": 5,
+     "pose": {
+      "pos": [
+       1778,
+       731,
+       9
+      ],
+      "heading": 180,
+      "pitch": 52
+     },
+     "target": [
+      1778,
+      573,
+      -114
+     ],
+     "score": {
+      "score": 1.7979,
+      "rails": 0.5281,
+      "interest": 0.8166,
+      "spread": 1,
+      "depth": 0.7672,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0.3627,
+      "blocked": false
+     },
+     "ground": 525
+    },
+    {
+     "id": 6,
+     "pose": {
+      "pos": [
+       907,
+       1310,
+       1465
+      ],
+      "heading": 90,
+      "pitch": 52
+     },
+     "target": [
+      1936,
+      -7,
+      1465
+     ],
+     "score": {
+      "score": 1.7708,
+      "rails": 0.8373,
+      "interest": 0.397,
+      "spread": 0.9167,
+      "depth": 0.2458,
+      "sky": 0,
+      "void": 0.0787,
+      "back": 0.0008,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": 29
+    },
+    {
+     "id": 7,
+     "pose": {
+      "pos": [
+       -2582,
+       1878,
+       2667
+      ],
+      "heading": 135,
+      "pitch": 52
+     },
+     "target": [
+      -1854,
+      561,
+      1939
+     ],
+     "score": {
+      "score": 1.6914,
+      "rails": 1,
+      "interest": 0.3287,
+      "spread": 1,
+      "depth": 0.3901,
+      "sky": 0,
+      "void": 0.061,
+      "back": 0.0957,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": 97
+    },
+    {
+     "id": 100,
+     "pose": {
+      "pos": [
+       114,
+       2267,
+       -3810
+      ],
+      "heading": 0,
+      "pitch": 45
+     },
+     "target": [
+      114,
+      317,
+      -1860
+     ],
+     "score": {
+      "score": 0.5453,
+      "interest": 0.3082,
+      "spread": 1,
+      "depth": 0.2885,
+      "sky": 0,
+      "void": 0.1644,
+      "back": 0.0401,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 101,
+     "pose": {
+      "pos": [
+       4188,
+       2165,
+       264
+      ],
+      "heading": 270,
+      "pitch": 45
+     },
+     "target": [
+      2238,
+      215,
+      264
+     ],
+     "score": {
+      "score": 0.0096,
+      "interest": 0.2811,
+      "spread": 0.75,
+      "depth": 0.3127,
+      "sky": 0,
+      "void": 0.2616,
+      "back": 0.0201,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 102,
+     "pose": {
+      "pos": [
+       -1265,
+       2267,
+       -481
+      ],
+      "heading": 135,
+      "pitch": 45
+     },
+     "target": [
+      114,
+      317,
+      -1860
+     ],
+     "score": {
+      "score": -0.2583,
+      "interest": 0.2776,
+      "spread": 0.75,
+      "depth": 0.1881,
+      "sky": 0,
+      "void": 0.3295,
+      "back": 0.0008,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": 144
+    },
+    {
+     "id": 103,
+     "pose": {
+      "pos": [
+       -3657,
+       2507,
+       1781
+      ],
+      "heading": 90,
+      "pitch": 45
+     },
+     "target": [
+      -1707,
+      557,
+      1781
+     ],
+     "score": {
+      "score": -0.2728,
+      "interest": 0.2504,
+      "spread": 0.75,
+      "depth": 0.3349,
+      "sky": 0,
+      "void": 0.3079,
+      "back": 0.037,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 104,
+     "pose": {
+      "pos": [
+       1493,
+       2267,
+       -481
+      ],
+      "heading": 225,
+      "pitch": 45
+     },
+     "target": [
+      114,
+      317,
+      -1860
+     ],
+     "score": {
+      "score": -0.29,
+      "interest": 0.2634,
+      "spread": 0.75,
+      "depth": 0.1976,
+      "sky": 0,
+      "void": 0.331,
+      "back": 0.0008,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": 45
+    },
+    {
+     "id": 105,
+     "pose": {
+      "pos": [
+       -1707,
+       2507,
+       3731
+      ],
+      "heading": 180,
+      "pitch": 45
+     },
+     "target": [
+      -1707,
+      557,
+      1781
+     ],
+     "score": {
+      "score": -0.3292,
+      "interest": 0.2644,
+      "spread": 0.6667,
+      "depth": 0.3363,
+      "sky": 0,
+      "void": 0.3079,
+      "back": 0.0509,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    }
+   ],
+   "chosen": 100,
+   "why": "the overview: the cul-de-sac, the houses, the bowls and the ramps (first round, before the play area)"
+  },
+  "thps3_ap": {
+   "candidates": [
+    {
+     "id": 0,
+     "pose": {
+      "pos": [
+       -1284,
+       -462,
+       2303
+      ],
+      "heading": 0,
+      "pitch": 32
+     },
+     "target": [
+      -1284,
+      -541,
+      2430
+     ],
+     "score": {
+      "score": 2.0204,
+      "rails": 0.903,
+      "interest": 0.2833,
+      "spread": 1,
+      "depth": 0.4842,
+      "sky": 0,
+      "void": 0.0015,
+      "back": 0.0031,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -1046
+    },
+    {
+     "id": 1,
+     "pose": {
+      "pos": [
+       3815,
+       112,
+       -171
+      ],
+      "heading": 180,
+      "pitch": 32
+     },
+     "target": [
+      3815,
+      -290,
+      -815
+     ],
+     "score": {
+      "score": 1.6353,
+      "rails": 0.4178,
+      "interest": 0.3449,
+      "spread": 1,
+      "depth": 0.4552,
+      "sky": 0,
+      "void": 0.0015,
+      "back": 0.0208,
+      "near": 0.0224,
+      "blocked": false
+     },
+     "ground": -532
+    },
+    {
+     "id": 2,
+     "pose": {
+      "pos": [
+       -1194,
+       -462,
+       2520
+      ],
+      "heading": 225,
+      "pitch": 32
+     },
+     "target": [
+      -1284,
+      -541,
+      2430
+     ],
+     "score": {
+      "score": 1.63,
+      "rails": 0.4234,
+      "interest": 0.323,
+      "spread": 1,
+      "depth": 0.3526,
+      "sky": 0,
+      "void": 0.0069,
+      "back": 0.0131,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -1046
+    },
+    {
+     "id": 3,
+     "pose": {
+      "pos": [
+       3815,
+       112,
+       -1459
+      ],
+      "heading": 0,
+      "pitch": 32
+     },
+     "target": [
+      3815,
+      -290,
+      -815
+     ],
+     "score": {
+      "score": 1.6039,
+      "rails": 0.3617,
+      "interest": 0.3418,
+      "spread": 1,
+      "depth": 0.4848,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0162,
+      "near": 0.0247,
+      "blocked": false
+     },
+     "ground": -532
+    },
+    {
+     "id": 4,
+     "pose": {
+      "pos": [
+       -1433,
+       -407,
+       2430
+      ],
+      "heading": 90,
+      "pitch": 42
+     },
+     "target": [
+      -1284,
+      -541,
+      2430
+     ],
+     "score": {
+      "score": 1.3934,
+      "rails": 0.2215,
+      "interest": 0.2789,
+      "spread": 1,
+      "depth": 0.2524,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0069,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -1046
+    },
+    {
+     "id": 5,
+     "pose": {
+      "pos": [
+       4129,
+       112,
+       -815
+      ],
+      "heading": 270,
+      "pitch": 52
+     },
+     "target": [
+      3815,
+      -290,
+      -815
+     ],
+     "score": {
+      "score": 1.2897,
+      "rails": 0.0393,
+      "interest": 0.3508,
+      "spread": 1,
+      "depth": 0.1879,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0139,
+      "near": 0.0216,
+      "blocked": false
+     },
+     "ground": -532
+    },
+    {
+     "id": 100,
+     "pose": {
+      "pos": [
+       4378,
+       4771,
+       -14301
+      ],
+      "heading": 180,
+      "pitch": 45
+     },
+     "target": [
+      4378,
+      423,
+      -18649
+     ],
+     "score": {
+      "score": 0.2141,
+      "interest": 0.2458,
+      "spread": 0.6667,
+      "depth": 0.211,
+      "sky": 0,
+      "void": 0.1852,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 101,
+     "pose": {
+      "pos": [
+       4378,
+       4771,
+       -22997
+      ],
+      "heading": 0,
+      "pitch": 45
+     },
+     "target": [
+      4378,
+      423,
+      -18649
+     ],
+     "score": {
+      "score": -0.7779,
+      "interest": 0.152,
+      "spread": 0.6667,
+      "depth": 0.2068,
+      "sky": 0,
+      "void": 0.2924,
+      "back": 0.1497,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 102,
+     "pose": {
+      "pos": [
+       8726,
+       4771,
+       -18649
+      ],
+      "heading": 270,
+      "pitch": 45
+     },
+     "target": [
+      4378,
+      423,
+      -18649
+     ],
+     "score": {
+      "score": -1.0358,
+      "interest": 0.1604,
+      "spread": 0.5,
+      "depth": 0.2954,
+      "sky": 0,
+      "void": 0.4306,
+      "back": 0.0093,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -32
+    },
+    {
+     "id": 103,
+     "pose": {
+      "pos": [
+       -6358,
+       4491,
+       -17819
+      ],
+      "heading": 135,
+      "pitch": 37
+     },
+     "target": [
+      -2886,
+      790,
+      -21291
+     ],
+     "score": {
+      "score": -1.0386,
+      "interest": 0.1514,
+      "spread": 0.5,
+      "depth": 0.3206,
+      "sky": 0,
+      "void": 0.4344,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -34
+    },
+    {
+     "id": 104,
+     "pose": {
+      "pos": [
+       30,
+       4771,
+       -18649
+      ],
+      "heading": 90,
+      "pitch": 45
+     },
+     "target": [
+      4378,
+      423,
+      -18649
+     ],
+     "score": {
+      "score": -1.053,
+      "interest": 0.1626,
+      "spread": 0.5,
+      "depth": 0.279,
+      "sky": 0,
+      "void": 0.4352,
+      "back": 0.0085,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -26
+    },
+    {
+     "id": 105,
+     "pose": {
+      "pos": [
+       14717,
+       4730,
+       -18217
+      ],
+      "heading": 225,
+      "pitch": 45
+     },
+     "target": [
+      11643,
+      382,
+      -21291
+     ],
+     "score": {
+      "score": -1.3861,
+      "interest": 0.1355,
+      "spread": 0.4167,
+      "depth": 0.3198,
+      "sky": 0,
+      "void": 0.5008,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    }
+   ],
+   "chosen": 1,
+   "why": "inside the terminal: the escalators and the TO THE ISLANDS sign (the roof shuts the rest; weak)"
+  },
+  "si": {
+   "candidates": [
+    {
+     "id": 0,
+     "pose": {
+      "pos": [
+       -2098,
+       328,
+       100
+      ],
+      "heading": 0,
+      "pitch": 52
+     },
+     "target": [
+      -2098,
+      -60,
+      403
+     ],
+     "score": {
+      "score": 1.787,
+      "rails": 0.0809,
+      "interest": 0.5365,
+      "spread": 1,
+      "depth": 0.1773,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0015,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -107
+    },
+    {
+     "id": 1,
+     "pose": {
+      "pos": [
+       -3484,
+       718,
+       3576
+      ],
+      "heading": 135,
+      "pitch": 32
+     },
+     "target": [
+      -2545,
+      -112,
+      2637
+     ],
+     "score": {
+      "score": 1.7486,
+      "rails": 0.6351,
+      "interest": 0.3484,
+      "spread": 1,
+      "depth": 0.5889,
+      "sky": 0,
+      "void": 0.0563,
+      "back": 0.0031,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 2,
+     "pose": {
+      "pos": [
+       -1476,
+       328,
+       403
+      ],
+      "heading": 270,
+      "pitch": 32
+     },
+     "target": [
+      -2098,
+      -60,
+      403
+     ],
+     "score": {
+      "score": 1.7055,
+      "rails": 0.1993,
+      "interest": 0.4234,
+      "spread": 1,
+      "depth": 0.3566,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0031,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -107
+    },
+    {
+     "id": 3,
+     "pose": {
+      "pos": [
+       -1548,
+       881,
+       1789
+      ],
+      "heading": 135,
+      "pitch": 32
+     },
+     "target": [
+      -609,
+      51,
+      850
+     ],
+     "score": {
+      "score": 1.4752,
+      "rails": 0.1619,
+      "interest": 0.3501,
+      "spread": 1,
+      "depth": 0.2675,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0139,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -223
+    },
+    {
+     "id": 4,
+     "pose": {
+      "pos": [
+       330,
+       881,
+       1789
+      ],
+      "heading": 225,
+      "pitch": 32
+     },
+     "target": [
+      -609,
+      51,
+      850
+     ],
+     "score": {
+      "score": 1.4633,
+      "rails": 0.1681,
+      "interest": 0.3392,
+      "spread": 1,
+      "depth": 0.3222,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0185,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -238
+    },
+    {
+     "id": 5,
+     "pose": {
+      "pos": [
+       -1606,
+       718,
+       3576
+      ],
+      "heading": 225,
+      "pitch": 32
+     },
+     "target": [
+      -2545,
+      -112,
+      2637
+     ],
+     "score": {
+      "score": 1.0939,
+      "rails": 0.1432,
+      "interest": 0.4099,
+      "spread": 0.8333,
+      "depth": 0.4829,
+      "sky": 0,
+      "void": 0.1204,
+      "back": 0.0015,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": 8
+    },
+    {
+     "id": 6,
+     "pose": {
+      "pos": [
+       -2098,
+       587,
+       1439
+      ],
+      "heading": 180,
+      "pitch": 32
+     },
+     "target": [
+      -2098,
+      -60,
+      403
+     ],
+     "score": {
+      "score": 1.0643,
+      "rails": 0.0125,
+      "interest": 0.6908,
+      "spread": 1,
+      "depth": 0.2747,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0039,
+      "near": 0,
+      "blocked": true
+     },
+     "ground": -201
+    },
+    {
+     "id": 7,
+     "pose": {
+      "pos": [
+       -2545,
+       936,
+       1473
+      ],
+      "heading": 0,
+      "pitch": 42
+     },
+     "target": [
+      -2545,
+      -112,
+      2637
+     ],
+     "score": {
+      "score": 1.0361,
+      "rails": 0.5355,
+      "interest": 0.3151,
+      "spread": 0.75,
+      "depth": 0.5288,
+      "sky": 0,
+      "void": 0.1559,
+      "back": 0.0031,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": 14
+    },
+    {
+     "id": 100,
+     "pose": {
+      "pos": [
+       -2129,
+       1600,
+       3005
+      ],
+      "heading": 180,
+      "pitch": 37
+     },
+     "target": [
+      -2129,
+      110,
+      1027
+     ],
+     "score": {
+      "score": 0.9166,
+      "interest": 0.328,
+      "spread": 0.8333,
+      "depth": 0.2928,
+      "sky": 0,
+      "void": 0.0085,
+      "back": 0.1173,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -463
+    },
+    {
+     "id": 101,
+     "pose": {
+      "pos": [
+       550,
+       3363,
+       4512
+      ],
+      "heading": 180,
+      "pitch": 30
+     },
+     "target": [
+      550,
+      1351,
+      1027
+     ],
+     "score": {
+      "score": 0.2739,
+      "interest": 0.2185,
+      "spread": 0.75,
+      "depth": 0.3842,
+      "sky": 0,
+      "void": 0.1551,
+      "back": 0.0432,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 102,
+     "pose": {
+      "pos": [
+       -3527,
+       1571,
+       5105
+      ],
+      "heading": 135,
+      "pitch": 37
+     },
+     "target": [
+      -2129,
+      81,
+      3707
+     ],
+     "score": {
+      "score": -0.367,
+      "interest": 0.3011,
+      "spread": 0.75,
+      "depth": 0.3789,
+      "sky": 0,
+      "void": 0.375,
+      "back": 0.0131,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 103,
+     "pose": {
+      "pos": [
+       -731,
+       1571,
+       2309
+      ],
+      "heading": 315,
+      "pitch": 37
+     },
+     "target": [
+      -2129,
+      81,
+      3707
+     ],
+     "score": {
+      "score": -0.4437,
+      "interest": 0.3075,
+      "spread": 0.6667,
+      "depth": 0.1224,
+      "sky": 0,
+      "void": 0.3719,
+      "back": 0.0031,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -278
+    },
+    {
+     "id": 104,
+     "pose": {
+      "pos": [
+       1622,
+       3857,
+       3560
+      ],
+      "heading": 180,
+      "pitch": 37
+     },
+     "target": [
+      1622,
+      132,
+      -1384
+     ],
+     "score": {
+      "score": -0.5157,
+      "interest": 0.2141,
+      "spread": 0.8333,
+      "depth": 0.831,
+      "sky": 0,
+      "void": 0.1265,
+      "back": 0.0748,
+      "near": 0,
+      "blocked": true
+     },
+     "ground": null
+    },
+    {
+     "id": 105,
+     "pose": {
+      "pos": [
+       15,
+       1348,
+       1027
+      ],
+      "heading": 270,
+      "pitch": 30
+     },
+     "target": [
+      -2129,
+      110,
+      1027
+     ],
+     "score": {
+      "score": -0.5276,
+      "interest": 0.22,
+      "spread": 0.5833,
+      "depth": 0.3509,
+      "sky": 0,
+      "void": 0.1937,
+      "back": 0.2593,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -159
+    }
+   ],
+   "chosen": 1,
+   "why": "the fort wall's quarter pipes, the pirate ship and the water"
+  },
+  "thps3_la": {
+   "candidates": [
+    {
+     "id": 0,
+     "pose": {
+      "pos": [
+       -786,
+       1240,
+       10
+      ],
+      "heading": 45,
+      "pitch": 52
+     },
+     "target": [
+      -8,
+      -168,
+      788
+     ],
+     "score": {
+      "score": 2.1286,
+      "rails": 1,
+      "interest": 0.303,
+      "spread": 1,
+      "depth": 0.4926,
+      "sky": 0,
+      "void": 0,
+      "back": 0.01,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -66
+    },
+    {
+     "id": 1,
+     "pose": {
+      "pos": [
+       580,
+       1594,
+       1486
+      ],
+      "heading": 270,
+      "pitch": 42
+     },
+     "target": [
+      -1578,
+      -349,
+      1486
+     ],
+     "score": {
+      "score": 2.1016,
+      "rails": 1,
+      "interest": 0.291,
+      "spread": 1,
+      "depth": 0.4719,
+      "sky": 0,
+      "void": 0.0031,
+      "back": 0.0039,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -262
+    },
+    {
+     "id": 2,
+     "pose": {
+      "pos": [
+       931,
+       1028,
+       -151
+      ],
+      "heading": 315,
+      "pitch": 42
+     },
+     "target": [
+      -8,
+      -168,
+      788
+     ],
+     "score": {
+      "score": 2.0995,
+      "rails": 1,
+      "interest": 0.3135,
+      "spread": 1,
+      "depth": 0.2931,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0062,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -66
+    },
+    {
+     "id": 3,
+     "pose": {
+      "pos": [
+       918,
+       1458,
+       2534
+      ],
+      "heading": 270,
+      "pitch": 52
+     },
+     "target": [
+      -182,
+      50,
+      2534
+     ],
+     "score": {
+      "score": 2.0967,
+      "rails": 1,
+      "interest": 0.2991,
+      "spread": 1,
+      "depth": 0.4244,
+      "sky": 0,
+      "void": 0.0039,
+      "back": 0.0054,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -181
+    },
+    {
+     "id": 4,
+     "pose": {
+      "pos": [
+       -2650,
+       598,
+       414
+      ],
+      "heading": 45,
+      "pitch": 32
+     },
+     "target": [
+      -1578,
+      -349,
+      1486
+     ],
+     "score": {
+      "score": 2.0642,
+      "rails": 1,
+      "interest": 0.2509,
+      "spread": 1,
+      "depth": 0.6478,
+      "sky": 0,
+      "void": 0.0046,
+      "back": 0.0054,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -418
+    },
+    {
+     "id": 5,
+     "pose": {
+      "pos": [
+       -947,
+       1028,
+       1727
+      ],
+      "heading": 135,
+      "pitch": 42
+     },
+     "target": [
+      -8,
+      -168,
+      788
+     ],
+     "score": {
+      "score": 2.0593,
+      "rails": 0.9515,
+      "interest": 0.2926,
+      "spread": 1,
+      "depth": 0.4603,
+      "sky": 0,
+      "void": 0,
+      "back": 0.01,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -258
+    },
+    {
+     "id": 6,
+     "pose": {
+      "pos": [
+       -2182,
+       1563,
+       5580
+      ],
+      "heading": 135,
+      "pitch": 52
+     },
+     "target": [
+      -1404,
+      155,
+      4802
+     ],
+     "score": {
+      "score": 2.056,
+      "rails": 1,
+      "interest": 0.2844,
+      "spread": 1,
+      "depth": 0.3265,
+      "sky": 0,
+      "void": 0.0008,
+      "back": 0.0031,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -420
+    },
+    {
+     "id": 7,
+     "pose": {
+      "pos": [
+       -626,
+       1563,
+       5580
+      ],
+      "heading": 225,
+      "pitch": 52
+     },
+     "target": [
+      -1404,
+      155,
+      4802
+     ],
+     "score": {
+      "score": 2.005,
+      "rails": 1,
+      "interest": 0.2783,
+      "spread": 1,
+      "depth": 0.3295,
+      "sky": 0,
+      "void": 0.0093,
+      "back": 0.0054,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -363
+    },
+    {
+     "id": 100,
+     "pose": {
+      "pos": [
+       -1961,
+       940,
+       5051
+      ],
+      "heading": 90,
+      "pitch": 30
+     },
+     "target": [
+      320,
+      -377,
+      5051
+     ],
+     "score": {
+      "score": 1.3343,
+      "interest": 0.3073,
+      "spread": 1,
+      "depth": 0.466,
+      "sky": 0,
+      "void": 0.0031,
+      "back": 0.0031,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": 197
+    },
+    {
+     "id": 101,
+     "pose": {
+      "pos": [
+       320,
+       1486,
+       6914
+      ],
+      "heading": 180,
+      "pitch": 45
+     },
+     "target": [
+      320,
+      -377,
+      5051
+     ],
+     "score": {
+      "score": 1.2613,
+      "interest": 0.2935,
+      "spread": 1,
+      "depth": 0.312,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0077,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -32
+    },
+    {
+     "id": 102,
+     "pose": {
+      "pos": [
+       -3445,
+       2297,
+       2016
+      ],
+      "heading": 135,
+      "pitch": 45
+     },
+     "target": [
+      -2128,
+      434,
+      699
+     ],
+     "score": {
+      "score": 1.24,
+      "interest": 0.2482,
+      "spread": 0.9167,
+      "depth": 1.0012,
+      "sky": 0,
+      "void": 0.0015,
+      "back": 0.0401,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -416
+    },
+    {
+     "id": 103,
+     "pose": {
+      "pos": [
+       1911,
+       2300,
+       2331
+      ],
+      "heading": 270,
+      "pitch": 45
+     },
+     "target": [
+      48,
+      437,
+      2331
+     ],
+     "score": {
+      "score": 1.2162,
+      "interest": 0.2877,
+      "spread": 1,
+      "depth": 0.3286,
+      "sky": 0,
+      "void": 0.0077,
+      "back": 0.0108,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -210
+    },
+    {
+     "id": 104,
+     "pose": {
+      "pos": [
+       -5077,
+       1990,
+       3734
+      ],
+      "heading": 45,
+      "pitch": 45
+     },
+     "target": [
+      -3760,
+      127,
+      5051
+     ],
+     "score": {
+      "score": 1.1784,
+      "interest": 0.2663,
+      "spread": 1,
+      "depth": 0.5527,
+      "sky": 0,
+      "void": 0.0285,
+      "back": 0.0023,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -209
+    },
+    {
+     "id": 105,
+     "pose": {
+      "pos": [
+       -3257,
+       1564,
+       2331
+      ],
+      "heading": 270,
+      "pitch": 45
+     },
+     "target": [
+      -5120,
+      -299,
+      2331
+     ],
+     "score": {
+      "score": 1.1022,
+      "interest": 0.2593,
+      "spread": 1,
+      "depth": 0.4121,
+      "sky": 0,
+      "void": 0.0278,
+      "back": 0.0116,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -415
+    }
+   ],
+   "chosen": 6,
+   "why": "the freeway overpass over the street with the plazas - LA's landmark"
+  },
+  "tok": {
+   "candidates": [
+    {
+     "id": 0,
+     "pose": {
+      "pos": [
+       1204,
+       1998,
+       3789
+      ],
+      "heading": 270,
+      "pitch": 52
+     },
+     "target": [
+      -54,
+      388,
+      3789
+     ],
+     "score": {
+      "score": 2.2944,
+      "rails": 0.9506,
+      "interest": 0.4319,
+      "spread": 1,
+      "depth": 0.3053,
+      "sky": 0,
+      "void": 0.0054,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": 1320
+    },
+    {
+     "id": 1,
+     "pose": {
+      "pos": [
+       -1312,
+       1998,
+       3789
+      ],
+      "heading": 90,
+      "pitch": 52
+     },
+     "target": [
+      -54,
+      388,
+      3789
+     ],
+     "score": {
+      "score": 2.2728,
+      "rails": 0.9466,
+      "interest": 0.4295,
+      "spread": 1,
+      "depth": 0.2809,
+      "sky": 0,
+      "void": 0.0069,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": 0
+    },
+    {
+     "id": 2,
+     "pose": {
+      "pos": [
+       -1127,
+       1436,
+       -164
+      ],
+      "heading": 45,
+      "pitch": 42
+     },
+     "target": [
+      -54,
+      69,
+      909
+     ],
+     "score": {
+      "score": 2.2063,
+      "rails": 1,
+      "interest": 0.3554,
+      "spread": 1,
+      "depth": 0.516,
+      "sky": 0,
+      "void": 0.0139,
+      "back": 0.0015,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": 180
+    },
+    {
+     "id": 3,
+     "pose": {
+      "pos": [
+       835,
+       1679,
+       20
+      ],
+      "heading": 315,
+      "pitch": 52
+     },
+     "target": [
+      -54,
+      69,
+      909
+     ],
+     "score": {
+      "score": 2.1813,
+      "rails": 1,
+      "interest": 0.373,
+      "spread": 1,
+      "depth": 0.3028,
+      "sky": 0,
+      "void": 0.0139,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": 0
+    },
+    {
+     "id": 4,
+     "pose": {
+      "pos": [
+       -54,
+       1998,
+       5047
+      ],
+      "heading": 180,
+      "pitch": 52
+     },
+     "target": [
+      -54,
+      388,
+      3789
+     ],
+     "score": {
+      "score": 2.1522,
+      "rails": 1,
+      "interest": 0.3459,
+      "spread": 1,
+      "depth": 0.2081,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0008,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": 131
+    },
+    {
+     "id": 5,
+     "pose": {
+      "pos": [
+       -54,
+       1679,
+       2167
+      ],
+      "heading": 180,
+      "pitch": 52
+     },
+     "target": [
+      -54,
+      69,
+      909
+     ],
+     "score": {
+      "score": 2.0912,
+      "rails": 1,
+      "interest": 0.3631,
+      "spread": 1,
+      "depth": 0.1715,
+      "sky": 0,
+      "void": 0.0216,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": 240
+    },
+    {
+     "id": 6,
+     "pose": {
+      "pos": [
+       2850,
+       2940,
+       2555
+      ],
+      "heading": 270,
+      "pitch": 52
+     },
+     "target": [
+      1592,
+      1330,
+      2555
+     ],
+     "score": {
+      "score": 1.7412,
+      "rails": 1,
+      "interest": 0.2543,
+      "spread": 1,
+      "depth": 0.4073,
+      "sky": 0,
+      "void": 0.0671,
+      "back": 0.0085,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 7,
+     "pose": {
+      "pos": [
+       1592,
+       2940,
+       3813
+      ],
+      "heading": 180,
+      "pitch": 52
+     },
+     "target": [
+      1592,
+      1330,
+      2555
+     ],
+     "score": {
+      "score": 1.3746,
+      "rails": 1,
+      "interest": 0.2809,
+      "spread": 0.9167,
+      "depth": 0.3417,
+      "sky": 0,
+      "void": 0.1551,
+      "back": 0.0077,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": 1320
+    },
+    {
+     "id": 100,
+     "pose": {
+      "pos": [
+       1771,
+       1932,
+       2893
+      ],
+      "heading": 270,
+      "pitch": 45
+     },
+     "target": [
+      58,
+      219,
+      2893
+     ],
+     "score": {
+      "score": 1.5131,
+      "interest": 0.3601,
+      "spread": 1,
+      "depth": 0.7075,
+      "sky": 0,
+      "void": 0.0039,
+      "back": 0.0015,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 101,
+     "pose": {
+      "pos": [
+       -1655,
+       1932,
+       2893
+      ],
+      "heading": 90,
+      "pitch": 45
+     },
+     "target": [
+      58,
+      219,
+      2893
+     ],
+     "score": {
+      "score": 1.4738,
+      "interest": 0.394,
+      "spread": 1,
+      "depth": 0.3682,
+      "sky": 0,
+      "void": 0.0062,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": 1440
+    },
+    {
+     "id": 102,
+     "pose": {
+      "pos": [
+       58,
+       1932,
+       1180
+      ],
+      "heading": 0,
+      "pitch": 45
+     },
+     "target": [
+      58,
+      219,
+      2893
+     ],
+     "score": {
+      "score": 1.394,
+      "interest": 0.3668,
+      "spread": 1,
+      "depth": 0.2708,
+      "sky": 0,
+      "void": 0.0023,
+      "back": 0.0046,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": 159
+    },
+    {
+     "id": 103,
+     "pose": {
+      "pos": [
+       58,
+       1431,
+       4992
+      ],
+      "heading": 180,
+      "pitch": 30
+     },
+     "target": [
+      58,
+      219,
+      2893
+     ],
+     "score": {
+      "score": 1.3466,
+      "interest": 0.344,
+      "spread": 1,
+      "depth": 0.3146,
+      "sky": 0,
+      "void": 0.0085,
+      "back": 0.0008,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": 135
+    },
+    {
+     "id": 104,
+     "pose": {
+      "pos": [
+       2522,
+       2708,
+       2007
+      ],
+      "heading": 225,
+      "pitch": 37
+     },
+     "target": [
+      298,
+      338,
+      -217
+     ],
+     "score": {
+      "score": 0.6339,
+      "interest": 0.2304,
+      "spread": 0.8333,
+      "depth": 0.6064,
+      "sky": 0,
+      "void": 0.1258,
+      "back": 0.0023,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 105,
+     "pose": {
+      "pos": [
+       -9,
+       2075,
+       6175
+      ],
+      "heading": 225,
+      "pitch": 37
+     },
+     "target": [
+      -1377,
+      617,
+      4807
+     ],
+     "score": {
+      "score": 0.4682,
+      "interest": 0.2748,
+      "spread": 0.8333,
+      "depth": 0.3833,
+      "sky": 0,
+      "void": 0.1736,
+      "back": 0.0008,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": 77
+    }
+   ],
+   "chosen": 5,
+   "why": "the neon signs round the central funboxes"
+  },
+  "shp": {
+   "candidates": [
+    {
+     "id": 0,
+     "pose": {
+      "pos": [
+       -1650,
+       1095,
+       1926
+      ],
+      "heading": 90,
+      "pitch": 52
+     },
+     "target": [
+      -500,
+      -376,
+      1926
+     ],
+     "score": {
+      "score": 1.9306,
+      "rails": 0.9799,
+      "interest": 0.3213,
+      "spread": 1,
+      "depth": 0.1924,
+      "sky": 0,
+      "void": 0.0046,
+      "back": 0.054,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -1036
+    },
+    {
+     "id": 1,
+     "pose": {
+      "pos": [
+       3582,
+       502,
+       580
+      ],
+      "heading": 270,
+      "pitch": 42
+     },
+     "target": [
+      2194,
+      -747,
+      580
+     ],
+     "score": {
+      "score": 1.8591,
+      "rails": 0.9972,
+      "interest": 0.2613,
+      "spread": 1,
+      "depth": 0.2703,
+      "sky": 0,
+      "void": 0.0177,
+      "back": 0.0285,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -2823
+    },
+    {
+     "id": 2,
+     "pose": {
+      "pos": [
+       2950,
+       269,
+       4254
+      ],
+      "heading": 225,
+      "pitch": 42
+     },
+     "target": [
+      1969,
+      -980,
+      3273
+     ],
+     "score": {
+      "score": 1.7234,
+      "rails": 0.8968,
+      "interest": 0.2452,
+      "spread": 0.8333,
+      "depth": 0.4772,
+      "sky": 0,
+      "void": 0.0054,
+      "back": 0.0424,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -2823
+    },
+    {
+     "id": 3,
+     "pose": {
+      "pos": [
+       772,
+       -411,
+       5069
+      ],
+      "heading": 270,
+      "pitch": 42
+     },
+     "target": [
+      623,
+      -545,
+      5069
+     ],
+     "score": {
+      "score": 1.7009,
+      "rails": 0.2216,
+      "interest": 0.4695,
+      "spread": 1,
+      "depth": 0.4567,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0147,
+      "near": 0.0386,
+      "blocked": false
+     },
+     "ground": -713
+    },
+    {
+     "id": 4,
+     "pose": {
+      "pos": [
+       2782,
+       491,
+       2460
+      ],
+      "heading": 315,
+      "pitch": 52
+     },
+     "target": [
+      1969,
+      -980,
+      3273
+     ],
+     "score": {
+      "score": 1.6939,
+      "rails": 1,
+      "interest": 0.2484,
+      "spread": 0.75,
+      "depth": 0.4667,
+      "sky": 0,
+      "void": 0.0193,
+      "back": 0.0463,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -2823
+    },
+    {
+     "id": 5,
+     "pose": {
+      "pos": [
+       623,
+       926,
+       6219
+      ],
+      "heading": 180,
+      "pitch": 52
+     },
+     "target": [
+      623,
+      -545,
+      5069
+     ],
+     "score": {
+      "score": 1.5369,
+      "rails": 1,
+      "interest": 0.2685,
+      "spread": 0.75,
+      "depth": 0.4625,
+      "sky": 0,
+      "void": 0.0625,
+      "back": 0.0556,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -974
+    },
+    {
+     "id": 6,
+     "pose": {
+      "pos": [
+       -639,
+       1143,
+       -1131
+      ],
+      "heading": 45,
+      "pitch": 52
+     },
+     "target": [
+      174,
+      -328,
+      -318
+     ],
+     "score": {
+      "score": 1.5163,
+      "rails": 1,
+      "interest": 0.2798,
+      "spread": 0.9167,
+      "depth": 0.3888,
+      "sky": 0,
+      "void": 0.1034,
+      "back": 0.0386,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -974
+    },
+    {
+     "id": 7,
+     "pose": {
+      "pos": [
+       398,
+       799,
+       -4161
+      ],
+      "heading": 0,
+      "pitch": 52
+     },
+     "target": [
+      398,
+      -672,
+      -3011
+     ],
+     "score": {
+      "score": 1.3875,
+      "rails": 1,
+      "interest": 0.2011,
+      "spread": 0.5,
+      "depth": 0.4422,
+      "sky": 0,
+      "void": 0.0517,
+      "back": 0.0162,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -2823
+    },
+    {
+     "id": 100,
+     "pose": {
+      "pos": [
+       6877,
+       202,
+       -3190
+      ],
+      "heading": 270,
+      "pitch": 45
+     },
+     "target": [
+      4550,
+      -2125,
+      -3190
+     ],
+     "score": {
+      "score": 0.2879,
+      "interest": 0.1969,
+      "spread": 0.8333,
+      "depth": 0.2775,
+      "sky": 0,
+      "void": 0.1713,
+      "back": 0.0015,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 101,
+     "pose": {
+      "pos": [
+       -1521,
+       1488,
+       -5573
+      ],
+      "heading": 45,
+      "pitch": 45
+     },
+     "target": [
+      124,
+      -839,
+      -3928
+     ],
+     "score": {
+      "score": 0.2811,
+      "interest": 0.2079,
+      "spread": 0.8333,
+      "depth": 0.2275,
+      "sky": 0,
+      "void": 0.169,
+      "back": 0.0108,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -2823
+    },
+    {
+     "id": 102,
+     "pose": {
+      "pos": [
+       2875,
+       1875,
+       -1884
+      ],
+      "heading": 315,
+      "pitch": 45
+     },
+     "target": [
+      1230,
+      -452,
+      -239
+     ],
+     "score": {
+      "score": 0.1661,
+      "interest": 0.2482,
+      "spread": 0.75,
+      "depth": 0.3619,
+      "sky": 0,
+      "void": 0.2029,
+      "back": 0.0309,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -2823
+    },
+    {
+     "id": 103,
+     "pose": {
+      "pos": [
+       1769,
+       1488,
+       -5573
+      ],
+      "heading": 315,
+      "pitch": 45
+     },
+     "target": [
+      124,
+      -839,
+      -3928
+     ],
+     "score": {
+      "score": 0.1532,
+      "interest": 0.2168,
+      "spread": 0.75,
+      "depth": 0.2223,
+      "sky": 0,
+      "void": 0.1944,
+      "back": 0.0077,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -2823
+    },
+    {
+     "id": 104,
+     "pose": {
+      "pos": [
+       2507,
+       1964,
+       5464
+      ],
+      "heading": 225,
+      "pitch": 45
+     },
+     "target": [
+      862,
+      -363,
+      3819
+     ],
+     "score": {
+      "score": 0.1353,
+      "interest": 0.2369,
+      "spread": 0.8333,
+      "depth": 0.3751,
+      "sky": 0,
+      "void": 0.216,
+      "back": 0.0347,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -2823
+    },
+    {
+     "id": 105,
+     "pose": {
+      "pos": [
+       -6261,
+       330,
+       5295
+      ],
+      "heading": 90,
+      "pitch": 45
+     },
+     "target": [
+      -3934,
+      -1997,
+      5295
+     ],
+     "score": {
+      "score": -0.0254,
+      "interest": 0.1765,
+      "spread": 0.5833,
+      "depth": 0.256,
+      "sky": 0,
+      "void": 0.1998,
+      "back": 0.0023,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    }
+   ],
+   "chosen": 0,
+   "why": "the top deck: the pool, the water slide and the helipad over the sea"
+  },
+  "ware": {
+   "candidates": [
+    {
+     "id": 0,
+     "pose": {
+      "pos": [
+       -812,
+       -562,
+       -3979
+      ],
+      "heading": 90,
+      "pitch": 32
+     },
+     "target": [
+      -642,
+      -668,
+      -3979
+     ],
+     "score": {
+      "score": 3.0423,
+      "rails": 1,
+      "interest": 0.7592,
+      "spread": 1,
+      "depth": 0.6805,
+      "sky": 0,
+      "void": 0.0201,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -747
+    },
+    {
+     "id": 1,
+     "pose": {
+      "pos": [
+       1056,
+       -88,
+       -1757
+      ],
+      "heading": 180,
+      "pitch": 32
+     },
+     "target": [
+      1056,
+      -828,
+      -2942
+     ],
+     "score": {
+      "score": 2.3697,
+      "rails": 1,
+      "interest": 0.3878,
+      "spread": 1,
+      "depth": 0.6883,
+      "sky": 0,
+      "void": 0.0031,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 2,
+     "pose": {
+      "pos": [
+       322,
+       107,
+       -3676
+      ],
+      "heading": 45,
+      "pitch": 42
+     },
+     "target": [
+      1056,
+      -828,
+      -2942
+     ],
+     "score": {
+      "score": 2.2506,
+      "rails": 1,
+      "interest": 0.411,
+      "spread": 1,
+      "depth": 0.2397,
+      "sky": 0,
+      "void": 0.0108,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -765
+    },
+    {
+     "id": 3,
+     "pose": {
+      "pos": [
+       -113,
+       9,
+       -3979
+      ],
+      "heading": 270,
+      "pitch": 52
+     },
+     "target": [
+      -642,
+      -668,
+      -3979
+     ],
+     "score": {
+      "score": 2.2243,
+      "rails": 1,
+      "interest": 0.3737,
+      "spread": 1,
+      "depth": 0.3209,
+      "sky": 0,
+      "void": 0.0039,
+      "back": 0.0015,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -765
+    },
+    {
+     "id": 4,
+     "pose": {
+      "pos": [
+       -642,
+       -212,
+       -3250
+      ],
+      "heading": 180,
+      "pitch": 32
+     },
+     "target": [
+      -642,
+      -668,
+      -3979
+     ],
+     "score": {
+      "score": 2.1241,
+      "rails": 0.9677,
+      "interest": 0.3884,
+      "spread": 1,
+      "depth": 0.2394,
+      "sky": 0,
+      "void": 0.0247,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -765
+    },
+    {
+     "id": 5,
+     "pose": {
+      "pos": [
+       18,
+       182,
+       -4263
+      ],
+      "heading": 90,
+      "pitch": 42
+     },
+     "target": [
+      1056,
+      -753,
+      -4263
+     ],
+     "score": {
+      "score": 2.0074,
+      "rails": 1,
+      "interest": 0.2732,
+      "spread": 1,
+      "depth": 0.5326,
+      "sky": 0,
+      "void": 0.0247,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -765
+    },
+    {
+     "id": 6,
+     "pose": {
+      "pos": [
+       1056,
+       -13,
+       -3078
+      ],
+      "heading": 180,
+      "pitch": 32
+     },
+     "target": [
+      1056,
+      -753,
+      -4263
+     ],
+     "score": {
+      "score": 1.9711,
+      "rails": 1,
+      "interest": 0.262,
+      "spread": 1,
+      "depth": 0.596,
+      "sky": 0,
+      "void": 0.0324,
+      "back": 0.0008,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -697
+    },
+    {
+     "id": 100,
+     "pose": {
+      "pos": [
+       530,
+       -398,
+       -2416
+      ],
+      "heading": 135,
+      "pitch": 30
+     },
+     "target": [
+      1056,
+      -828,
+      -2942
+     ],
+     "score": {
+      "score": 1.7272,
+      "interest": 0.5293,
+      "spread": 1,
+      "depth": 0.3931,
+      "sky": 0,
+      "void": 0.0123,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -754
+    },
+    {
+     "id": 101,
+     "pose": {
+      "pos": [
+       267,
+       13,
+       -3731
+      ],
+      "heading": 45,
+      "pitch": 37
+     },
+     "target": [
+      1056,
+      -828,
+      -2942
+     ],
+     "score": {
+      "score": 1.4518,
+      "interest": 0.4101,
+      "spread": 1,
+      "depth": 0.2596,
+      "sky": 0,
+      "void": 0.0116,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -765
+    },
+    {
+     "id": 102,
+     "pose": {
+      "pos": [
+       -359,
+       209,
+       -857
+      ],
+      "heading": 0,
+      "pitch": 30
+     },
+     "target": [
+      -359,
+      -221,
+      -112
+     ],
+     "score": {
+      "score": 1.4224,
+      "interest": 0.3432,
+      "spread": 1,
+      "depth": 0.4534,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -267
+    },
+    {
+     "id": 103,
+     "pose": {
+      "pos": [
+       386,
+       209,
+       -112
+      ],
+      "heading": 270,
+      "pitch": 30
+     },
+     "target": [
+      -359,
+      -221,
+      -112
+     ],
+     "score": {
+      "score": 1.3841,
+      "interest": 0.3067,
+      "spread": 1,
+      "depth": 0.5753,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0008,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -239
+    },
+    {
+     "id": 104,
+     "pose": {
+      "pos": [
+       -840,
+       110,
+       -3979
+      ],
+      "heading": 270,
+      "pitch": 30
+     },
+     "target": [
+      -1585,
+      -320,
+      -3979
+     ],
+     "score": {
+      "score": 1.2688,
+      "interest": 0.2507,
+      "spread": 1,
+      "depth": 0.5579,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -748
+    },
+    {
+     "id": 105,
+     "pose": {
+      "pos": [
+       -547,
+       770,
+       -2043
+      ],
+      "heading": 0,
+      "pitch": 45
+     },
+     "target": [
+      -547,
+      -218,
+      -1055
+     ],
+     "score": {
+      "score": 1.2451,
+      "interest": 0.284,
+      "spread": 1,
+      "depth": 0.3216,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0077,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -765
+    }
+   ],
+   "chosen": 100,
+   "why": "the halfpipe under the office (first round)"
+  },
+  "burn": {
+   "candidates": [
+    {
+     "id": 0,
+     "pose": {
+      "pos": [
+       1965,
+       1545,
+       1226
+      ],
+      "heading": 270,
+      "pitch": 32
+     },
+     "target": [
+      926,
+      896,
+      1226
+     ],
+     "score": {
+      "score": 0.3472,
+      "rails": 0,
+      "interest": 0.1743,
+      "spread": 0.5833,
+      "depth": 0.2037,
+      "sky": 0,
+      "void": 0.0139,
+      "back": 0.1427,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 1,
+     "pose": {
+      "pos": [
+       209,
+       1009,
+       2006
+      ],
+      "heading": 90,
+      "pitch": 42
+     },
+     "target": [
+      769,
+      505,
+      2006
+     ],
+     "score": {
+      "score": 0.3156,
+      "rails": 0,
+      "interest": 0.2975,
+      "spread": 1,
+      "depth": 0.4021,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0,
+      "blocked": true
+     },
+     "ground": 893
+    },
+    {
+     "id": 2,
+     "pose": {
+      "pos": [
+       769,
+       1009,
+       1446
+      ],
+      "heading": 0,
+      "pitch": 42
+     },
+     "target": [
+      769,
+      505,
+      2006
+     ],
+     "score": {
+      "score": 0.2962,
+      "rails": 0,
+      "interest": 0.2853,
+      "spread": 1,
+      "depth": 0.4185,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0,
+      "blocked": true
+     },
+     "ground": 893
+    },
+    {
+     "id": 3,
+     "pose": {
+      "pos": [
+       769,
+       1009,
+       2566
+      ],
+      "heading": 180,
+      "pitch": 42
+     },
+     "target": [
+      769,
+      505,
+      2006
+     ],
+     "score": {
+      "score": 0.2961,
+      "rails": 0,
+      "interest": 0.2852,
+      "spread": 1,
+      "depth": 0.4189,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0,
+      "blocked": true
+     },
+     "ground": 893
+    },
+    {
+     "id": 4,
+     "pose": {
+      "pos": [
+       393,
+       1028,
+       431
+      ],
+      "heading": 135,
+      "pitch": 52
+     },
+     "target": [
+      926,
+      63,
+      -102
+     ],
+     "score": {
+      "score": 0.2798,
+      "rails": 0,
+      "interest": 0.2981,
+      "spread": 1,
+      "depth": 0.2785,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0,
+      "blocked": true
+     },
+     "ground": 893
+    },
+    {
+     "id": 5,
+     "pose": {
+      "pos": [
+       -250,
+       1086,
+       2163
+      ],
+      "heading": 270,
+      "pitch": 52
+     },
+     "target": [
+      -714,
+      492,
+      2163
+     ],
+     "score": {
+      "score": 0.2759,
+      "rails": 0,
+      "interest": 0.2962,
+      "spread": 1,
+      "depth": 0.2785,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0,
+      "blocked": true
+     },
+     "ground": 893
+    },
+    {
+     "id": 6,
+     "pose": {
+      "pos": [
+       -273,
+       1094,
+       1382
+      ],
+      "heading": 270,
+      "pitch": 52
+     },
+     "target": [
+      -1027,
+      129,
+      1382
+     ],
+     "score": {
+      "score": 0.2752,
+      "rails": 0,
+      "interest": 0.2958,
+      "spread": 1,
+      "depth": 0.2785,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0,
+      "blocked": true
+     },
+     "ground": 893
+    },
+    {
+     "id": 7,
+     "pose": {
+      "pos": [
+       -494,
+       1080,
+       431
+      ],
+      "heading": 225,
+      "pitch": 52
+     },
+     "target": [
+      -1027,
+      115,
+      -102
+     ],
+     "score": {
+      "score": 0.2665,
+      "rails": 0,
+      "interest": 0.2901,
+      "spread": 1,
+      "depth": 0.2874,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0,
+      "blocked": true
+     },
+     "ground": 893
+    },
+    {
+     "id": 100,
+     "pose": {
+      "pos": [
+       -110,
+       1526,
+       3836
+      ],
+      "heading": 180,
+      "pitch": 45
+     },
+     "target": [
+      -110,
+      760,
+      3070
+     ],
+     "score": {
+      "score": 1.1721,
+      "interest": 0.2639,
+      "spread": 1,
+      "depth": 0.1472,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": 893
+    },
+    {
+     "id": 101,
+     "pose": {
+      "pos": [
+       -876,
+       1526,
+       3070
+      ],
+      "heading": 90,
+      "pitch": 45
+     },
+     "target": [
+      -110,
+      760,
+      3070
+     ],
+     "score": {
+      "score": 1.1164,
+      "interest": 0.2577,
+      "spread": 1,
+      "depth": 0.3494,
+      "sky": 0,
+      "void": 0.0023,
+      "back": 0.0378,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": 787
+    },
+    {
+     "id": 102,
+     "pose": {
+      "pos": [
+       656,
+       1526,
+       3070
+      ],
+      "heading": 270,
+      "pitch": 45
+     },
+     "target": [
+      -110,
+      760,
+      3070
+     ],
+     "score": {
+      "score": 0.8487,
+      "interest": 0.2411,
+      "spread": 1,
+      "depth": 0.3055,
+      "sky": 0,
+      "void": 0.0355,
+      "back": 0.0733,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": 893
+    },
+    {
+     "id": 103,
+     "pose": {
+      "pos": [
+       -2098,
+       1270,
+       1087
+      ],
+      "heading": 90,
+      "pitch": 30
+     },
+     "target": [
+      -1159,
+      728,
+      1087
+     ],
+     "score": {
+      "score": 0.4444,
+      "interest": 0.2005,
+      "spread": 0.75,
+      "depth": 0.1766,
+      "sky": 0,
+      "void": 0.0941,
+      "back": 0.0332,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 104,
+     "pose": {
+      "pos": [
+       -42,
+       1094,
+       2020
+      ],
+      "heading": 90,
+      "pitch": 37
+     },
+     "target": [
+      823,
+      442,
+      2020
+     ],
+     "score": {
+      "score": 0.3055,
+      "interest": 0.2837,
+      "spread": 1,
+      "depth": 0.4604,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0,
+      "blocked": true
+     },
+     "ground": 893
+    },
+    {
+     "id": 105,
+     "pose": {
+      "pos": [
+       823,
+       984,
+       2959
+      ],
+      "heading": 180,
+      "pitch": 30
+     },
+     "target": [
+      823,
+      442,
+      2020
+     ],
+     "score": {
+      "score": 0.0309,
+      "interest": 0.2779,
+      "spread": 1,
+      "depth": 0.6473,
+      "sky": 0,
+      "void": 0,
+      "back": 0.0008,
+      "near": 0.1057,
+      "blocked": true
+     },
+     "ground": 893
+    }
+   ],
+   "chosen": 3,
+   "why": "the eye bowl and the park under the bridge girders, the parked cars"
+  },
+  "ros": {
+   "candidates": [
+    {
+     "id": 0,
+     "pose": {
+      "pos": [
+       -2469,
+       -76,
+       3023
+      ],
+      "heading": 180,
+      "pitch": 52
+     },
+     "target": [
+      -2469,
+      -234,
+      2900
+     ],
+     "score": {
+      "score": 2.3843,
+      "rails": 0,
+      "interest": 0.8526,
+      "spread": 1,
+      "depth": 0.2634,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -233
+    },
+    {
+     "id": 1,
+     "pose": {
+      "pos": [
+       896,
+       -50,
+       1190
+      ],
+      "heading": 90,
+      "pitch": 32
+     },
+     "target": [
+      1066,
+      -156,
+      1190
+     ],
+     "score": {
+      "score": 2.365,
+      "rails": 0.087,
+      "interest": 0.8128,
+      "spread": 1,
+      "depth": 0.2325,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -284
+    },
+    {
+     "id": 2,
+     "pose": {
+      "pos": [
+       -2320,
+       -100,
+       2900
+      ],
+      "heading": 270,
+      "pitch": 42
+     },
+     "target": [
+      -2469,
+      -234,
+      2900
+     ],
+     "score": {
+      "score": 2.3231,
+      "rails": 0,
+      "interest": 0.8309,
+      "spread": 1,
+      "depth": 0.2042,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -273
+    },
+    {
+     "id": 3,
+     "pose": {
+      "pos": [
+       268,
+       463,
+       3523
+      ],
+      "heading": 0,
+      "pitch": 42
+     },
+     "target": [
+      268,
+      -310,
+      4382
+     ],
+     "score": {
+      "score": 2.1662,
+      "rails": 0.8696,
+      "interest": 0.3687,
+      "spread": 1,
+      "depth": 0.4437,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -227
+    },
+    {
+     "id": 4,
+     "pose": {
+      "pos": [
+       1215,
+       543,
+       4382
+      ],
+      "heading": 270,
+      "pitch": 42
+     },
+     "target": [
+      268,
+      -310,
+      4382
+     ],
+     "score": {
+      "score": 2.1352,
+      "rails": 1,
+      "interest": 0.325,
+      "spread": 1,
+      "depth": 0.5748,
+      "sky": 0,
+      "void": 0.0208,
+      "back": 0.0015,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -227
+    },
+    {
+     "id": 5,
+     "pose": {
+      "pos": [
+       -2556,
+       -76,
+       2813
+      ],
+      "heading": 45,
+      "pitch": 52
+     },
+     "target": [
+      -2469,
+      -234,
+      2900
+     ],
+     "score": {
+      "score": 2.0905,
+      "rails": 0,
+      "interest": 0.7929,
+      "spread": 1,
+      "depth": 0.4081,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0.0725,
+      "blocked": false
+     },
+     "ground": -209
+    },
+    {
+     "id": 6,
+     "pose": {
+      "pos": [
+       687,
+       666,
+       4533
+      ],
+      "heading": 135,
+      "pitch": 42
+     },
+     "target": [
+      1294,
+      -107,
+      3926
+     ],
+     "score": {
+      "score": 1.8332,
+      "rails": 0.7391,
+      "interest": 0.3042,
+      "spread": 1,
+      "depth": 0.4098,
+      "sky": 0,
+      "void": 0.0224,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -227
+    },
+    {
+     "id": 7,
+     "pose": {
+      "pos": [
+       -101,
+       851,
+       2900
+      ],
+      "heading": 90,
+      "pitch": 52
+     },
+     "target": [
+      610,
+      -60,
+      2900
+     ],
+     "score": {
+      "score": 1.7848,
+      "rails": 0.6087,
+      "interest": 0.3332,
+      "spread": 1,
+      "depth": 0.5887,
+      "sky": 0,
+      "void": 0.0285,
+      "back": 0.0123,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -96
+    },
+    {
+     "id": 100,
+     "pose": {
+      "pos": [
+       223,
+       208,
+       3554
+      ],
+      "heading": 45,
+      "pitch": 30
+     },
+     "target": [
+      954,
+      -389,
+      4285
+     ],
+     "score": {
+      "score": 1.4482,
+      "interest": 0.4251,
+      "spread": 1,
+      "depth": 0.1784,
+      "sky": 0,
+      "void": 0.0139,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -227
+    },
+    {
+     "id": 101,
+     "pose": {
+      "pos": [
+       -1,
+       749,
+       2743
+      ],
+      "heading": 180,
+      "pitch": 45
+     },
+     "target": [
+      -1,
+      -95,
+      1899
+     ],
+     "score": {
+      "score": 1.1984,
+      "interest": 0.4214,
+      "spread": 1,
+      "depth": 0.321,
+      "sky": 0,
+      "void": 0.0702,
+      "back": 0.0239,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -96
+    },
+    {
+     "id": 102,
+     "pose": {
+      "pos": [
+       -121,
+       600,
+       2615
+      ],
+      "heading": 45,
+      "pitch": 45
+     },
+     "target": [
+      476,
+      -244,
+      3212
+     ],
+     "score": {
+      "score": 0.9947,
+      "interest": 0.2705,
+      "spread": 1,
+      "depth": 0.32,
+      "sky": 0,
+      "void": 0.0586,
+      "back": 0.0031,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 103,
+     "pose": {
+      "pos": [
+       229,
+       690,
+       1422
+      ],
+      "heading": 90,
+      "pitch": 45
+     },
+     "target": [
+      1073,
+      -154,
+      1422
+     ],
+     "score": {
+      "score": 0.9556,
+      "interest": 0.3769,
+      "spread": 1,
+      "depth": 0.1335,
+      "sky": 0,
+      "void": 0.1096,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 104,
+     "pose": {
+      "pos": [
+       596,
+       749,
+       1302
+      ],
+      "heading": 315,
+      "pitch": 45
+     },
+     "target": [
+      -1,
+      -95,
+      1899
+     ],
+     "score": {
+      "score": 0.9122,
+      "interest": 0.3029,
+      "spread": 1,
+      "depth": 0.3688,
+      "sky": 0,
+      "void": 0.0934,
+      "back": 0.0123,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -295
+    },
+    {
+     "id": 105,
+     "pose": {
+      "pos": [
+       -598,
+       749,
+       1302
+      ],
+      "heading": 45,
+      "pitch": 45
+     },
+     "target": [
+      -1,
+      -95,
+      1899
+     ],
+     "score": {
+      "score": 0.7965,
+      "interest": 0.3145,
+      "spread": 1,
+      "depth": 0.3111,
+      "sky": 0,
+      "void": 0.1127,
+      "back": 0.0301,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    }
+   ],
+   "chosen": 104,
+   "why": "the main park: the ramps round the blue floor, the halfpipe behind (first round)"
+  },
+  "thps3_tut": {
+   "candidates": [
+    {
+     "id": 0,
+     "pose": {
+      "pos": [
+       -224,
+       123,
+       -102
+      ],
+      "heading": 270,
+      "pitch": 32
+     },
+     "target": [
+      -351,
+      44,
+      -102
+     ],
+     "score": {
+      "score": 2.4711,
+      "rails": 0.2632,
+      "interest": 0.8283,
+      "spread": 1,
+      "depth": 0.3423,
+      "sky": 0,
+      "void": 0.0247,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 1,
+     "pose": {
+      "pos": [
+       -1157,
+       194,
+       -475
+      ],
+      "heading": 270,
+      "pitch": 32
+     },
+     "target": [
+      -1284,
+      115,
+      -475
+     ],
+     "score": {
+      "score": 2.1421,
+      "rails": 0.1316,
+      "interest": 0.7255,
+      "spread": 1,
+      "depth": 0.3075,
+      "sky": 0,
+      "void": 0.0046,
+      "back": 0,
+      "near": 0.0293,
+      "blocked": false
+     },
+     "ground": 1
+    },
+    {
+     "id": 2,
+     "pose": {
+      "pos": [
+       -1136,
+       1025,
+       1330
+      ],
+      "heading": 90,
+      "pitch": 32
+     },
+     "target": [
+      272,
+      145,
+      1330
+     ],
+     "score": {
+      "score": 0.8524,
+      "rails": 1,
+      "interest": 0.1645,
+      "spread": 0.5,
+      "depth": 1.1206,
+      "sky": 0,
+      "void": 0.2114,
+      "back": 0.0123,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 3,
+     "pose": {
+      "pos": [
+       -521,
+       150,
+       -102
+      ],
+      "heading": 90,
+      "pitch": 32
+     },
+     "target": [
+      -351,
+      44,
+      -102
+     ],
+     "score": {
+      "score": 0.8186,
+      "rails": 1,
+      "interest": 0.2225,
+      "spread": 0.75,
+      "depth": 0.3737,
+      "sky": 0,
+      "void": 0.2346,
+      "back": 0.0201,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 4,
+     "pose": {
+      "pos": [
+       -1284,
+       995,
+       933
+      ],
+      "heading": 180,
+      "pitch": 32
+     },
+     "target": [
+      -1284,
+      115,
+      -475
+     ],
+     "score": {
+      "score": 0.781,
+      "rails": 1,
+      "interest": 0.1589,
+      "spread": 0.5,
+      "depth": 0.9366,
+      "sky": 0,
+      "void": 0.2222,
+      "back": 0.0116,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 5,
+     "pose": {
+      "pos": [
+       1294,
+       1453,
+       1330
+      ],
+      "heading": 270,
+      "pitch": 52
+     },
+     "target": [
+      272,
+      145,
+      1330
+     ],
+     "score": {
+      "score": 0.7602,
+      "rails": 1,
+      "interest": 0.1651,
+      "spread": 0.5833,
+      "depth": 1.0762,
+      "sky": 0,
+      "void": 0.2531,
+      "back": 0.0031,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 6,
+     "pose": {
+      "pos": [
+       1268,
+       1134,
+       323
+      ],
+      "heading": 180,
+      "pitch": 42
+     },
+     "target": [
+      1268,
+      23,
+      -911
+     ],
+     "score": {
+      "score": 0.7128,
+      "rails": 1,
+      "interest": 0.1714,
+      "spread": 0.5,
+      "depth": 0.8179,
+      "sky": 0,
+      "void": 0.2438,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 7,
+     "pose": {
+      "pos": [
+       -189,
+       497,
+       -251
+      ],
+      "heading": 45,
+      "pitch": 32
+     },
+     "target": [
+      209,
+      145,
+      147
+     ],
+     "score": {
+      "score": 0.45,
+      "rails": 1,
+      "interest": 0.2427,
+      "spread": 0.6667,
+      "depth": 0.5049,
+      "sky": 0,
+      "void": 0.3241,
+      "back": 0.0363,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": 144
+    },
+    {
+     "id": 100,
+     "pose": {
+      "pos": [
+       56,
+       376,
+       -509
+      ],
+      "heading": 315,
+      "pitch": 30
+     },
+     "target": [
+      -351,
+      44,
+      -102
+     ],
+     "score": {
+      "score": 0.1885,
+      "interest": 0.2909,
+      "spread": 0.8333,
+      "depth": 0.6374,
+      "sky": 0,
+      "void": 0.26,
+      "back": 0.0177,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": 7
+    },
+    {
+     "id": 101,
+     "pose": {
+      "pos": [
+       -1166,
+       975,
+       1330
+      ],
+      "heading": 90,
+      "pitch": 30
+     },
+     "target": [
+      272,
+      145,
+      1330
+     ],
+     "score": {
+      "score": 0.1096,
+      "interest": 0.165,
+      "spread": 0.5833,
+      "depth": 1.1256,
+      "sky": 0,
+      "void": 0.2099,
+      "back": 0.0123,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 102,
+     "pose": {
+      "pos": [
+       1268,
+       1022,
+       415
+      ],
+      "heading": 180,
+      "pitch": 37
+     },
+     "target": [
+      1268,
+      23,
+      -911
+     ],
+     "score": {
+      "score": 0.0245,
+      "interest": 0.1734,
+      "spread": 0.5833,
+      "depth": 0.8236,
+      "sky": 0,
+      "void": 0.2245,
+      "back": 0.0085,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 103,
+     "pose": {
+      "pos": [
+       -1284,
+       945,
+       963
+      ],
+      "heading": 180,
+      "pitch": 30
+     },
+     "target": [
+      -1284,
+      115,
+      -475
+     ],
+     "score": {
+      "score": 0.0178,
+      "interest": 0.1645,
+      "spread": 0.5,
+      "depth": 0.9439,
+      "sky": 0,
+      "void": 0.2168,
+      "back": 0.0108,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 104,
+     "pose": {
+      "pos": [
+       1206,
+       684,
+       1330
+      ],
+      "heading": 270,
+      "pitch": 30
+     },
+     "target": [
+      272,
+      145,
+      1330
+     ],
+     "score": {
+      "score": -0.0339,
+      "interest": 0.1669,
+      "spread": 0.5833,
+      "depth": 1.063,
+      "sky": 0,
+      "void": 0.2515,
+      "back": 0.0046,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 105,
+     "pose": {
+      "pos": [
+       310,
+       583,
+       559
+      ],
+      "heading": 225,
+      "pitch": 30
+     },
+     "target": [
+      -351,
+      44,
+      -102
+     ],
+     "score": {
+      "score": -0.1308,
+      "interest": 0.2055,
+      "spread": 0.75,
+      "depth": 0.4411,
+      "sky": 0,
+      "void": 0.2608,
+      "back": 0.0324,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    }
+   ],
+   "chosen": 4,
+   "why": "the beach, the hotel and the plaza with the palms"
+  },
+  "thps3_skateshop": {
+   "candidates": [
+    {
+     "id": 0,
+     "pose": {
+      "pos": [
+       27,
+       37,
+       -296
+      ],
+      "heading": 0,
+      "pitch": 52
+     },
+     "target": [
+      27,
+      -81,
+      -204
+     ],
+     "score": {
+      "score": 1.225,
+      "rails": 0,
+      "interest": 0.2684,
+      "spread": 1,
+      "depth": 0.2942,
+      "sky": 0,
+      "void": 0,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -96
+    },
+    {
+     "id": 1,
+     "pose": {
+      "pos": [
+       114,
+       77,
+       -117
+      ],
+      "heading": 225,
+      "pitch": 52
+     },
+     "target": [
+      27,
+      -81,
+      -204
+     ],
+     "score": {
+      "score": -0.0761,
+      "rails": 0,
+      "interest": 0.195,
+      "spread": 0.75,
+      "depth": 0.2595,
+      "sky": 0,
+      "void": 0.2485,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -96
+    },
+    {
+     "id": 2,
+     "pose": {
+      "pos": [
+       -96,
+       77,
+       -204
+      ],
+      "heading": 90,
+      "pitch": 52
+     },
+     "target": [
+      27,
+      -81,
+      -204
+     ],
+     "score": {
+      "score": -0.1861,
+      "rails": 0,
+      "interest": 0.1864,
+      "spread": 0.75,
+      "depth": 0.2792,
+      "sky": 0,
+      "void": 0.2731,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -96
+    },
+    {
+     "id": 100,
+     "pose": {
+      "pos": [
+       -255,
+       220,
+       78
+      ],
+      "heading": 135,
+      "pitch": 37
+     },
+     "target": [
+      27,
+      -81,
+      -204
+     ],
+     "score": {
+      "score": -1.6419,
+      "interest": 0.0938,
+      "spread": 0.4167,
+      "depth": 0.157,
+      "sky": 0,
+      "void": 0.5316,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": -96
+    },
+    {
+     "id": 101,
+     "pose": {
+      "pos": [
+       381,
+       273,
+       -204
+      ],
+      "heading": 270,
+      "pitch": 45
+     },
+     "target": [
+      27,
+      -81,
+      -204
+     ],
+     "score": {
+      "score": -1.6536,
+      "interest": 0.0849,
+      "spread": 0.25,
+      "depth": 0.2429,
+      "sky": 0,
+      "void": 0.5116,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    },
+    {
+     "id": 102,
+     "pose": {
+      "pos": [
+       -223,
+       273,
+       -454
+      ],
+      "heading": 45,
+      "pitch": 45
+     },
+     "target": [
+      27,
+      -81,
+      -204
+     ],
+     "score": {
+      "score": -1.8852,
+      "interest": 0.0737,
+      "spread": 0.25,
+      "depth": 0.2144,
+      "sky": 0,
+      "void": 0.5617,
+      "back": 0,
+      "near": 0,
+      "blocked": false
+     },
+     "ground": null
+    }
+   ],
+   "chosen": 2,
+   "why": "the counter, the shop's walls and the THPS3 logo on the floor"
+  }
+ },
+ "note": "Candidates from scenic_spots.ts (ids 0-7; 100+ the first round's, before the play area / rails / indoor distances were added); `chosen` picked by looking at the pictures (scenic_art.ts sheets)."
+}
