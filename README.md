@@ -2,7 +2,8 @@
 
 > **Not affiliated with or endorsed by Activision, Neversoft or any other rights holder.** A non-commercial fan project
 > for preservation, interoperability and education. No game files are included: the tools work only on copies of the
-> games you own. Game names are trademarks of their owners. MIT licence (LICENSE); the fonts in `fonts/` are under the
+> games you own. Game names are trademarks of their owners. See LICENSE (MIT for the project's own work; no licence for material
+> from the games); the fonts in `fonts/` are under the
 > SIL Open Font License; other third-party parts (CPython-derived helpers, downloaded tools and data) are listed in
 > THIRD_PARTY_NOTICES.md. Rights holders: open an issue and it will be dealt with promptly.
 

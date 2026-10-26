@@ -1,3 +1,20 @@
+THUG2 content pipeline - licensing
+
+1. Material from the games (no licence granted)
+
+   Not covered by the MIT licence below, and not owned by this project:
+   - the adapted game scripts in menu_level/make_menu_level.ts and menu_level/career_complete.ts, which are modified
+     from Tony Hawk's Underground 2's own scripts;
+   - facts about the games and about THUGPRO's levels recorded in compat/ and in the converters' tables (names,
+     checksums, coordinates, offsets);
+   - anything these tools produce from your game files (converted levels, scripts, textures, the data overlay): that
+     output is derived from the games, whose copyright belongs to Activision Publishing, Inc. and its licensors.
+
+2. Original work (MIT licence)
+
+   Everything else - the code written for this project - is licensed under the MIT licence below. Third-party parts
+   keep their own licences: the fonts in fonts/ (SIL Open Font License) and THIRD_PARTY_NOTICES.md.
+
 MIT License
 
 Copyright (c) 2026 Kevin Mallinson and the THUG2 decompilation contributors
