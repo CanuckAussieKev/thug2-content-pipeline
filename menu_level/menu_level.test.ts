@@ -1,6 +1,5 @@
 // NOT ORIGINAL - unit tests of tools/pipeline/menu_level's and tools/anteara's pure functions (no game data): the values are
-// what their Python twins gave (the parity cases, tools/parity/menu_level and tools/parity/anteara, compare them on
-// the game's files).
+// what their Python twins gave.
 
 import * as assert from "node:assert/strict";
 import { test } from "node:test";

@@ -1,5 +1,5 @@
 // NOT ORIGINAL - tests of tools/pipeline/level_port against values its Python twin gave. The game-data ones are skipped when
-// the game isn't installed (the full comparison: tools/parity/level_port/cases.ts).
+// the game isn't installed.
 
 import assert from "node:assert/strict";
 import * as fs from "node:fs";
