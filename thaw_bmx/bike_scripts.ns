@@ -70,9 +70,37 @@ thaw_bmx_spot_components = [
 //@unit BikeToWalkTricks
 //@unit bike_OnGroundAi
 //@unit bike_getpedalanimspeed
-// (THAW's Skater_PlayTurnAnim blends <anim> and <turn_anim> by the steering; here the turn animation - its cycle
-// played whole: THUG2's PlayAnim Cycle from=current loops from the time it starts at to the end, and started near
-// the end that loop is next to nothing - the timeline's wrap-around then never ends (phase 6: the wheels' hang))
+// (THAW's Skater_PlayTurnAnim: its anim tree's TurnBlend of <anim> and <turn_anim>, the turn's share the physics'
+// +0x570 each frame - half the turn pose at the gentlest turn, all of it at the sharpest -, the branch blended in over
+// 0.4 s. Here <anim> on the rider and the bike and <turn_anim> in the anim subset ThawBmxTurn, whose weight the DLL
+// sets each frame - that share x the 0.4 s blend in (ThawBmxSteerAnim on), out once bike_blenturnanims_exit says off
+// (thaw_bmx_physics.cpp SteerAnim). Each cycle played whole: THUG2's PlayAnim Cycle from=current loops from the time
+// it starts at to the end, and started near the end that loop is next to nothing - the timeline's wrap-around then
+// never ends (phase 6: the wheels' hang))
+script thaw_bmx_playturnanim {
+    thaw_bmx_playanim anim=<anim> Cycle BlendPeriod=0.4 NoRestart
+    if ! Obj_AnimSubsetExists SubsetId=ThawBmxTurn {
+        Obj_AddAnimSubset SubsetId=ThawBmxTurn EnableBlending
+        Obj_SetAnimSubsetWeight SubsetId=ThawBmxTurn BlendWeight=0
+        if Flipped {
+            Obj_Flip SubsetId=ThawBmxTurn
+        }
+    }
+    PlayAnim SubsetId=ThawBmxTurn anim=<TurnAnim> Cycle BlendPeriod=0.4
+    if ObjectExists id=ThawBmx {
+        if ThawBmx:AnimExists <TurnAnim> {
+            if ! ThawBmx:Obj_AnimSubsetExists SubsetId=ThawBmxTurn {
+                ThawBmx:Obj_AddAnimSubset SubsetId=ThawBmxTurn EnableBlending
+                ThawBmx:Obj_SetAnimSubsetWeight SubsetId=ThawBmxTurn BlendWeight=0
+                if ThawBmx:Obj_AnimationFlipped {
+                    ThawBmx:Obj_Flip SubsetId=ThawBmxTurn
+                }
+            }
+            ThawBmx:Obj_PlayAnim SubsetId=ThawBmxTurn anim=<TurnAnim> Cycle BlendPeriod=0.4
+        }
+    }
+    ThawBmxSteerAnim on
+}
 //@unit bike_playturnanim
 //@unit bike_blenturnanims_exit
 //@unit bike_handbrake
