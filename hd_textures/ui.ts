@@ -23,8 +23,8 @@
 //     gradient backgrounds, the per-level menu3d pieces, and the original front end's scene levels\mainmenu): a
 //     model's texture coordinates are normalised, so the dictionary is simply upscaled in place (format kept, mips
 //     rebuilt: the level converters' --hd-textures pass) - no marker.
-// Not included: Create-A-Graphic's pieces (edited texel by texel), PermTex / Bits (skater
-// scuffs, car lights, particles, debris: in-game, not menu), skater / ped model textures, the localised loading
+// Not included: Create-A-Graphic's pieces (edited texel by texel), the overlay's images\thaw_bmx (the bike's manual
+// meter, in-game), PermTex / Bits (skater scuffs, car lights, particles, debris: in-game, not menu), skater / ped model textures, the localised loading
 // screens (Data\images\fr, gr).
 //
 //   node tools/pipeline/hd_textures/ui.ts <game folder> <out folder> [--scale 4] [--model M] [--max N]
@@ -436,6 +436,10 @@ export function gameUiFiles(
     return files;
 }
 
+// The overlay's in-game images, not upscaled (in-game, not menu): THAW's bike manual meter (images\thaw_bmx, the
+// thaw_bmx converter's).
+const IN_GAME_IMAGES = /^images[\\/]thaw_bmx[\\/]/i;
+
 // The overlay's own images (relative names), which win over the game's.
 function overlayImages(overlay: string): Map<string, Buffer> {
     const files = new Map<string, Buffer>();
@@ -447,6 +451,7 @@ function overlayImages(overlay: string): Map<string, Buffer> {
     })) {
         if (!entry.isFile() || !/\.img\.xbx$/i.test(entry.name)) continue;
         const full = path.join(entry.parentPath, entry.name);
+        if (IN_GAME_IMAGES.test(path.relative(overlay, full))) continue;
         files.set(path.relative(overlay, full), fs.readFileSync(full));
     }
     return files;

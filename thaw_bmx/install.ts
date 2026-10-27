@@ -1,5 +1,5 @@
 // NOT ORIGINAL - puts the THAW BMX converter's staging folder (<game>\thug2-decomp-thaw-bmx, tools/pipeline/thaw_bmx/convert.ts)
-// into the data overlay (tools/pipeline/menu_level/make_menu_level.ts calls this): models, anims, skeletons and sounds merged in (new
+// into the data overlay (tools/pipeline/menu_level/make_menu_level.ts calls this): models, anims, skeletons, sounds and images merged in (new
 // files only - they are named so as not to collide with the game's), the manifest as thaw_bmx.json, and the scripts
 // (scripts\thaw_bmx\thaw_bmx.ns: the animation load scripts, the special item's structure, the test scripts) appended to
 // the overlay's copy of scripts\game\skater\specialitems.qb - a file the game loads at start-up, so they exist in every
@@ -18,7 +18,7 @@ export function installFiles(game: string, overlay: string): string[] {
     const staging = path.join(game, STAGING);
     if (!fs.existsSync(path.join(staging, MANIFEST))) return [];
     const done: string[] = [];
-    for (const folder of ["models", "anims", "skeletons", "sounds"]) {
+    for (const folder of ["models", "anims", "skeletons", "sounds", "images"]) {
         const from = path.join(staging, folder);
         if (!fs.existsSync(from)) continue;
         fs.cpSync(from, path.join(overlay, folder), { recursive: true, preserveTimestamps: true, force: true });

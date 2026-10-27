@@ -3,10 +3,11 @@
 // qb.toNs; script bodies by a plain token printer (if / else / endif as THAW's 0x25 / 0x26 / 0x28, inline structures
 // as { }) - for reading, not for compiling.
 //
-//   node tools/pipeline/thaw_bmx/dump_scripts.ts [--thaw C:\Games\THAW] [--file <part of a qb path>]... [--name <regex>] [--out <file>]
+//   node tools/pipeline/thaw_bmx/dump_scripts.ts [--thaw C:\Games\THAW] [--file <part of a qb path>]... [--name <regex>] [--pak <file>]... [--out <file>]
 //
 // --file picks the qb files of data\pak\qb.pak.wpc (and dbgq.pak.wpc) whose path contains the text (case-insensitive);
-// --name only the scripts / globals whose name matches. Without --out the text goes to stdout.
+// --name only the scripts / globals whose name matches; --pak <file> (repeatable) other paks instead (e.g. a mod's
+// data\mod\qb.pak.wpc). Without --out the text goes to stdout.
 
 import * as fs from "node:fs";
 import * as path from "node:path";
@@ -130,6 +131,7 @@ export function main(argv: string[]): number {
             file: { type: "string", multiple: true, default: [] },
             name: { type: "string" },
             out: { type: "string" },
+            pak: { type: "string", multiple: true, default: [] },
         },
     });
     const game = resolveInstall(values.thaw!, "thaw");
@@ -137,8 +139,11 @@ export function main(argv: string[]): number {
     const filter = values.name ? new RegExp(values.name, "i") : null;
     const parts = (values.file ?? []).map((f) => f.toLowerCase());
     const text: string[] = [];
-    for (const pak of ["qb.pak.wpc", "dbgq.pak.wpc"]) {
-        const file = path.join(game, "data", "pak", pak);
+    const paks = values.pak?.length
+        ? values.pak
+        : ["qb.pak.wpc", "dbgq.pak.wpc"].map((p) => path.join(game, "data", "pak", p));
+    for (const file of paks) {
+        const pak = path.basename(file);
         if (!fs.existsSync(file)) continue;
         for (const [e, d] of thaw.pakFiles(file)) {
             if (e.extension !== ".qb" || !e.path) continue;
