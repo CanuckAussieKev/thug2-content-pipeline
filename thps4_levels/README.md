@@ -21,7 +21,7 @@ Jnk, Kon, Lon, SF2, Sch, Zoo, SkateShop, Motox (Foo has no scene; the park edito
 Names (online play with THUGPRO: a level is known online only by its load script's checksum): each level is named as
 THPS4 names it - `alc`, `cnv`, `hof`, `jnk`, `kon`, `lon`, `sf2`, `sch`, `zoo`, `motox` (Load_alc, Level_alc,
 alc_NodeArray), as THUGPRO's THPS4 ports are; the skate shop stays `thps4_skateshop` on disk (THUG2's own skate shop
-is `skateshop`, and the front end's backdrop loads it by that name) and its load script is `Load_practice` - THUGPRO's
+is `skateshop`) and its load script is `Load_practice` - THUGPRO's
 name for it, from the compatibility profile (`tools/pipeline/compat/thugpro/thps4_levels.json`, TP-20). The profile also
 gives the skate shop THUGPRO's King of the Hill crown and 8 multiplayer spawns (TP-21: places only, extracted with
 `thugpro_compare.ts --extract-thugpro`; the nodes are made in our form by `thps4_levels.addNetNodes`). `--compat none` leaves
@@ -33,9 +33,6 @@ install (read only): `node tools/pipeline/thps4_levels/thugpro_compare.ts --thug
 the converted levels into the overlay and adds them to `Levels.qb` and the level select. Run it again after every
 `convert`. Delete `thug2-decomp-thps4` and run it again to take the levels out.
 
-The THPS4 skate shop is also the front end's backdrop (`[features] menu_backdrop`, on by default: see
-src/game/front/menu_backdrop.h): with it installed, the front end shows it behind the menus and the overlay's
-standard main menu; without it the game's own front end is used.
 
     node tools/pipeline/thps4_levels/thps4_levels.ts selfcheck
 
