@@ -86,6 +86,7 @@ thaw_bmx_spot_components = [
 //@unit SetBikeTrickName
 //@unit create_bike_manual_meter
 //@unit destroy_bike_manual_meter
+//@unit update_bike_manual_meter
 //@unit bike_manual_state
 //@unit bike_nosemanual_state
 // (bike_manual_state's and bike_nosemanual_state's own loop body: the pad shakes with the manual angle)

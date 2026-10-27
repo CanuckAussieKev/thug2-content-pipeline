@@ -310,27 +310,31 @@ from 7ced9c21 scripts\game\skater\bike_scripts.qb SetBikeTrickName
 new create_bike_manual_meter
 from 1a11f168 scripts\game\skater\bike_scripts.qb create_bike_manual_meter
 = 1
-= 64
++     // (THAW loads its panel pictures at start-up; here the converted ones when first needed - ThawBmx_LoadTexture,
++     // the DLL's: LoadTexture unless a texture of that name is loaded)
++     ThawBmx_LoadTexture "thaw_bmx/bike_tailmeter"
++     ThawBmx_LoadTexture "thaw_bmx/bike_nosemeter"
++     ThawBmx_LoadTexture "thaw_bmx/bike_arc"
+= 2-64
 new destroy_bike_manual_meter
 from 248f2109 scripts\game\skater\bike_scripts.qb destroy_bike_manual_meter
-= 1
-= 6
+= 1-6
+new update_bike_manual_meter
+from 9ebd30a5 scripts\game\skater\bike_scripts.qb update_bike_manual_meter
+= 1-15
 new bike_manual_state
 from 71ab9a41 scripts\game\skater\bike_scripts.qb bike_manual_state
-= 1
-= 4-6
+= 1-6
 +         thaw_bmx_manual_vibration
 = 23-25
 new bike_nosemanual_state
 from 87b2d8cd scripts\game\skater\bike_scripts.qb bike_nosemanual_state
-= 1
-= 4-6
+= 1-6
 +         thaw_bmx_manual_vibration
 = 23-25
 new bike_manual_pivot
 from 5fce23f6 scripts\game\skater\bike_scripts.qb bike_manual_pivot
-= 1
-= 3-14
+= 1-14
 new bike_exit_endo
 from 2aaeed3b scripts\game\skater\bike_scripts.qb bike_exit_endo
 = 1-4

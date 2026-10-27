@@ -14,6 +14,7 @@
 //   scripts\thaw_bmx\thaw_bmx.ns (and a compiled .qb, a syntax check)    animload_thaw_bmx_rider / _bike (LoadAnim
 //                                                                        lists), thaw_bmx_details (the special item's
 //                                                                        structure), thaw_bmx_test_* (for a test run)
+//   images\thaw_bmx\bike_tailmeter / bike_nosemeter / bike_arc.img.xbx   the bike's manual meter (meter.ts)
 //   thaw_bmx.json                                                        the manifest (phase 2 reads it)
 //
 // What THAW's files are, and how each becomes THUG2's:
@@ -54,6 +55,7 @@ import type { Quat, Vec } from "../thps3_levels/thps3_skin.ts";
 import * as skel from "../thps3_levels/thps3_skin.ts";
 import * as bikeScripts from "./bike_scripts.ts";
 import * as check from "./check.ts";
+import * as meter from "./meter.ts";
 import * as ride from "./ride.ts";
 import * as ska from "./ska.ts";
 import * as sounds from "./sounds.ts";
@@ -644,6 +646,13 @@ export function convert(c: Context, out: string, ns: string | null): Result {
         ride.SOUND_FOLDER,
     );
     report.push(`sounds: ${soundFiles.length} (sounds\\${ride.SOUND_FOLDER})`);
+    // the bike's manual meter's pictures (THAW's panel sprites - meter.ts; the ported meter script loads them)
+    for (const name of meter.METER_IMAGES) {
+        const file = findPath(c.thaw, "data", "images", "panelsprites", `${name}.img.wpc`);
+        if (file === null) throw new FormatError(`THAW: data\\images\\panelsprites\\${name}.img.wpc not found`);
+        write(out, meter.imagePath(name), meter.writeImg32(meter.readWpcDxtImg(fs.readFileSync(file))), files);
+    }
+    report.push(`manual meter: ${meter.METER_IMAGES.length} images (images\\${meter.IMAGE_FOLDER})`);
     report.push(compiled ? "scripts: compiled" : "scripts: NeverScript source only (no --ns)");
     notes.push(
         "Rider animations are on THUG2's THPS6_human: the 48 shared bones' keys as THAW has them, the two Bone_Shoulder bones made from the biceps (SHOULDER_FRACTION), THAW's 4 twist bones dropped.",

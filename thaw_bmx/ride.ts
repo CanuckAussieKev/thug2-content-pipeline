@@ -207,6 +207,8 @@ script thaw_bmx_stance_sprite {
 script thaw_bmx_after_reset {
     thaw_bmx_stance_sprite scale=(0.75, 1.3)
     kill_bail_bike
+    // (the manual meter, THAW's bike_manual_state's - a reset may come in the middle of a manual)
+    destroy_bike_manual_meter
     KillSpawnedScript Name=bike_play_looping_sounds
     StopBikeLoopingSounds
     SwitchOnBoard
