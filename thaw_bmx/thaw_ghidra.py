@@ -1,11 +1,15 @@
-"""NOT ORIGINAL - read THAW.exe in a private copy of the THAW Ghidra project (the BMX survey).
+"""NOT ORIGINAL - read THAW's reference build in a private copy of its Ghidra project (the BMX work).
 
-    GHIDRA_INSTALL_DIR=C:/ghidra uv run --no-project --python 3.13 --with pyghidra \
-        python -I tools/pipeline/thaw_bmx/thaw_ghidra.py [--project C:/Games/THAW-ghidra-bmx] [--program <exe name>] <command> <args...>
+    GHIDRA_INSTALL_DIR=C:/ghidra uv run --no-project --python 3.13 --with pyghidra \\
+        python -I tools/pipeline/thaw_bmx/thaw_ghidra.py [--project <folder>] [--program <exe name>] <command> <args...>
 
-Work in a copy (Copy-Item -Recurse C:/Games/THAW-ghidra C:/Games/THAW-ghidra-<name>): functions Ghidra's auto-analysis
-missed (many - THAW's member functions are only reached through tables a static initialiser fills) are created on
-first use. Addresses are hex without 0x. Commands:
+THAW's reference build is the THAW PC exe every THAW address in this project is named after (the decomp's local.json:
+thawReferenceExe; its Ghidra project's folder thawGhidraProject, the program's name in it thawGhidraProgram - the
+defaults of --project / --program). The project is made once with
+`analyzeHeadless <project folder> <exe name without .exe> -import <the exe>`. Work in a copy (Copy-Item -Recurse
+<project folder> <project folder>-<name>): functions Ghidra's auto-analysis missed (many - THAW's member functions are
+only reached through tables a static initialiser fills) are created on first use. Addresses are hex without 0x.
+Commands:
 
     funcs <address>...          size, callers, callees of the function at / containing each address
     disasm <address>...         its instructions
@@ -13,36 +17,49 @@ first use. Addresses are hex without 0x. Commands:
     survey <from> <to>          the functions Ghidra knows in a range, with sizes; their total
     operand <regex> <from> <to> the functions whose instructions match (e.g. "\\+ 0x524\\]" - the on-bike flag)
     scalars <address>...        the 32-bit constants each function uses (name them: THAW's dbg names, survey.ts)
-    obfuscated [<from> <to>]     calls / jumps from THAW's own code (the first .text) into the obfuscated sections
-                                (>= 0x857000): its virtual machine entries, one per stolen instruction or call
 """
+import os
 import re
 import sys
 
 import pyghidra
 
-pyghidra.start()
 
-OBFUSCATED_SECTIONS = 0x857000  # the second .text, .init, .data...: the obfuscated ones
+def local_config():
+    """The decomp's tools/ghidra/local_config.py (local.json's settings): the decomp checkout is THUG2_DECOMP or the
+    nearest folder above this one with its CMakeLists.txt and src/game; None when this repository is on its own."""
+    root = os.environ.get("THUG2_DECOMP")
+    if not root:
+        here = os.path.dirname(os.path.abspath(__file__))
+        while os.path.dirname(here) != here:
+            here = os.path.dirname(here)
+            if os.path.isfile(os.path.join(here, "CMakeLists.txt")) and os.path.isdir(os.path.join(here, "src", "game")):
+                root = here
+                break
+    if not root:
+        return None
+    sys.path.insert(0, os.path.join(root, "tools", "ghidra"))
+    import local_config as config
+    return config
 
 
 def main():
     args = sys.argv[1:]
-    project_dir, project_name, exe = None, "THAW", "THAW.exe"
+    config = local_config()
+    project_dir = config.THAW_GHIDRA_PROJECT if config else ""
+    exe = config.THAW_GHIDRA_PROGRAM if config else ""
     while args[:1] in (["--project"], ["--program"]):
         if args[0] == "--project":
             project_dir = args[1]
         else:
-            # --program <exe name>: another program, in the --project named with it - the second THAW PC build
-            #, in a project made once by
-            # analyzeHeadless <project folder> <exe name without .exe> -import <its exe>
             exe = args[1]
-            project_name = exe.rsplit(".", 1)[0]
         args = args[2:]
-    if project_dir is None:
-        if project_name != "THAW":
-            sys.exit("thaw_ghidra.py: --program needs --project <its Ghidra project folder>")
-        project_dir = "C:/Games/THAW-ghidra-bmx"
+    if not project_dir or not exe:
+        sys.exit("thaw_ghidra.py: THAW's reference build's Ghidra project: --project <folder> --program <exe name> "
+                 "(or thawGhidraProject / thawGhidraProgram in the decomp's local.json)")
+    pyghidra.start()
+    # the project's name is the exe's without .exe (as analyzeHeadless made it)
+    project_name = exe.rsplit(".", 1)[0]
     cmd, args = args[0], args[1:]
     with pyghidra.open_project(project_dir, project_name) as project, \
             pyghidra.program_context(project, "/" + exe) as program:
@@ -136,16 +153,6 @@ def main():
                                 if v > 0x10000 and not (0x400000 <= v < 0x1900000):
                                     values.append("%08x" % v)
                 print("%s size %d : %s" % (label(f), size(f), " ".join(dict.fromkeys(values))))
-        elif cmd == "obfuscated":
-            lo, hi = (int(args[0], 16), int(args[1], 16)) if args else (0x401000, 0x68E000)
-            for f in functions(lo, hi):
-                for ins in listing.getInstructions(f.getBody(), True):
-                    flow = ins.getFlowType()
-                    if not flow.isCall() and not flow.isJump():
-                        continue
-                    for target in ins.getFlows():
-                        if target.getOffset() >= OBFUSCATED_SECTIONS:
-                            print("%08X in %s -> %08X" % (ins.getAddress().getOffset(), label(f), target.getOffset()))
         else:
             sys.exit("unknown command " + cmd)
 

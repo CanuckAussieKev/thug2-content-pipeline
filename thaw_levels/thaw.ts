@@ -485,9 +485,9 @@ export function statements(body: Uint8Array, _name = "script"): Statement[] {
 
 // --- scene (.geom) ----------------------------------------------------------------------------------------------
 //
-// A memory image the loader (THAW.exe 0x005083B0) fixes up in place:
+// A memory image the loader (THAW 0x00508260, THAW's reference build) fixes up in place:
 //   0x00  u32 0, 7 x 0xCABAAAFA
-//   0x20  materials (0x00530470): u16 0x1002, u16 count, u32 size of the block (from 0x20), u32 16 (offset of the
+//   0x20  materials (0x005302E0): u16 0x1002, u16 count, u32 size of the block (from 0x20), u32 16 (offset of the
 //         first), u32 -1; then 0x120 bytes per material (MAT_*), then their extra data (uv wibbles, colour
 //         wibbles, texture animations - offsets in the materials are from 0x20, -1 = none)
 //   then the scene; S = its start + 8 + its second word (+0x10), offsets below are from S:

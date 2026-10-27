@@ -54,13 +54,19 @@ export const nsMissing = (ns: string): string =>
 //                  original code default to it);
 //   exeNames       other exe names a game folder may have besides THUG2.exe (the game tools accept them too);
 //   ghidraProject / ghidraProgram   the Ghidra project's and program's names (tools/ghidra);
-//   protectedFolders   folders the tools never write into (backups you keep), besides the built-in ones.
+//   protectedFolders   folders the tools never write into (backups you keep), besides the built-in ones;
+//   thawReferenceExe   THAW's reference build, the exe THAW's addresses (the BMX work, tools/pipeline/thaw_bmx) are
+//                  named after;
+//   thawGhidraProject / thawGhidraProgram   its Ghidra project's folder and the program's name in it (thaw_ghidra.py).
 export interface LocalConfig {
     referenceExe?: string;
     exeNames?: string[];
     ghidraProject?: string;
     ghidraProgram?: string;
     protectedFolders?: string[];
+    thawReferenceExe?: string;
+    thawGhidraProject?: string;
+    thawGhidraProgram?: string;
 }
 
 // The main checkout of a linked git worktree (its .git is a file "gitdir: <main>/.git/worktrees/<name>", whose
@@ -95,6 +101,8 @@ export const GAME_EXE_NAMES: readonly string[] = ["THUG2.exe", ...(LOCAL.exeName
 // The reference build's path for a tool's default (`--exe` and the like): local.json's referenceExe, or "" (the tool
 // then asks for it).
 export const REFERENCE_EXE: string = LOCAL.referenceExe ?? "";
+// THAW's reference build's path (local.json's thawReferenceExe), or "".
+export const THAW_REFERENCE_EXE: string = LOCAL.thawReferenceExe ?? "";
 
 // Folders nothing is ever written into, lower case without a trailing separator: an untouched backup install,
 // THUGPRO's install, and local.json's protectedFolders.

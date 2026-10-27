@@ -168,7 +168,7 @@ script thaw_bmx_manual {
 //@unit bike_flatland_decade
 //@unit bike_manual_crankflip
 //@unit bike_manual_xup
-// (THAW's physics spawns it - 0x5C9380's thunk; ours runs it at once from the physics (RunBikeScript): it spawns
+// (THAW's physics spawns it - 0x5C9210's thunk; ours runs it at once from the physics (RunBikeScript): it spawns
 // its body, which waits for an animation)
 //@unit bike_release_partial_xup
 //@unit thaw_bmx_release_partial_xup

@@ -79,7 +79,7 @@ export const HUMAN = "THPS6_human"; // (THUG2's skater skeleton, the reference t
 
 // The 0x90 bytes after the last mesh of every THAW .skin (all 589 of the game's skins that read: the same bytes): 0x60
 // zero bytes, then a 0x30 block of 0x20 zeros and the four words 0x00FE1001, 0, 0, 0x10. The file's first word is the
-// offset of that block (file size - 0x30). The loader (THAW.exe 0x005083B0's skin path) is the runtime's pointer-fixup
+// offset of that block (file size - 0x30). The loader (THAW 0x00508260's skin path) is the runtime's pointer-fixup
 // footer of the memory image - empty here: the image has no pointers left to patch after the meshes. Nothing is read
 // from it; THUG2's skin has no such trailer.
 export const TRAILER = 0x90;

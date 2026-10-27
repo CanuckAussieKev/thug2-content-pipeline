@@ -9,11 +9,14 @@ THUG2 installs read only; nothing of either game is stored in the repo.
     node tools/pipeline/menu_level/make_menu_level.ts --game C:\Games\THUG2-3 --ns ...                       # into the overlay
 
 `--ns` is NeverScript's ns.exe (tools\build_neverscript.ps1); without it the scripts are written as text only.
-`survey.ts` (the earlier scoping survey) is unchanged. `thaw_ghidra.py --project <folder> --program <exe name>` reads
-a second THAW PC build (THAW.exe's code at other addresses) in its own Ghidra project; `second_build_map.py --second
-<its exe>` maps THAW.exe addresses to it (`--list second_build_targets.txt --diff 400 --json second_build_map.json`;
-the sites THAW.exe can't show, with the second build's instructions: `--sites 5C1F00 5EA000 --json
-second_build_sites.json`).
+`survey.ts` (the earlier scoping survey) reads THAW's member tables and CFunctions from THAW's reference build by
+default (`--exe` another).
+
+**Addresses.** Every THAW address in this project ("THAW 0x...", in the decomp's src/game/skater/thaw_bmx*.cpp and
+here) is THAW's reference build's: one THAW PC exe whose code can be read whole (THAW.exe's own is encrypted in
+places, its code elsewhere the same). The decomp's local.json names it - `thawReferenceExe`, with its Ghidra project
+`thawGhidraProject` / `thawGhidraProgram`. `thaw_ghidra.py` reads that project (a private copy: `--project <folder>`;
+`--program <exe name>` another program).
 
 ## Files
 

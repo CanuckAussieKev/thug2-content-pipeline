@@ -45,7 +45,7 @@ header is off) and scenes (read and converted).
   structure, array, checksum, $reference), structures as linked 16-byte entries. Scripts are LZSS'd THUG2 token
   streams with weighted random tokens and one more token, 0x4A (an inline structure). All 851 qb files read; every
   script's token walk ends at its end.
-- Scene `.geom` (THAW.exe's loader 0x005083B0, materials 0x00530470): a memory image. 0x120-byte materials (pass
+- Scene `.geom` (THAW's loader 0x00508260, materials 0x005302E0 - THAW's reference build's addresses): a memory image. 0x120-byte materials (pass
   flags, blend modes, fixed alpha, addressing and filtering use THUG2's values; up to 4 passes), then 0xBABEFACE
   and the scene: sector table (0x30 bytes: checksum, flags), a 0x68-byte node per sector (box, mesh count), 0xE0-byte
   mesh records (sphere, material checksum, stride, vertex / index counts, Direct3D FVF), then the vertex and index

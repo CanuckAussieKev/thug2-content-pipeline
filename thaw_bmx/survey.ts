@@ -2,9 +2,13 @@
 
 // (PC 1.01) and THUG2 installs, read only; nothing of either game is stored.
 //
-//   node tools/pipeline/thaw_bmx/survey.ts [--thaw C:\Games\THAW] [--thug2 C:\Games\THUG2] [members|scripts|assets|all]
+//   node tools/pipeline/thaw_bmx/survey.ts [--thaw C:\Games\THAW] [--thug2 C:\Games\THUG2] [--exe <THAW's exe>]
+//                                         [members|scripts|assets|all]
 //
-// members  THAW.exe's script member tables ({u32 name, u32 component, u32 function, 3 x u32 0} - 0x18 bytes, the
+// --exe: the THAW exe the members are read from - by default THAW's reference build (the decomp's local.json:
+// thawReferenceExe; the addresses the BMX work names are its), else the install's THAW.exe.
+//
+// members  THAW's script member tables ({u32 name, u32 component, u32 function, 3 x u32 0} - 0x18 bytes, the
 //          functions mostly stored by a static initialiser: `mov eax, imm32; mov [entry+8], eax`) and its CFunction
 //          table ({char* name, function}); the bike members (and every component's count) against THUG2's
 //          (tools/pipeline/level_port/thug2_members.ts, the reference build's CFunction table)
@@ -23,7 +27,7 @@ import { checksum } from "../level_port/qb.ts";
 import { Thug2 } from "../level_port/script_port.ts";
 import { NAMED_MEMBERS, TABLE_MEMBERS, COMPONENTS as THUG2_COMPONENTS } from "../level_port/thug2_members.ts";
 import { helpFromHeader } from "../lib/cli.ts";
-import { GAME_EXE_NAMES } from "../lib/decomp.ts";
+import { GAME_EXE_NAMES, THAW_REFERENCE_EXE } from "../lib/decomp.ts";
 import { resolveInstall } from "../lib/install.ts";
 import { decodeLatin1, isMain, print, runMain } from "../lib/py.ts";
 import * as thaw from "../thaw_levels/thaw.ts";
@@ -31,7 +35,7 @@ import * as thaw from "../thaw_levels/thaw.ts";
 const BMX = /bike|bmx/i;
 const hex8 = (n: number): string => n.toString(16).padStart(8, "0");
 
-// --- THAW.exe -----------------------------------------------------------------------------------------------------
+// --- THAW's exe -----------------------------------------------------------------------------------------------------
 
 interface Section {
     va: number;
@@ -75,7 +79,7 @@ export class Exe {
         for (const b of bytes) if (b < 0x20 || b > 0x7e) return null;
         return decodeLatin1(bytes);
     }
-    // the first section is THAW's own code (the obfuscated ones are the later ones)
+    // the first section is THAW's own code
     isCode(va: number): boolean {
         const s = this.sections[0]!;
         return va >= s.va && va < s.va + s.vsize;
@@ -152,7 +156,7 @@ export function cfunctions(exe: Exe): { name: string; fn: number }[] {
         }
         return null;
     })();
-    if (target === null) throw new Error("THAW.exe: no SpawnScript string");
+    if (target === null) throw new Error("THAW's exe: no SpawnScript string");
     for (const s of exe.sections.slice(1, 3)) {
         for (let va = s.va; va < s.va + s.rsize - 8; va += 4) {
             if (exe.u32(va) !== target || !exe.isCode(exe.u32(va + 4) ?? 0)) continue;
@@ -170,7 +174,7 @@ export function cfunctions(exe: Exe): { name: string; fn: number }[] {
             if (out.length > 100) return out;
         }
     }
-    throw new Error("THAW.exe: the CFunction table wasn't found");
+    throw new Error("THAW's exe: the CFunction table wasn't found");
 }
 
 // --- the survey ---------------------------------------------------------------------------------------------------
@@ -189,10 +193,10 @@ interface Context {
 const nameOf = (c: Context, v: number): string => c.names.get(v) ?? hex8(v);
 const thug2ComponentName = new Map(THUG2_COMPONENTS.map(([k, n]) => [k, n]));
 
-function context(thawDir: string, thug2Dir: string): Context {
+function context(thawDir: string, thug2Dir: string, exePath: string): Context {
     const names = thaw.loadNames(thawDir);
     const game = resolveInstall(thawDir, "thaw");
-    const exe = new Exe(path.join(game, "THAW.exe"));
+    const exe = new Exe(exePath || path.join(game, "THAW.exe"));
     const thug2Game = resolveInstall(thug2Dir, "thug2");
     let thug2Exe: Buffer | null = null;
     for (const n of GAME_EXE_NAMES) {
@@ -478,11 +482,12 @@ export function main(argv: string[]): number {
         options: {
             thaw: { type: "string", default: "C:\\Games\\THAW" },
             thug2: { type: "string", default: "C:\\Games\\THUG2" },
+            exe: { type: "string", default: THAW_REFERENCE_EXE },
         },
         allowPositionals: true,
     });
     const what = positionals[0] ?? "all";
-    const c = context(values.thaw!, values.thug2!);
+    const c = context(values.thaw!, values.thug2!, values.exe!);
     if (what === "members" || what === "all") surveyMembers(c);
     if (what === "scripts" || what === "all") surveyScripts(c);
     if (what === "assets" || what === "all") surveyAssets(c);
