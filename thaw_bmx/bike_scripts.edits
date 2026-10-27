@@ -1006,4 +1006,26 @@ from bf4831f4 scripts\game\skater\tricks.qb OnGroundExceptions
 = 21-22
 +     SetRollingFriction `default`
 = 24-31
+new bike_PedKnockDown
+from c12e6c96 scripts\game\skater\tricks.qb PedKnockDown
+~ 1 7 0 bike_
+= 2-7
+~ 8 8 6 SpawnS
+= 9-13
+~ 14 15 4 SetS
+= 15
+~ 16 7 1 S
++         SetRollingFriction 0
+= 18
++         if OnLip {
+= 20
+= 25-27
+~ 28 22 2 ir
+= 29-32
++             SetSpeed -150
+= 34
++             Jump
+= 36-38
+~ 40 8 4
+= 52-55
 +

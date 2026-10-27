@@ -240,11 +240,16 @@ test("rideScripts (tricks): the getting on / off animations, the grind's fall-of
         return m[1]!;
     };
     const code = (name: string): string => body(name).replace(/\/\/[^\n]*/g, "");
-    // getting on: off the board (BrakeToStand from skating, WStand) before bmx_getup; off: GetUp_S_RunJump onto it
+    // getting on: off the board (BrakeToStand from skating, the board put away with THAW's board catch backwards,
+    // WStand) before bmx_getup; off: GetUp_S_RunJump onto it
     const on = code("thaw_bmx_get_on");
     assert.match(on, /if ! Walking \{\n\s+PlayAnim Anim=BrakeToStand Speed=1.3\n\s+WaitAnim 50 Percent\n\s+\}/);
+    assert.match(on, /PlayAnim Anim=THPS7_BoardCatch_Stand Backwards Speed=1.2\n\s+WaitAnimFinished/);
     assert.ok(
-        on.indexOf("SwitchOffBoard") < on.indexOf("Anim=WStand") &&
+        on.indexOf("if ! IsBoardMissing") < on.indexOf("Anim=BrakeToStand") &&
+            on.indexOf("Anim=BrakeToStand") < on.indexOf("Anim=THPS7_BoardCatch_Stand") &&
+            on.indexOf("Anim=THPS7_BoardCatch_Stand") < on.indexOf("SwitchOffBoard") &&
+            on.indexOf("SwitchOffBoard") < on.indexOf("Anim=WStand") &&
             on.indexOf("Anim=WStand") < on.indexOf("bmx_finish_on"),
     );
     const off = code("bmx_finish_off");
@@ -267,6 +272,11 @@ test("rideScripts (tricks): the getting on / off animations, the grind's fall-of
     assert.doesNotMatch(code("bike_GroundGone"), /SetSkaterAirTricks/);
     assert.match(code("bike_GroundGone"), /SetQueueTricks Bike_AirTricks/);
     assert.match(code("bike_start"), /SetExtraGrindTricks NoTricks/);
+    // a ped's knock-down on the bike: the bike's bail (THAW's PedKnockDown bike branch), not the skater's manual bails
+    const knock = code("bike_PedKnockDown");
+    assert.match(knock, /Obj_SpawnScript BloodSmall/);
+    assert.match(knock, /if Skating \{[\s\S]*Goto bike_bail\n\s+\} else \{\n\s+Goto WalkBailState/);
+    assert.doesNotMatch(knock, /ManualBail|vehicle_bail|FiftyFiftyFall|IsSkaterOnBike|OnStall/);
     assert.equal((text.match(/\{/g) ?? []).length, (text.match(/\}/g) ?? []).length);
 });
 

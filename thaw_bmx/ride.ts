@@ -161,12 +161,18 @@ script thaw_bmx_get_on {
     thaw_bmx_stance_sprite scale=0
     orient_vehicle
     change bike_pedaling=0
-    // (THAW: off the board first - from skating BrakeToStand to half way, the board off, the standing idle WStand;
-    // THUG2 has both animations under the same names. THAW puts the board away between with THPS7_BoardCatch_Stand
-    // played backwards, an animation of its skater set that isn't converted)
-    if ! Walking {
-        PlayAnim Anim=BrakeToStand Speed=1.3
-        WaitAnim 50 Percent
+    // (THAW: off the board first, unless it's missing - from skating BrakeToStand to half way, the board put away
+    // with THPS7_BoardCatch_Stand played backwards at 1.2x to its end (convert.ts brings it from THAW's skater set),
+    // the board off, the standing idle WStand; THUG2 has BrakeToStand and WStand under the same names)
+    if ! IsBoardMissing {
+        Obj_SetBoundingSphere 10000
+        if ! Walking {
+            PlayAnim Anim=BrakeToStand Speed=1.3
+            WaitAnim 50 Percent
+        }
+        PlayAnim Anim=THPS7_BoardCatch_Stand Backwards Speed=1.2
+        WaitAnimFinished
+        Obj_RestoreBoundingSphere
     }
     SwitchOffBoard
     PlayAnim Anim=WStand Cycle BlendPeriod=0
@@ -307,6 +313,11 @@ script thaw_bmx_test_revert {
 // (a test: the grind's balance lost as its meter's exception would start it - "run thaw_bmx_test_skatein")
 script thaw_bmx_test_skatein {
     MakeSkaterGoto bike_SkateInOrBail params={FallingRight}
+}
+// (a test: a ped's knock-down as a chasing ped's catch sends it - "run thaw_bmx_test_knockdown"; on the bike the DLL
+// sends the rider to bike_PedKnockDown)
+script thaw_bmx_test_knockdown {
+    MakeSkaterGoto PedKnockDown params={SetVelSpeed=350}
 }
 script thaw_bmx_test_manual {
     SpawnSkaterScript thaw_bmx_test_manual_on_skater params={index=<index>}

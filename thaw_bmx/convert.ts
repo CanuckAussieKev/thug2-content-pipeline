@@ -374,8 +374,18 @@ export function keyTables(c: Context): ska.KeyTables {
     };
 }
 
-// The animation sets: the files of pak\bmx_anims in the order of the load scripts' rows, the five permanent ones from
-// pak\perm_anims.
+// An animation's key in THAW's anim paks (PakEntry.pak): its descChecksum plus its skeleton's (the reference) - checked
+// on every file of bmx_anims, net_anims and perm_anims and 833 of unloadable_anims' 847.
+export function animKey(row: LoadRow): number {
+    return (checksum(row.desc) + (row.reference === "" ? 0 : checksum(row.reference))) >>> 0;
+}
+
+// THAW's skater animations its bike scripts play that THUG2 hasn't: put on the rider with the bike's own (the
+// board put away when getting on, toggle_bike_on_off2).
+export const SKATER_ANIMS: readonly string[] = ["THPS7_BoardCatch_Stand"];
+
+// The animation sets: the files of pak\bmx_anims in the order of the load scripts' rows (their keys checked), the five
+// permanent ones from pak\perm_anims, SKATER_ANIMS from pak\unloadable_anims.
 export function readAnims(c: Context): Anim[] {
     let scripts: Map<string, Buffer> | undefined;
     for (const [e, d] of pak(c, "dbgq.pak.wpc")) {
@@ -397,13 +407,16 @@ export function readAnims(c: Context): Anim[] {
     const riderRows = unique(["0", "1", "2"].flatMap((n) => rowsOf(`animload_THPS7_Veh_BMX_${n}`)));
     const bikeRows = unique(["0", "1", "2"].flatMap((n) => rowsOf(`animload_SI_BMX_${n}`)));
     const permanentRows = rowsOf("animload_SI_BMX_P");
-    const files = pak(c, "bmx_anims", "bmx_anims.pak.wpc")
-        .filter(([e]) => e.extension === ".ska")
-        .map(([, d]) => d);
+    const entries = pak(c, "bmx_anims", "bmx_anims.pak.wpc").filter(([e]) => e.extension === ".ska");
+    const files = entries.map(([, d]) => d);
     if (files.length !== riderRows.length + bikeRows.length)
         throw new FormatError(
             `THAW: ${files.length} animations in bmx_anims, ${riderRows.length + bikeRows.length} in the scripts`,
         );
+    [...riderRows, ...bikeRows].forEach((row, i) => {
+        if (entries[i]![0].pak !== animKey(row))
+            throw new FormatError(`THAW: bmx_anims file ${i} isn't ${row.path} (its key ${hex8(entries[i]![0].pak)})`);
+    });
     const out: Anim[] = [];
     riderRows.forEach((row, i) => {
         if (files[i]![0xd]! < 52) throw new FormatError(`${row.path}: ${files[i]![0xd]} bones, not the rider's`);
@@ -421,6 +434,24 @@ export function readAnims(c: Context): Anim[] {
     permanentRows.forEach((row, i) => {
         out.push({ set: "bike_permanent", row, data: eight[i]![1] });
     });
+    // The skater's own animations the bike's scripts play (THAW's skater set, pak\unloadable_anims), found by key.
+    const skaterRows = Array.from({ length: 18 }, (_, n) => `animload_THPS7_Human_unloadable_${n}`)
+        .filter((name) => scripts!.has(name))
+        .flatMap(rowsOf);
+    const unloadable = new Map(
+        pak(c, "unloadable_anims", "unloadable_anims.pak.wpc")
+            .filter(([e]) => e.extension === ".ska")
+            .map(([e, d]) => [e.pak, d]),
+    );
+    for (const desc of SKATER_ANIMS) {
+        const row = skaterRows.find((r) => r.desc.toLowerCase() === desc.toLowerCase());
+        if (row === undefined)
+            throw new FormatError(`THAW: no load row of ${desc} in animload_THPS7_Human_unloadable_*`);
+        const data = unloadable.get(animKey(row));
+        if (data === undefined) throw new FormatError(`THAW: ${row.path} not in unloadable_anims`);
+        if (data[0xd]! < 52) throw new FormatError(`${row.path}: ${data[0xd]} bones, not the skater's`);
+        out.push({ set: "rider", row, data });
+    }
     return out;
 }
 

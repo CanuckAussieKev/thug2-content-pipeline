@@ -53,9 +53,12 @@ THUG2's allanims.ns).
   sizes at 0x28 / 0x2C, per-bone sizes from 0x30), the key forms and flags (0x06834000 / 0x06810000 / partial 0x068B4000)
   are THUG2's. Keys that read THAW's standard-key tables (`data\anims\standardkeyQ/T.bin`, other values than THUG2's) -
   rotation tables, the one-component table of flag 0x10000, translation tables - are written out in full (as
-  tools/pipeline/thug1_levels does for THUG1; THAW's flag 0x10000 forms are new). The pak (`bmx_anims.pak.wpc`) names its files by an
-  unknown hash; they are in the order of THAW's `animload_*` scripts (scripts\allanims.qb in `dbgq.pak.wpc`), which gives
-  the names.
+  tools/pipeline/thug1_levels does for THUG1; THAW's flag 0x10000 forms are new). The pak (`bmx_anims.pak.wpc`) keys each file by its
+  descChecksum plus its skeleton's (the load row's SetReferenceChecksum: `animKey` in convert.ts - every file of bmx_anims,
+  net_anims and perm_anims, 833 of unloadable_anims' 847); the files are in the order of THAW's `animload_*` scripts
+  (scripts\allanims.qb in `dbgq.pak.wpc`), which gives the names, and convert.ts checks each key. THAW's skater animations
+  the bike's scripts play that THUG2 hasn't (`SKATER_ANIMS`: THPS7_BoardCatch_Stand) are found by key in
+  `unloadable_anims.pak.wpc` and put on the rider with the bike's.
 - **Rider** (52 -> 50 bones): see `remapRider`. 48 shared bones copy; THAW's 4 twist bones under the biceps are dropped;
   THUG2's `Bone_Shoulder_L/R` (a sibling of the bicep under the collar) are made from the biceps: the half-way
   rotation from the bicep's rest pose, `slerp(I, bicep * restBicep^-1, 0.5)` - what THUG2's own animations do
@@ -111,7 +114,9 @@ the DLL's PCWave::Load reads the overlay's copy first).
 THAW's skater scripts branch to the bike's own in places (`if IsSkaterOnBike`); THUG2's scripts of the same names are the
 skater's only, so the port has them under its own names: `bike_SkateInOrBail` / `bike_SkateIn_Right` / `_Left` /
 `bike_OnGroundExceptions` (falling off a grind's balance: back onto the bike or its bail, never THUG2's skate-in that turns
-the board on), the air tricks after rolling off a ledge (THAW's `SetSkaterAirTricks` bike branch), and the getting on / off
-animations THAW plays from its `toggle_bike_on_off2` / `bmx_finish_off` (BrakeToStand, WStand, GetUp_S_RunJump - THUG2 has
-them under the same names). `convert.ts` checks every animation the scripts name is converted or THUG2's own
+the board on), the air tricks after rolling off a ledge (THAW's `SetSkaterAirTricks` bike branch), the getting on / off
+animations THAW plays from its `toggle_bike_on_off2` / `bmx_finish_off` (BrakeToStand, THAW's THPS7_BoardCatch_Stand
+backwards, WStand, GetUp_S_RunJump - THUG2 has all but the board catch under the same names), and a ped's knock-down
+(`bike_PedKnockDown`: THAW's PedKnockDown bike branch, the bike's bail - the DLL sends a rider there from MakeSkaterGoto
+PedKnockDown; a ped in its knock-down state doesn't knock a rider over, as THAW's STATESCRIPT_knockdown). `convert.ts` checks every animation the scripts name is converted or THUG2's own
 (`check.ts unknownAnimations`).
