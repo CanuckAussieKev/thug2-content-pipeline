@@ -617,12 +617,19 @@ export function convert(c: Context, out: string, ns: string | null): Result {
         compiled = true;
         // (phase 4) every command the scripts run is THUG2's or ours (check.ts) - with the game's scripts to hand
         if (fs.existsSync(path.join(c.thug2, "Data", "pre", "qb_scripts.prx"))) {
-            const unknown = check.unknownCommands(fs.readFileSync(target), new Thug2(c.thug2), c.names);
+            const thug2 = new Thug2(c.thug2);
+            const unknown = check.unknownCommands(fs.readFileSync(target), thug2, c.names);
             if (unknown.length)
                 throw new FormatError(
                     `thaw_bmx.qb: commands neither THUG2 nor ours have: ${unknown.map(([s, n]) => `${s}: ${n}`).join(", ")}`,
                 );
             report.push("scripts: every command THUG2's or ours");
+            // every animation the scripts name is converted or THUG2's own
+            const have = new Set([...thug2.anims, ...anims.map((a) => checksum(a.row.desc))]);
+            const missing = check.unknownAnimations(text, have);
+            if (missing.length)
+                throw new FormatError(`thaw_bmx.ns: animations neither converted nor THUG2's: ${missing.join(", ")}`);
+            report.push(`scripts: all ${check.namedAnimations(text).size} animations named converted or THUG2's`);
         }
     }
     // the bike's sounds (phase 4: THAW's global_sfx, sounds.ts)

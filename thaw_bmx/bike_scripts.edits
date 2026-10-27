@@ -89,6 +89,11 @@ new bmx_finish_off
 from ea1f0f2f scripts\game\skater\bike_scripts.qb bmx_finish_off
 = 1-2
 = 4-5
++     // (THAW: the skater runs and jumps onto the board - GetUp_S_RunJump, THUG2's own of the same name - half of it
++     // with the physics paused)
++     PlayAnim Anim=GetUp_S_RunJump BlendPeriod=0.0 Speed=1.2
+= 13
++     WaitAnim 50 Percent
 ~ 17 6 1 p
 +     EnablePlayerInput
 = 21
@@ -111,6 +116,7 @@ with 4be6f3dc scripts\game\skater\bike_scripts.qb bmx_finish_on
 = 15-16
 new bike_start
 from 4e4106af scripts\game\skater\bike_scripts.qb bike_start
+with 72535573 scripts\game\skater\walking_control.qb SetWalkingGroundTricks
 = 1
 +     if ! ObjectExists id=ThawBmx {
 +         TurnOnSpecialItem specialitem_details=thaw_bmx_details
@@ -122,7 +128,11 @@ from 4e4106af scripts\game\skater\bike_scripts.qb bike_start
 ~ 18 8 6 SpawnS
 ~ 19 7 1 W
 = 20-23
-= 25-29
+= 25
++     // (ours: the skater's extra grind tricks off - THAW's bike has none, and THUG2's, left set from the skater's air,
++     // would start a skater's grind on a rail ahead of BikeGrindTrickList's; THUG2's vehicles clear them so too)
+= 12 @1
+= 26-29
 ~ 30 8 12 KillSpawnedS
 = 31
 +     EnablePlayerInput
@@ -544,7 +554,10 @@ from 2e1446d6 scripts\game\skater\bike_scripts.qb bike_GroundGone
 ~ 3 27 1 S
 = 4
 ~ 5 17 11 Ex=Ollied S
-= 6-11
+= 6-9
++     // (THAW: SetSkaterAirTricks, whose bike branch is this - THUG2's sets the skater's air and extra grind tricks)
+~ 10 7 6 QueueTricks Bike_
+= 11
 ~ 12 17 1
 = 13
 ~ 14 12 1 B
@@ -836,8 +849,9 @@ from d48ec822 scripts\game\skater\bike_grindscripts.qb BIKE_GRIND
 ~ 56 4 20 Vibrate Actuator=1 P
 +     Vibrate Actuator=0 Percent=50
 = 58-60
-~ 61 17 16 Ex=OffMeterTop S
-~ 62 17 19 Ex=OffMeterBottom S
++     // (THAW: SkateInOrBail, whose skate-in takes its bike branches - here bike_SkateInOrBail; THUG2's is the skater's)
+~ 61 17 19 Ex=OffMeterTop Scr=bike_
+~ 62 17 22 Ex=OffMeterBottom Scr=bike_
 = 63-71
 +         thaw_bmx_playanim anim=<InitAnim> BlendPeriod=0
 = 73-74
@@ -883,4 +897,108 @@ from 0924f954 scripts\game\skater\bike_grindscripts.qb bike_rail_exit
 ~ 10 7 1 F
 +         Flip
 = 12-16
+new bike_SkateInOrBail
+from 3173d7e6 scripts\game\skater\grindscripts.qb SkateInOrBail
+~ 1 7 0 bike_
+~ 2 16 47
++     moveright = -1
++     movey = -5
+= 3
+= 8-11
+~ 13 4 4 bike_
+~ 16 4 4
+= 18-19
++     // (THAW: SetLastLandingVert - THAW-only)
+= 21
+~ 22 11 1 B
+~ 23 17 0 bike_
+= 24
+~ 25 17 0 bike_
+= 26-28
+~ 29 11 1 B
+~ 30 17 0 bike_
+= 31
+~ 32 17 0 bike_
+= 33-34
+~ 35 16 6 GrindR
+= 36
+~ 37 16 1 R
+~ 38 17 0 bike_
+= 39
+~ 40 16 1 L
+~ 41 17 0 bike_
+= 42
+~ 43 23 1 L
+~ 44 15 1 B
+~ 45 21 0 bike_
+= 46
+~ 47 21 0 bike_
+= 48-49
+~ 50 15 1 B
+~ 51 21 0 bike_
+= 52
+~ 53 21 0 bike_
+= 54-57
++     // (THAW: <grindbail> - the bike's grinds name the skater's GrindFallLR; on the bike its bail)
++     Goto bike_bail
+= 63
+new bike_SkateIn_Right
+from c75c0f31 scripts\game\skater\grindscripts.qb SkateIn_Right
+with bf4831f4 scripts\game\skater\tricks.qb OnGroundExceptions
+~ 1 7 0 bike_
+~ 2 19 1 R
+= 3-4
+~ 5 22 1 R
+= 6
+= 8-10
+= 12
+~ 13 17 1 G
+= 14-16
+~ 17 21 1 D
++         bike_OnGroundExceptions NoEndRun
+= 8-11 @1
+= 20-24
++         // (THAW: SetExtraTricks_Reverts - no reverts on the bike there; bike_land2 has ours)
+= 26
+~ 28 8 4
+= 42-44
+~ 46 8 4
+= 54-55
+new bike_SkateIn_Left
+from d8e40b21 scripts\game\skater\grindscripts.qb SkateIn_Left
+with bf4831f4 scripts\game\skater\tricks.qb OnGroundExceptions
+~ 1 7 0 bike_
+~ 2 19 1 L
+= 3-4
+~ 5 22 1 L
+= 6
+= 8-11
+~ 13 17 1 G
+= 14-16
+~ 17 20 1 D
+~ 18 17 1 G
++         bike_OnGroundExceptions NoEndRun
+= 8-11 @1
+= 21-25
+= 27
+~ 29 8 4
+= 43
+= 45-46
+~ 48 8 4
+= 56-57
+new bike_OnGroundExceptions
+from bf4831f4 scripts\game\skater\tricks.qb OnGroundExceptions
+~ 1 7 0 bike_
+= 2
+~ 3 32 0 Bike_
+= 4-5
+~ 6 21 16 Ex=RunHasEnded S
+~ 7 21 17 Ex=GoalHasEnded S
+= 8-13
+~ 18 27 1 S
+= 19
++     EnablePlayerInput
+= 21-22
++     SetRollingFriction `default`
+= 24-31
 +

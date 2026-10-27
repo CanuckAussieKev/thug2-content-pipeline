@@ -72,6 +72,29 @@ export function qbContents(data: Uint8Array): {
     return { scripts, globals, commands };
 }
 
+// The animations the scripts' text names: a name given to a key that names an animation (anim=, Anim=, InitAnim=,
+// Idle_Anim=, wallplant_anim=, TurnAnim= ... and bike_playturnanim's TurnIdle=) - [the name, its key]; the special
+// item's AnimName= (a load script) and the flag flip_anim aren't. Names made at run time (the x-up's <anim>_xup) aren't
+// in the text: the scripts ask AnimExists for those.
+export function namedAnimations(text: string): Map<string, string> {
+    const out = new Map<string, string>();
+    for (const m of text.matchAll(/\b([A-Za-z_]*anim[A-Za-z_]*|TurnIdle)\s*=\s*([A-Za-z_][A-Za-z0-9_]*)/gi)) {
+        const [, key, name] = m;
+        if (/^(animname|flip_anim)$/i.test(key!) || /^animload_/i.test(name!)) continue;
+        if (!out.has(name!.toLowerCase())) out.set(name!.toLowerCase(), key!);
+    }
+    return out;
+}
+
+// The animations the scripts name that neither the converted sets nor THUG2's own (its skater's - the rider plays
+// THUG2's Bail_Manual_FT, BrakeToStand, GetUp_S_RunJump...) have: THUG2's PlayAnim of one that isn't loaded plays
+// nothing. `have`: the checksums of the animations there are.
+export function unknownAnimations(text: string, have: ReadonlySet<number>): string[] {
+    return [...namedAnimations(text)]
+        .filter(([name]) => !have.has(checksum(name)))
+        .map(([name, key]) => `${key}=${name}`);
+}
+
 // The commands no one has: [script, command] (names as `names` has them, else hex).
 export function unknownCommands(
     data: Uint8Array,

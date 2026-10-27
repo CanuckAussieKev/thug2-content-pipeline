@@ -254,3 +254,15 @@ script thaw_bmx_bail_bike_control {
 //@unit BIKE_GRIND
 //@unit bike_OffRail
 //@unit bike_rail_exit
+// (THAW's SkateInOrBail, grindscripts.qb - falling off the grind's balance - as it runs on the bike: its skate-ins take
+// their bike branches (bike_rail_exit into BIKE_LAND, or bike_bail) and its OnGroundExceptions leaves the board off.
+// THUG2's SkateInOrBail is the skater's only: its ground exceptions turn the board on and its skate-in lands the skater)
+//@unit bike_SkateInOrBail
+// (THAW's SkateIn_Right on the bike)
+//@unit bike_SkateIn_Right
+// (THAW's SkateIn_Left on the bike)
+//@unit bike_SkateIn_Left
+// (THAW's OnGroundExceptions on the bike: no board, no skater's ground tricks. THAW's table is the skater's
+// OnGroundExceptionTable, whose GroundGone / Ollied scripts go on to the bike's from their bike branches - THUG2's
+// haven't them: here the bike's own table)
+//@unit bike_OnGroundExceptions

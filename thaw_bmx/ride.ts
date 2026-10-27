@@ -161,11 +161,19 @@ script thaw_bmx_get_on {
     thaw_bmx_stance_sprite scale=0
     orient_vehicle
     change bike_pedaling=0
+    // (THAW: off the board first - from skating BrakeToStand to half way, the board off, the standing idle WStand;
+    // THUG2 has both animations under the same names. THAW puts the board away between with THPS7_BoardCatch_Stand
+    // played backwards, an animation of its skater set that isn't converted)
+    if ! Walking {
+        PlayAnim Anim=BrakeToStand Speed=1.3
+        WaitAnim 50 Percent
+    }
     SwitchOffBoard
+    PlayAnim Anim=WStand Cycle BlendPeriod=0
     bmx_finish_on
 }
 // (THAW's toggle_bike_on_off2, getting off: unflipped as getting on, bmx_getup backwards, the bike gone; then its
-// bmx_finish_off - the parked bike)
+// bmx_finish_off - the run-and-jump onto the board, the parked bike)
 script thaw_bmx_get_off {
     kill_bail_bike
     ClearExceptions
@@ -293,6 +301,10 @@ script thaw_bmx_test_push {
 // (a test: the revert as its window (bike_land2) would start it - "run thaw_bmx_test_revert")
 script thaw_bmx_test_revert {
     MakeSkaterGoto bike_revert
+}
+// (a test: the grind's balance lost as its meter's exception would start it - "run thaw_bmx_test_skatein")
+script thaw_bmx_test_skatein {
+    MakeSkaterGoto bike_SkateInOrBail params={FallingRight}
 }
 script thaw_bmx_test_manual {
     SpawnSkaterScript thaw_bmx_test_manual_on_skater params={index=<index>}

@@ -104,3 +104,13 @@ The animation trees THAW's scripts drive become `thaw_bmx_playanim` (PlayAnim on
 has the animation) and `thaw_bmx_playbarspin` (the anim subset Barspin on both); the manual's pose follows the manual
 angle in the DLL (src/game/skater/thaw_bmx_tricks.cpp). The data overlay gets the sounds (`install.ts` copies `sounds`;
 the DLL's PCWave::Load reads the overlay's copy first).
+
+## THAW's general scripts' bike branches
+
+THAW's skater scripts branch to the bike's own in places (`if IsSkaterOnBike`); THUG2's scripts of the same names are the
+skater's only, so the port has them under its own names: `bike_SkateInOrBail` / `bike_SkateIn_Right` / `_Left` /
+`bike_OnGroundExceptions` (falling off a grind's balance: back onto the bike or its bail, never THUG2's skate-in that turns
+the board on), the air tricks after rolling off a ledge (THAW's `SetSkaterAirTricks` bike branch), and the getting on / off
+animations THAW plays from its `toggle_bike_on_off2` / `bmx_finish_off` (BrakeToStand, WStand, GetUp_S_RunJump - THUG2 has
+them under the same names). `convert.ts` checks every animation the scripts name is converted or THUG2's own
+(`check.ts unknownAnimations`).

@@ -19,7 +19,7 @@ import {
     trickList,
     triggers,
 } from "./bike_scripts.ts";
-import { OUR_MEMBERS } from "./check.ts";
+import { namedAnimations, OUR_MEMBERS, unknownAnimations } from "./check.ts";
 import { addPauseItem, MANIFEST, STAGING } from "./install.ts";
 import * as ride from "./ride.ts";
 import * as sounds from "./sounds.ts";
@@ -228,6 +228,82 @@ test("rideScripts (phase 6): the wheels' cycles played whole - never from=curren
     const code = text.replace(/\/\/[^\n]*/g, "");
     assert.doesNotMatch(code, /\bCycle\b[^\n]*from=current/i);
     assert.doesNotMatch(code, /from=current[^\n]*\bCycle\b/i);
+});
+
+test("rideScripts (tricks): the getting on / off animations, the grind's fall-off and the air on the bike's own", {
+    skip: NO_THAW,
+}, () => {
+    const text = rideScripts();
+    const body = (name: string): string => {
+        const m = new RegExp(`\\nscript ${name} \\{\\n([\\s\\S]*?)\\n\\}\\n`).exec(text);
+        assert.ok(m, name);
+        return m[1]!;
+    };
+    const code = (name: string): string => body(name).replace(/\/\/[^\n]*/g, "");
+    // getting on: off the board (BrakeToStand from skating, WStand) before bmx_getup; off: GetUp_S_RunJump onto it
+    const on = code("thaw_bmx_get_on");
+    assert.match(on, /if ! Walking \{\n\s+PlayAnim Anim=BrakeToStand Speed=1.3\n\s+WaitAnim 50 Percent\n\s+\}/);
+    assert.ok(
+        on.indexOf("SwitchOffBoard") < on.indexOf("Anim=WStand") &&
+            on.indexOf("Anim=WStand") < on.indexOf("bmx_finish_on"),
+    );
+    const off = code("bmx_finish_off");
+    assert.match(off, /PlayAnim Anim=GetUp_S_RunJump[^\n]*\n[\s\S]*WaitAnim 50 Percent\n\s+UnpausePhysics/);
+    // the grind's balance lost: the bike's skate-in (THAW's SkateInOrBail's bike branches), never THUG2's skater one
+    const grind = code("BIKE_GRIND");
+    assert.match(grind, /Ex=OffMeterTop Scr=bike_SkateInOrBail params=\{<\.\.\.> FallingLeft\}/);
+    assert.match(grind, /Ex=OffMeterBottom Scr=bike_SkateInOrBail params=\{<\.\.\.> FallingRight\}/);
+    assert.doesNotMatch(text.replace(/\/\/[^\n]*/g, ""), /Scr=SkateInOrBail\b|Goto SkateIn_(Right|Left)\b/);
+    for (const side of ["Right", "Left"]) {
+        const skateIn = code(`bike_SkateIn_${side}`);
+        assert.match(skateIn, /Goto bike_rail_exit params=\{callback=BIKE_LAND\}/);
+        assert.match(skateIn, /Goto bike_rail_exit params=\{callback=bike_bail\}/);
+        assert.doesNotMatch(skateIn, /SkateInLand|SkateIn_Bail|OnGroundExceptions_NoOllie|SetExtraTricks_Reverts/);
+    }
+    const ground = code("bike_OnGroundExceptions");
+    assert.match(ground, /ResetEventHandlersFromTable Bike_OnGroundExceptionTable/);
+    assert.doesNotMatch(ground, /SwitchOnBoard|SetSkaterGroundTricks/);
+    // off a ledge: the bike's air tricks (THAW's SetSkaterAirTricks' bike branch), no skater's extra grind tricks
+    assert.doesNotMatch(code("bike_GroundGone"), /SetSkaterAirTricks/);
+    assert.match(code("bike_GroundGone"), /SetQueueTricks Bike_AirTricks/);
+    assert.match(code("bike_start"), /SetExtraGrindTricks NoTricks/);
+    assert.equal((text.match(/\{/g) ?? []).length, (text.match(/\}/g) ?? []).length);
+});
+
+test("namedAnimations / unknownAnimations: every key naming an animation; load scripts and flags left out", () => {
+    const text = [
+        "script a {",
+        "    thaw_bmx_playanim anim=bmx_idle Cycle",
+        "    PlayAnim Anim=GetUp_S_RunJump BlendPeriod=0.0",
+        "    bike_grab_trick init_anim=bmx_tailwhip_init Idle_Anim=bmx_tailwhip_idle Out_Anim=bmx_tailwhip_out flip_anim=flip_anim",
+        "    BIKE_GRIND InitAnim=bmx_grind_init anim_backwards=1",
+        "    bike_playturnanim TurnIdle=bmx_turnl_pedaling TurnAnim=bmx_turnl_coasting_idle",
+        "    {component=animblender AnimName=animload_thaw_bmx_bike}",
+        '    LoadAnim name="anims\\\\x.ska" descChecksum=bmx_idle',
+        "}",
+    ].join("\n");
+    assert.deepEqual([...namedAnimations(text).keys()].sort(), [
+        "bmx_grind_init",
+        "bmx_idle",
+        "bmx_tailwhip_idle",
+        "bmx_tailwhip_init",
+        "bmx_tailwhip_out",
+        "bmx_turnl_coasting_idle",
+        "bmx_turnl_pedaling",
+        "getup_s_runjump",
+    ]);
+    const have = new Set(
+        [
+            "bmx_idle",
+            "GetUp_S_RunJump",
+            "bmx_tailwhip_init",
+            "bmx_tailwhip_idle",
+            "bmx_grind_init",
+            "bmx_turnl_pedaling",
+            "bmx_turnl_coasting_idle",
+        ].map(checksum),
+    );
+    assert.deepEqual(unknownAnimations(text, have), ["Out_Anim=bmx_tailwhip_out"]);
 });
 
 test("bailBikeComponents: THAW's rigid body on our bike's skeleton, model and animations - no SoundType", () => {
