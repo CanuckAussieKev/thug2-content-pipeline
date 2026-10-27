@@ -39,6 +39,9 @@ export const OUR_MEMBERS: readonly string[] = [
     "ExitStallBoost",
     "OnStall",
     "ThawBmxSteerAnim",
+    // (THAW's CameraLookAround members: the d-pad turns the camera on the bike - camera_lookaround.cpp)
+    "LookaroundOnDPad_On",
+    "LookaroundOnDPad_Off",
 ];
 // Ours that are C functions (thaw_bmx.cpp RegisterScriptFunctions; the parked bikes': thaw_bmx_parked.cpp).
 export const OUR_CFUNCS: readonly string[] = [

@@ -144,13 +144,14 @@ script thaw_bmx_manual_vibration {
 // THUG2's ManualTricks / GroundManualTricks timings; in the air the press is kept for the landing (bike_land2), so
 // manuals link into combos as the skater's do. THAW's own way - the stick held back / forward half a second, the
 // physics' manual pitch - stays.)
+// (on the movement stick's directions, THAW's leftup / leftdown: on the bike the d-pad is the camera)
 thaw_bmx_AirManualTricks = [
-    {Trigger={InOrder, Up, Down, 400} Duration=700 Scr=thaw_bmx_manual}
-    {Trigger={InOrder, Down, Up, 400} Duration=700 Scr=thaw_bmx_manual Params={nose}}
+    {Trigger={InOrder, leftup, leftdown, 400} Duration=700 Scr=thaw_bmx_manual}
+    {Trigger={InOrder, leftdown, leftup, 400} Duration=700 Scr=thaw_bmx_manual Params={nose}}
 ]
 thaw_bmx_GroundManualTricks = [
-    {Trigger={InOrder, Up, Down, 220} Scr=thaw_bmx_manual}
-    {Trigger={InOrder, Down, Up, 220} Scr=thaw_bmx_manual Params={nose}}
+    {Trigger={InOrder, leftup, leftdown, 220} Scr=thaw_bmx_manual}
+    {Trigger={InOrder, leftdown, leftup, 220} Scr=thaw_bmx_manual Params={nose}}
 ]
 script thaw_bmx_manual {
     if GotParam nose {
@@ -258,7 +259,7 @@ script thaw_bmx_bail_bike_control {
 // the physics' stall state - src/game/skater/core_rail.cpp DoBikeStallPhysics - keeps the bike still on the rail)
 //@unit BikeStallTrick
 // (THAW's stalltricks.qb, which THUG2 hasn't; on the bike THAW's balance buttons leftright / leftleft - the movement
-// stick's right / left -, here Right / Left as BIKE_GRIND's)
+// stick's right / left, its pad's stick buttons - as BIKE_GRIND's)
 //@unit PlayStallBalancingAnim
 //@unit StallOllieOut
 // (THAW's ExitPointRailSpin as it runs on the bike - THUG2's own has no bike branch)

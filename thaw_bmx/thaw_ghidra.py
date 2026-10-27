@@ -93,7 +93,8 @@ def main():
                     print(a, "no function")
                     continue
                 callees = sorted(g.getEntryPoint().getOffset() for g in f.getCalledFunctions(None))
-                print(label(f), "size", size(f), "callers", len(callers(f)),
+                by = sorted(callers(f))
+                print(label(f), "size", size(f), "callers", len(by), "(%s)" % " ".join("%08X" % c for c in by),
                       "callees", " ".join("%08X" % c for c in callees))
         elif cmd == "disasm":
             for a in args:

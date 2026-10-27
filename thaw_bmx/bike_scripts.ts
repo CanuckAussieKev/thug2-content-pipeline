@@ -3,8 +3,8 @@
 // names (they replace phase 3's stand-ins: bike_enter_manual, BikeGrindTrickList ...). Two parts:
 //
 //   bikeGlobals   THAW's data, read from the user's THAW at convert time (qb.pak) and written as NeverScript: the trick
-//                 lists (Bike_AirTricks, Bike_ManualTricks, Bike_NoseManualTricks - their triggers moved off THAW's
-//                 right stick, see TRIGGERS), the exception tables, BikeGrindTrickList, bike_Wallplant_Trick, the wobble
+//                 lists (Bike_AirTricks, Bike_ManualTricks, Bike_NoseManualTricks - THAW's triggers, its right stick's
+//                 BikePress among them), the exception tables, BikeGrindTrickList, bike_Wallplant_Trick, the wobble
 //                 parameters, THAW's TERRAIN_BIKE_DEFAULT_* sound tables (as thaw_bmx_terrain_*: the DLL's bike sounds)
 //                 and the grind tricks' scripts (Trick_Bike_*, data-like: a name, a score, three animations).
 //   bikeScripts   the scripts themselves, ported to THUG2 (made at convert time from the user's THAW: our changes to
@@ -16,9 +16,10 @@
 //                 the bike (when it has the animation), the partial branches (the barspin) as anim subsets. The manual's
 //                 pose follows the manual angle in the DLL (src/game/skater/thaw_bmx_tricks.cpp ManualPose).
 //
-// Controls (THUG2's script buttons: X / Circle / Square / Triangle = the player's Ollie / Grab / Flip / Grind keys): THAW
-// does its bike's flip tricks on the right stick (BikePress rightup ...), which THUG2's pad hasn't - here they are
-// direction + Flip, like a skater's flip tricks; its grabs (THAW: square, down then square) direction + Grab.
+// Controls (THUG2's script buttons: X / Circle / Square / Triangle = the player's Ollie / Grab / Flip / Grind keys): as
+// THAW's - its flip tricks on the right stick (BikePress rightup ...), its grabs on square / down then square, the
+// d-pad the camera. THUG2's pad hasn't THAW's stick buttons (leftup ... rightright): the DLL makes them while the
+// feature is on (src/game/skater/thaw_bmx_sticks.cpp), so THAW's triggers and held checks are kept as they are.
 
 import * as fs from "node:fs";
 import * as path from "node:path";
@@ -76,7 +77,7 @@ export const SOUND_TABLES: readonly (readonly [string, string])[] = [
     ["TERRAIN_BIKE_DEFAULT_ROLL", "thaw_bmx_terrain_roll"],
     ["TERRAIN_BIKE_DEFAULT_GRIND", "thaw_bmx_terrain_grind"],
 ];
-// The trick lists whose triggers move (TRIGGERS).
+// THAW's trick lists (copied as they are: the DLL answers their stick triggers).
 export const TRICK_LISTS: readonly string[] = ["Bike_AirTricks", "Bike_ManualTricks", "Bike_NoseManualTricks"];
 // The grind tricks' scripts (bike_grindscripts.qb).
 export const GRIND_SCRIPTS = /^Trick_Bike_/;
@@ -97,83 +98,6 @@ export const SOUNDS: readonly string[] = [
 // THUG2's own sounds THAW's bike tables / scripts use (THUG2 has them: Terrains\GrindMetalOff02 / On02,
 // Skater\SK6_BoardRollIn01_11) - not converted.
 export const THUG2_SOUNDS: readonly string[] = ["GrindMetalOff02", "GrindMetalOn02", "SK6_BoardRollIn01_11"];
-
-// --- THAW's triggers on THUG2's pad ----------------------------------------------------------------------------------
-
-// THAW's BikePress directions (its right stick; RightUpRight... are its diagonals) and THUG2's d-pad / stick names.
-const STICK: Readonly<Record<string, string>> = {
-    rightup: "Up",
-    rightdown: "Down",
-    rightleft: "Left",
-    rightright: "Right",
-};
-// THUG2's air tricks' time for a button + a direction (airtricks.qb's AirTrickLogic triggers).
-export const AIR_TRICK_TIME = 500;
-// What a THAW trigger becomes (one THAW entry may become several - the tabletop on Grab with any side):
-//   BikePress <right stick dir> n        -> {AirTrickLogic Square <dir> 500} (Flip + direction; THAW's n, 50, is a stick's flick -\n//                                            THUG2's skater has 500 for its button + direction)
-//   InOrder leftdown square n (superman)  -> {AirTrickLogic Circle Down n}    (Grab + down)
-//   Press square n (tabletop)             -> {AirTrickLogic Circle Left / Right / Up n}  (Grab + a side; up: THAW's
-//                                            default right side)
-//   anything else (Press circle - the x-up -, Press R2 - the pivot)  as THAW has it.
-// The tricks' `buttons=[...]` (the buttons THAW's held checks look at) become `button=` THUG2's one button.
-export function triggers(trigger: QbValue, names: ReadonlyMap<number, string>): { trigger: string; button?: string }[] {
-    if (!(trigger instanceof Struct)) throw new Error("a trick's Trigger isn't a structure");
-    const parts = trigger.entries.map(([, v]) => (v instanceof Name ? qb.nameText(v.value, names) : v));
-    const kind = typeof parts[0] === "string" ? parts[0].toLowerCase() : "";
-    const word = (k: number): string => (typeof parts[k] === "string" ? (parts[k] as string).toLowerCase() : "");
-    const time = parts[parts.length - 1];
-    if (typeof time !== "number") throw new Error(`a trick's Trigger without a time: ${qb.toNs(trigger, names)}`);
-    if (kind === "bikepress") {
-        const dir = STICK[word(1)];
-        if (!dir) throw new Error(`BikePress ${word(1)}: not a right-stick direction`);
-        return [{ trigger: `{AirTrickLogic, Square, ${dir}, ${AIR_TRICK_TIME}}`, button: "Square" }];
-    }
-    if (kind === "inorder" && word(1) === "leftdown" && word(2) === "square")
-        return [{ trigger: `{AirTrickLogic, Circle, Down, ${time}}`, button: "Circle" }];
-    if (kind === "press" && word(1) === "square")
-        return ["Left", "Right", "Up"].map((dir) => ({
-            trigger: `{AirTrickLogic, Circle, ${dir}, ${time}}`,
-            button: "Circle",
-        }));
-    return [{ trigger: qb.toNs(trigger, names) }];
-}
-
-// A trick list with its triggers moved (TRIGGERS) - every other key (scr, params with THAW's names and scores) as
-// THAW has it.
-export function trickList(list: QbValue, names: Map<number, string>): string {
-    if (!Array.isArray(list)) throw new Error("a trick list isn't an array");
-    const out: string[] = [];
-    const triggerKey = qb.checksum("Trigger");
-    const paramsKey = qb.checksum("params");
-    const buttonsKey = qb.checksum("buttons");
-    const buttonKey = qb.checksum("button");
-    for (const text of ["button", "Square", "Circle"])
-        if (!names.has(qb.checksum(text))) names.set(qb.checksum(text), text);
-    for (const entry of list) {
-        if (!(entry instanceof Struct)) throw new Error("a trick list's entry isn't a structure");
-        const trigger = entry.entries.find(([k]) => k?.value === triggerKey)?.[1];
-        if (trigger === undefined) throw new Error("a trick without a Trigger");
-        for (const moved of triggers(trigger, names)) {
-            const items: [Name | null, QbValue][] = [];
-            for (const [k, v] of entry.entries) {
-                if (k?.value === triggerKey) continue;
-                if (k?.value === paramsKey && v instanceof Struct && moved.button !== undefined) {
-                    const params = v.entries.filter(([pk]) => pk?.value !== buttonsKey && pk?.value !== buttonKey);
-                    params.push([new Name(buttonKey), new Name(qb.checksum(moved.button))]);
-                    items.push([k, new Struct(params)]);
-                } else {
-                    items.push([k, v]);
-                }
-            }
-            const rest = qb
-                .toNs(new Struct(items), names)
-                .replace(/^\{\n?/, "")
-                .replace(/\n?\}$/, "");
-            out.push(`    {\n        Trigger=${moved.trigger}\n${rest.replace(/^/gm, "    ")}\n    }`);
-        }
-    }
-    return `[\n${out.join("\n")}\n]`;
-}
 
 // An exception table without the entries whose scripts THUG2 hasn't (DROPPED_HANDLERS).
 function withoutNetHandlers(table: QbValue): QbValue {
@@ -289,7 +213,7 @@ export function bikeGlobals(thawBike: ThawBike, names: Map<number, string>): str
         }
         lines.push(`${name} = ${qb.toNs(value, names)}`);
     }
-    for (const name of TRICK_LISTS) lines.push(`${name} = ${trickList(need(name), names)}`);
+    for (const name of TRICK_LISTS) lines.push(`${name} = ${qb.toNs(need(name), names)}`);
     lines.push(`${BAIL_BIKE_COMPONENTS} = ${bailBikeComponents(need("BailBikeComponents"), names)}`);
     for (const [theirs, ours] of SOUND_TABLES)
         lines.push(`${ours} = ${qb.toNs(soundPaths(need(theirs), names), names)}`);

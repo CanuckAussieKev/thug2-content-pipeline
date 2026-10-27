@@ -418,6 +418,11 @@ script thaw_bmx_after_reset {
     RestoreAutoKick
     AllowRailTricks
     thaw_bmx_camera_off
+    // (THAW's cleanup_bike_for_change_level: the d-pad camera off, the stick the menus' d-pad again)
+    if ObjectExists id=skatercam0 {
+        skatercam0:LookaroundOnDPad_Off
+    }
+    SetAnalogStickActiveForMenus 1
 }
 script thaw_bmx_camera_on {
     if (thaw_bmx_camera_swapped = 0) {

@@ -7,17 +7,18 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { test } from "node:test";
-import { checksum, Local, Name, type QbValue, Struct, Vector } from "../level_port/qb.ts";
+import { checksum, Name, type QbValue, Struct, Vector } from "../level_port/qb.ts";
 import { DECOMP } from "../lib/decomp.ts";
 import { findInstall } from "../lib/install.ts";
+import * as thaw from "../thaw_levels/thaw.ts";
 import {
     bailBikeComponents,
+    bikeGlobals,
     localStrings,
+    readThawBike,
     SOUNDS,
     soundPaths,
     ThawScripts,
-    trickList,
-    triggers,
 } from "./bike_scripts.ts";
 import { namedAnimations, OUR_MEMBERS, unknownAnimations } from "./check.ts";
 import { addPauseItem, MANIFEST, STAGING } from "./install.ts";
@@ -217,9 +218,12 @@ test("rideScripts (phase 5): THUG2's manual and revert inputs on the bike, the b
     // up-down / down-up: the manual / nose manual, THUG2's timings; the air's kept for the landing
     assert.match(
         text,
-        /thaw_bmx_GroundManualTricks = \[\n {4}\{Trigger=\{InOrder, Up, Down, 220\} Scr=thaw_bmx_manual\}/,
+        /thaw_bmx_GroundManualTricks = \[\n {4}\{Trigger=\{InOrder, leftup, leftdown, 220\} Scr=thaw_bmx_manual\}/,
     );
-    assert.match(text, /\{Trigger=\{InOrder, Down, Up, 400\} Duration=700 Scr=thaw_bmx_manual Params=\{nose\}\}/);
+    assert.match(
+        text,
+        /\{Trigger=\{InOrder, leftdown, leftup, 400\} Duration=700 Scr=thaw_bmx_manual Params=\{nose\}\}/,
+    );
     assert.match(body("thaw_bmx_manual"), /EnterWheelieFromAir nose\n\s+Goto bike_manual params=\{nose\}/);
     assert.match(body("bike_onground"), /SetManualTricks thaw_bmx_GroundManualTricks/);
     assert.match(body("bike_onground_loop"), /DoNextManualTrick\n/);
@@ -371,77 +375,49 @@ test("bailBikeComponents: THAW's rigid body on our bike's skeleton, model and an
     assert.throws(() => bailBikeComponents([thawComponents[0]!], n), /no rigidbody/);
 });
 
-test("triggers: THAW's right-stick tricks on Flip + a direction, its grabs on Grab + a direction", () => {
-    const n = names("BikePress", "rightright", "rightdown", "InOrder", "leftdown", "square", "Press", "circle", "R2");
-    const trig = (...parts: (string | number)[]): Struct =>
-        new Struct(parts.map((p) => [null, typeof p === "number" ? p : new Name(checksum(p))] as [null, QbValue]));
-    assert.deepEqual(triggers(trig("BikePress", "rightright", 50), n), [
-        { trigger: "{AirTrickLogic, Square, Right, 500}", button: "Square" },
-    ]);
-    assert.deepEqual(triggers(trig("BikePress", "rightdown", 50), n), [
-        { trigger: "{AirTrickLogic, Square, Down, 500}", button: "Square" },
-    ]);
-    assert.deepEqual(triggers(trig("InOrder", "leftdown", "square", 500), n), [
-        { trigger: "{AirTrickLogic, Circle, Down, 500}", button: "Circle" },
-    ]);
-    assert.deepEqual(
-        triggers(trig("Press", "square", 500), n).map((t) => t.trigger),
-        [
-            "{AirTrickLogic, Circle, Left, 500}",
-            "{AirTrickLogic, Circle, Right, 500}",
-            "{AirTrickLogic, Circle, Up, 500}",
-        ],
-    );
-    // the x-up (circle) and the pivot (R2) as THAW has them
-    assert.equal(triggers(trig("Press", "circle", 50), n)[0]!.button, undefined);
-    assert.match(triggers(trig("Press", "R2", 50), n)[0]!.trigger, /Press\n\s+R2\n\s+50/);
-    assert.throws(() => triggers(trig("BikePress", "leftleft", 50), n), /not a right-stick direction/);
+test("bikeGlobals: THAW's trick lists as THAW has them - BikePress on the right stick, its held checks' buttons=", {
+    skip: NO_THAW,
+}, () => {
+    const n = thaw.loadNames(THAW!);
+    const text = bikeGlobals(readThawBike(path.join(THAW!, "data", "pak", "qb.pak.wpc"), n), n);
+    const list = (name: string): string => {
+        const m = new RegExp(`\\n${name} = \\[\\n([\\s\\S]*?)\\n\\]\\n`).exec(`\n${text}`);
+        assert.ok(m, name);
+        return m[1]!;
+    };
+    const air = list("Bike_AirTricks");
+    // the right stick's flips: BikePress, THAW's 50 ms flick; the held check's buttons (double / triple whips)
+    assert.match(air, /Trigger=\{\s+BikePress\s+rightright\s+50\s+\}\s+scr=bike_grab_trick/);
+    assert.match(air, /buttons=\[rightright, RightUpRight, RightDownRight\]/);
+    assert.match(air, /Trigger=\{\s+BikePress\s+rightdown\s+50\s+\}\s+scr=bike_partial_barspin/);
+    // the grabs on THAW's buttons: the superman down then square (the movement stick's leftdown), the tabletop square
+    assert.match(air, /Trigger=\{\s+InOrder\s+leftdown\s+square\s+500\s+\}/);
+    assert.match(air, /Trigger=\{\s+Press\s+square\s+500\s+\}/);
+    for (const name of ["Bike_AirTricks", "Bike_ManualTricks", "Bike_NoseManualTricks"])
+        assert.doesNotMatch(list(name), /AirTrickLogic/, name);
+    assert.match(list("Bike_ManualTricks"), /BikePress/);
+    assert.equal(localStrings("Name = 'Double Peg Grind' x = \"don't\""), 'Name = %"Double Peg Grind" x = "don\'t"');
 });
 
-test("trickList: THAW's names, scores and scripts kept, `buttons` as the one button THUG2's Held asks", () => {
-    const n = names(
-        "BikePress",
-        "rightright",
-        "Press",
-        "square",
-        "scr",
-        "params",
-        "Name",
-        "score",
-        "buttons",
-        "bike_grab_trick",
-        "Trigger",
-        "RightUpRight",
-        "update_side",
-    );
-    const trick = (trigger: QbValue, params: [string, QbValue][]): Struct =>
-        new Struct([
-            [new Name(checksum("Trigger")), trigger],
-            [new Name(checksum("scr")), new Name(checksum("bike_grab_trick"))],
-            [new Name(checksum("params")), new Struct(params.map(([k, v]) => [k ? new Name(checksum(k)) : null, v]))],
-        ]);
-    const t = (...parts: string[]): Struct =>
-        new Struct(parts.map((p) => [null, /^\d+$/.test(p) ? Number(p) : new Name(checksum(p))] as [null, QbValue]));
-    const text = trickList(
-        [
-            trick(t("BikePress", "rightright", "50"), [
-                ["Name", new Local("Tailwhip")],
-                ["score", 100],
-                ["buttons", [new Name(checksum("rightright")), new Name(checksum("RightUpRight"))]],
-            ]),
-            trick(t("Press", "square", "500"), [
-                ["Name", new Local("Tabletop")],
-                ["", new Name(checksum("update_side"))],
-            ]),
-        ],
-        n,
-    );
-    assert.equal((text.match(/Trigger=/g) ?? []).length, 4, text);
-    assert.match(text, /Trigger=\{AirTrickLogic, Square, Right, 500\}\n {8}scr=bike_grab_trick\n/);
-    assert.match(text, /Name='Tailwhip'\n {12}score=100\n {12}button=Square\n/i);
-    assert.doesNotMatch(text, /buttons=/);
-    assert.match(localStrings(text), /Name=%"Tabletop"\n {12}update_side\n {12}button=Circle\n/i);
-    assert.equal(localStrings("Name = 'Double Peg Grind' x = \"don't\""), 'Name = %"Double Peg Grind" x = "don\'t"');
+test("rideScripts: THAW's stick buttons and its d-pad camera on the bike", { skip: NO_THAW }, () => {
+    const text = rideScripts();
+    const code = (name: string): string => {
+        const m = new RegExp(`\\nscript ${name}(?: [^{\\n]*)? \\{\\n([\\s\\S]*?)\\n\\}\\n`).exec(text);
+        assert.ok(m, name);
+        return m[1]!.replace(/\/\/[^\n]*/g, "");
+    };
+    // getting on: the d-pad turns the camera, the stick no longer drives the menus' d-pad; off (and a reset) back
+    assert.match(code("bike_start"), /skatercam0:LookaroundOnDPad_On\n\s+SetAnalogStickActiveForMenus 0/);
+    assert.match(code("bmx_finish_off"), /skatercam0:LookaroundOnDPad_Off\n\s+SetAnalogStickActiveForMenus 1/);
+    assert.match(code("thaw_bmx_after_reset"), /LookaroundOnDPad_Off[\s\S]*SetAnalogStickActiveForMenus 1/);
+    // THAW's movement-stick names, not THUG2's d-pad ones (the d-pad is the camera)
+    assert.match(code("BIKE_GRIND"), /DoBalanceTrick ButtonA=<ButtonA> ButtonB=<ButtonB>/);
+    assert.match(text, /\nscript BIKE_GRIND ButtonA=leftright ButtonB=leftleft \{/);
+    assert.match(text, /DoBalanceTrick ButtonA=leftright ButtonB=leftleft Type=Manual/);
+    assert.match(code("bike_grab_trick"), /Held <button> buttons=<buttons>/);
+    assert.match(text, /Held leftleft/);
+    assert.doesNotMatch(text.replace(/\/\/[^\n]*/g, ""), /Held (Up|UpLeft|UpRight|DownLeft|DownRight)\b/);
+    assert.match(text, /\{InOrder, leftup, leftdown, 220\}/);
 });
 
 test("soundPaths: THAW's sound names as THUG2's terrain files - ours under thaw_bmx, THUG2's own in Terrains", () => {
