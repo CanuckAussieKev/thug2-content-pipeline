@@ -46,7 +46,8 @@ export const THAW_CAMERAS: readonly [string, string][] = [
 export const PHYSICS_FILE = "scripts\\game\\skater\\physics.qb";
 // THAW's physics.qb globals the bike's physics reads that THUG2 hasn't (src/game/skater/thaw_bmx_physics.cpp reads them
 // under THAW's names - THUG2 has none of these; it falls back to THAW's values without them).
-export const THAW_GLOBALS: readonly string[] = ["Normal_Lerp_Speed_Bike", "bike_forward_jump_boost"];
+// (stall_slip_time: the bike stall's slip - src/game/skater/thaw_bmx_physics.cpp RailStallSlip)
+export const THAW_GLOBALS: readonly string[] = ["Normal_Lerp_Speed_Bike", "bike_forward_jump_boost", "stall_slip_time"];
 // The wheels: 11.0 units from the ground to the axles (the bike's skeleton: both wheel bones at y 11.01 in the rest
 // pose), so 2 pi r = 69.2 a turn; bmx_front_tire_rotate / bmx_rear_tire_rotate turn the wheel once in 1 s.
 export const WHEEL_CIRCUMFERENCE = 69.2;

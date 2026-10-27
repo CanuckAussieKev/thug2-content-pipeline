@@ -254,3 +254,12 @@ script thaw_bmx_bail_bike_control {
 //@unit BIKE_GRIND
 //@unit bike_OffRail
 //@unit bike_rail_exit
+// (THAW's stall on the bike: R1 held as a grind starts - BIKE_GRIND goes here while ShouldRunStallScript says so;
+// the physics' stall state - src/game/skater/core_rail.cpp DoBikeStallPhysics - keeps the bike still on the rail)
+//@unit BikeStallTrick
+// (THAW's stalltricks.qb, which THUG2 hasn't; on the bike THAW's balance buttons leftright / leftleft - the movement
+// stick's right / left -, here Right / Left as BIKE_GRIND's)
+//@unit PlayStallBalancingAnim
+//@unit StallOllieOut
+// (THAW's ExitPointRailSpin as it runs on the bike - THUG2's own has no bike branch)
+//@unit bike_ExitPointRailSpin

@@ -825,8 +825,7 @@ from d48ec822 scripts\game\skater\bike_grindscripts.qb BIKE_GRIND
 = 31-32
 ~ 33 11 1 F
 +             Flip
-= 35
-= 39-42
+= 35-42
 ~ 43 45 25 randomrange(110.0, 120.0)
 = 44-48
 ~ 49 27 1 S
@@ -883,4 +882,66 @@ from 0924f954 scripts\game\skater\bike_grindscripts.qb bike_rail_exit
 ~ 10 7 1 F
 +         Flip
 = 12-16
+new BikeStallTrick
+from bcd0e9d3 scripts\game\skater\bike_grindscripts.qb BikeStallTrick
+= 1
+~ 2 15 11
++     Type = grind
+= 3-5
++         if AnimExists <appended_id> {
+= 7-9
++         if AnimExists <appended_id> {
+= 11-13
++         if AnimExists <appended_id> {
+= 15-19
+~ 20 18 2 ir
+= 21-32
+~ 33 17 16 Ex=OffMeterTop S
+~ 34 17 19 Ex=OffMeterBottom S
+= 35
+~ 36 17 11 Ex=Ollied S
+= 37-38
+~ 39 12 6 SpawnS
+= 40-51
+~ 52 8 8 thaw_bmx_p
+~ 53 16 1 B
++         thaw_bmx_waitanim
+= 55-56
+~ 57 12 8 thaw_bmx_p
+= 58
+~ 59 20 1 B
++             thaw_bmx_waitanim
+= 61-63
+~ 64 13 1 O
+= 65-71
+~ 72 17 1 O
+= 73-80
+new PlayStallBalancingAnim
+from 88a35c82 scripts\game\skater\stalltricks.qb PlayStallBalancingAnim
+= 1-2
+~ 3 18 5 R
+~ 4 18 5 L
+= 5
+~ 6 18 1 R
+~ 7 18 1 L
+= 8-9
+~ 10 4 45 thaw_bmx_playanim anim=<anim> Wobble From=End T
+= 11
+~ 12 8 29 thaw_bmx_playanim anim=<anim> C
+= 13-14
+new StallOllieOut
+from aca92c09 scripts\game\skater\stalltricks.qb StallOllieOut
+= 1-24
+~ 25 4 0 bike_
+= 26
+new bike_ExitPointRailSpin
+from dda3ce10 scripts\game\skater\grindscripts.qb ExitPointRailSpin
+~ 1 7 0 bike_
+= 2-4
+~ 5 8 12 KillSpawnedS
+~ 6 8 6 SpawnS
+= 7-33
+= 37-43
+~ 45 4 4
+= 53
 +

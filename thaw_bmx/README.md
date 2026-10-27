@@ -104,3 +104,9 @@ The animation trees THAW's scripts drive become `thaw_bmx_playanim` (PlayAnim on
 has the animation) and `thaw_bmx_playbarspin` (the anim subset Barspin on both); the manual's pose follows the manual
 angle in the DLL (src/game/skater/thaw_bmx_tricks.cpp). The data overlay gets the sounds (`install.ts` copies `sounds`;
 the DLL's PCWave::Load reads the overlay's copy first).
+
+The stall (R1 held as a grind starts): THAW's `BikeStallTrick` (from BIKE_GRIND while `ShouldRunStallScript`), with
+its stalltricks.qb helpers `PlayStallBalancingAnim` and `StallOllieOut` and its ExitPointRailSpin as
+`bike_ExitPointRailSpin` (THUG2's own has no bike branch); THAW's `stall_slip_time` goes into the overlay with its other
+physics globals. The physics' stall state is in the DLL (src/game/skater/core_rail.cpp DoBikeStallPhysics,
+thaw_bmx_physics.cpp).

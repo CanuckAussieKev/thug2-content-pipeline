@@ -65,6 +65,7 @@ test("physicsText: THAW's bicycle_physics and bike cameras under our names, the 
         ],
         Normal_Lerp_Speed_Bike: 0.5,
         bike_forward_jump_boost: 100,
+        stall_slip_time: 130,
     });
     const text = ride.physicsText(
         thaw,
@@ -87,7 +88,7 @@ test("physicsText: THAW's bicycle_physics and bike cameras under our names, the 
         /\nthaw_bmx_camera_array = \[Skater_Camera_Undefined, thaw_bmx_camera_near, thaw_bmx_camera_medium, thaw_bmx_camera_far, thaw_bmx_camera_medium_ltg\]\n/,
     );
     // (phase 3: THAW's globals the bike's physics reads, under THAW's names)
-    assert.match(text, /\nNormal_Lerp_Speed_Bike = 0\.5\nbike_forward_jump_boost = 100\n$/);
+    assert.match(text, /\nNormal_Lerp_Speed_Bike = 0\.5\nbike_forward_jump_boost = 100\nstall_slip_time = 130\n$/);
     assert.throws(() => ride.physicsText(globals({}), names()), /no bicycle_physics/);
 });
 
