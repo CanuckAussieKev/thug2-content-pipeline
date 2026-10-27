@@ -189,15 +189,14 @@ test("rideScripts (phase 5): THUG2's manual and revert inputs on the bike, the b
     assert.match(body("bike_onground_loop"), /DoNextManualTrick\n/);
     assert.match(body("bike_Airborne"), /SetManualTricks thaw_bmx_AirManualTricks/);
     const land = body("bike_land2");
-    assert.match(land, /SetExtraTricks tricks=thaw_bmx_Reverts duration=<RevertTime>/);
-    // the manual / revert window comes before the combo lands
+    // the manual window comes before the combo lands
     assert.ok(land.indexOf("DoNextManualTrick FromAir") < land.indexOf("\n    LandSkaterTricks"));
-    assert.ok(land.indexOf("} <RevertTime>") < land.indexOf("KillExtraTricks"));
-    // the revert: THUG2's triggers, THAW's pivot animation, back into the landing (a manual can follow)
-    assert.match(text, /thaw_bmx_Reverts = \[\n {4}\{Trigger=\{Press, R2, 200\} Scr=bike_revert\}/);
-    const revert = body("bike_revert");
-    assert.match(revert, /Rotate\n[\s\S]*anim=bmx_pivot_frombackwards[\s\S]*Goto bike_land2 params=\{no_anim\}$/);
-    assert.match(revert, /ResetLandedFromVert/); // (or bike_land2 would open the window again)
+    // no revert on the bike (THAW has none: no SetExtraTricks_Reverts in its bike_land2); THAW's own backwards
+    // revert stays
+    assert.doesNotMatch(text, /thaw_bmx_Reverts|script bike_revert /);
+    assert.doesNotMatch(land, /SetExtraTricks/);
+    assert.match(land, /if ! LandedFromVert \{\n\s+while \{\n\s+DoNextManualTrick FromAir/);
+    assert.match(body("bike_backwards_revert"), /Rotate\n[\s\S]*anim=bmx_pivot_frombackwards/);
     // the bail: the ridden bike hidden, a rigid body one thrown; taken away at the get-up, a reset, getting on
     assert.match(
         body("bike_bail"),

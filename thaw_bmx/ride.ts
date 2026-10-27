@@ -300,10 +300,6 @@ script thaw_bmx_test_air_on_skater {
 script thaw_bmx_test_push {
     skater:SetSpeed <speed>
 }
-// (a test: the revert as its window (bike_land2) would start it - "run thaw_bmx_test_revert")
-script thaw_bmx_test_revert {
-    MakeSkaterGoto bike_revert
-}
 // (a test: the grind's balance lost as its meter's exception would start it - "run thaw_bmx_test_skatein")
 script thaw_bmx_test_skatein {
     MakeSkaterGoto bike_SkateInOrBail params={FallingRight}

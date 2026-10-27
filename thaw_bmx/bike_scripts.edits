@@ -626,13 +626,7 @@ from 46d5d6ff scripts\game\skater\bike_scripts.qb BIKE_LAND
 new bike_land2
 from f811fdf8 scripts\game\skater\bike_scripts.qb bike_land2
 with 3bceb733 scripts\game\skater\tricks.qb Land2
-= 1-6
-+         // (ours, the user's request: THUG2's revert input on the bike - Land2's window, R2 / L2 as the landing comes)
-+         GetSpeed
-+         if (<speed> > 250) {
-+             SetExtraTricks tricks=thaw_bmx_Reverts duration=<RevertTime>
-+         }
-= 7-18
+= 1-18
 ~ 19 24 5 D
 = 20-24
 ~ 25 28 5 U
@@ -649,13 +643,9 @@ with 3bceb733 scripts\game\skater\tricks.qb Land2
 ~ 46 17 17 Ex=GoalHasEnded S
 = 47-48
 ~ 49 20 2 thaw_bmx_AirManual
-+     // (ours, as THUG2's Land2: the revert's window, or the manual pressed in the air - the combo goes on into either)
-= 4
-+         ResetLandedFromVert
-+         while {
-+             wait 1 gameframe
-+         } <RevertTime>
-+     } else {
++     // (ours, as THUG2's Land2: the manual pressed in the air - the combo goes on into it. Not THUG2's revert window
++     // after a vert landing: THAW's bike has no revert - its only pivot is bike_backwards_revert, riding backwards)
++     if ! LandedFromVert {
 +         while {
 = 17 @1
 +             wait 1 gameframe
@@ -963,7 +953,7 @@ with bf4831f4 scripts\game\skater\tricks.qb OnGroundExceptions
 +         bike_OnGroundExceptions NoEndRun
 = 8-11 @1
 = 20-24
-+         // (THAW: SetExtraTricks_Reverts - no reverts on the bike there; bike_land2 has ours)
++         // (THAW: SetExtraTricks_Reverts - no reverts on the bike there)
 = 26
 ~ 28 8 4
 = 42-44
