@@ -99,6 +99,7 @@ No vehicle any more: the ride is THAW's own bike scripts.
 | `thaw_ns.ts` | THAW's script bodies (thaw_scripts.ts' THUG2 tokens) written as NeverScript in THUG2's decompiled layout - what the port's edits start from |
 | `sounds.ts` | THAW's global_sfx pak (its address table in `global_sfx_dat_wpc.qb`) -> THUG2 .snd (4-bit IMA ADPCM in a RIFF WAVE, a `smpl` loop for the loops) under `sounds\thaw_bmx` |
 | `check.ts` | every command the compiled scripts run is THUG2's (C function, member, script) or ours - convert.ts fails otherwise |
+| `meter.ts` | the bike's manual meter: THAW's panel pictures (`data\images\panelsprites\bike_tailmeter / bike_nosemeter / bike_arc.img.wpc`, DXT5) -> THUG2 32-bit `.img.xbx` under `images\thaw_bmx`. THAW's own meter scripts (create / update / destroy_bike_manual_meter, ported whole) draw it: the bike picture - mirrored (`flip_v`) for a nose manual - turned by 0.9 degrees per point of the manual angle over the arc; they load the pictures with the DLL's `ThawBmx_LoadTexture` |
 
 The animation trees THAW's scripts drive become `thaw_bmx_playanim` (PlayAnim on the rider, Obj_PlayAnim on the bike when it
 has the animation) and `thaw_bmx_playbarspin` (the anim subset Barspin on both); the manual's pose follows the manual
