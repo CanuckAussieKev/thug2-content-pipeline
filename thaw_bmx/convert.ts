@@ -56,6 +56,7 @@ import * as skel from "../thps3_levels/thps3_skin.ts";
 import * as bikeScripts from "./bike_scripts.ts";
 import * as check from "./check.ts";
 import * as meter from "./meter.ts";
+import * as parked from "./parked.ts";
 import * as ride from "./ride.ts";
 import * as ska from "./ska.ts";
 import * as sounds from "./sounds.ts";
@@ -599,10 +600,20 @@ export function convert(c: Context, out: string, ns: string | null): Result {
     // scripts
     const qbPak = findPath(c.thaw, "data", "pak", "qb.pak.wpc");
     if (qbPak === null) throw new FormatError("THAW: data\\pak\\qb.pak.wpc not found");
+    const thawBike = bikeScripts.readThawBike(qbPak, c.names);
+    // (the levels' own parked bikes: THAW's bike_ped_ids, their nodes in THAW's zones - parked.ts)
+    const homeBikes = parked.homeBikes(
+        c.thaw,
+        parked.bikePedIds(thawBike.get("bike_ped_ids"), c.names),
+        c.names,
+        report,
+    );
+    report.push(`parked bikes: ${homeBikes.length} levels' own (${homeBikes.map((b) => b.level).join(", ")})`);
     const text = scriptsText(
         anims,
         ride.physicsText(ride.thawPhysics(qbPak, c.names), c.names) +
-            bikeScripts.bikeGlobals(bikeScripts.readThawBike(qbPak, c.names), c.names) +
+            bikeScripts.bikeGlobals(thawBike, c.names) +
+            parked.homeBikesText(homeBikes) +
             ride.rideScripts(new bikeScripts.ThawScripts(qbPak, c.thaw)),
     );
     report.push(
