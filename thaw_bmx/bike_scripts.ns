@@ -161,51 +161,6 @@ script thaw_bmx_manual {
         Goto bike_manual
     }
 }
-// (ours, the user's request: THUG2's revert on the bike - R2 / L2 as it lands from vert (bike_land2 opens the window,
-// THUG2's Reverts triggers), a pivot round with THAW's bmx_pivot_frombackwards as its bike_backwards_revert plays it;
-// THUG2's revert's name and score, the combo going on - a manual can follow, as the skater's revert)
-thaw_bmx_Reverts = [
-    {Trigger={Press, R2, 200} Scr=bike_revert}
-    {Trigger={Press, L2, 200} Scr=bike_revert}
-]
-script bike_revert {
-    KillExtraTricks
-    StopBalanceTrick
-    OnExitRun bike_exit_revert
-    InRevert
-    ResetLandedFromVert
-    ClearException Ollied
-    LaunchStateChangeEvent State=Skater_InRevert
-    SetQueueTricks NoTricks
-    SetManualTricks thaw_bmx_AirManualTricks
-    if LastSpinWas Frontside {
-        SetTrickName %"FS Revert"
-    } else {
-        SetTrickName %"BS Revert"
-    }
-    SetTrickScore 100
-    Display Blockspin
-    Vibrate Actuator=1 Percent=80 duration=0.1
-    Rotate
-    if LastSpinWas Frontside {
-        Flip
-    }
-    Skater_PlayBikeAnim anim=bmx_pivot_frombackwards BlendPeriod=0
-    if LastSpinWas Frontside {
-        FlipAfter
-    }
-    SetException Ex=Ollied Scr=BIKE_OLLIE
-    while {
-        if AnimFinished {
-            break
-        }
-        wait 1 gameframe
-    }
-    Goto bike_land2 params={no_anim}
-}
-script bike_exit_revert {
-    OutRevert
-}
 //@unit bike_empty_trick
 //@unit bike_manual_barspin
 //@unit bike_nosewheelie_whip
