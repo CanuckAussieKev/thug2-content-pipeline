@@ -1,4 +1,4 @@
-// NOT ORIGINAL - the standard main menu's scripts (make_menu_level.ts standardMainMenu; src/game/front/menu_backdrop.h),
+// NOT ORIGINAL - the standard main menu's scripts (make_menu_level.ts standardMainMenu),
 // made from the user's THUG2 each run: main_menu.ns holds our own scripts and, for each one that is an adapted game
 // script (create_main_menu, add_main_menu_list_items, main_menu_list_item - the game's create_main_menu /
 // add_main_menu_items / make_spin_menu_item -, main_menu_choose and main_menu_skate_now - its main_menu_exit - and

@@ -4,8 +4,8 @@
 // folder the DLL reads before the game's archives and data folder:
 //   - always used: the skate shop as a playable level (Level_SkateShopLevel, in the level select as "SKATE SHOP"),
 //     TestLevel in the level select, the pause menu's LEVEL EDITOR, the THPS4 levels;
-//   - front_end\, used first while the skate-shop front end is on (thug2-decomp.ini [features] menu_backdrop, any
-//     value but 0 - src/game/front/menu_backdrop.h): the standard main menu.
+//   - front_end\, used first while the new front end is on (thug2-decomp.ini [features] new_frontend): the standard
+//     main menu.
 //
 //   node tools/pipeline/menu_level/make_menu_level.ts [--game C:\Games\THUG2] [--out <folder>] [--ns <ns.exe>] [--hd-ui 2|4]
 //
@@ -24,13 +24,9 @@
 //                              they have made <game>\thug2-decomp-thps4 / -thug1: copied in, their level structures
 //                              added to both Levels.qb and their signs to the level select's THUG1 / THPS4 sections
 //                              (tools/pipeline/level_port/ported_levels.ts).
-//   front_end\levels\mainmenu\mainmenu_scripts.qb  (when the THPS4 skate shop is among them: the front end's backdrop)
-//                              the front end's scripts with create_main_menu building a standard vertical menu (a
-//                              roundbar menu, as Game Options and Create-A-Modes) instead of the spinning wheel - the
-//                              same items doing the same things, after SKATE NOW (the menu slides away and the skater
-//                              drops in on the outside halfpipe, as THPS4's practice; Esc brings the menu back); the shop's collision loaded at the
-//                              start; the skater standing idle.
-//   front_end\levels\mainmenu\mainmenu.qb  the front end's nodes with the skater's restarts moved into THPS4's shop.
+//   front_end\levels\mainmenu\mainmenu_scripts.qb  the front end's scripts with create_main_menu building a standard
+//                              vertical menu (a roundbar menu, as Game Options and Create-A-Modes) instead of the
+//                              spinning wheel - the same items doing the same things - and the new front end's items.
 //   hd_ui\                    with --hd-ui 2|4 (off by default): the menus' images and fonts upscaled
 //                              (tools/pipeline/hd_textures/ui.ts), same relative names; read first only while [features]
 //                              hd_ui=1 (src/game/gfx/hd_ui.h). --hd-ui-model picks the model.
@@ -59,29 +55,14 @@ import { pathToFileURL } from "node:url";
 import * as zlib from "node:zlib";
 import * as hdUi from "../hd_textures/ui.ts"; // (--hd-ui: the menus' images and fonts upscaled)
 import { textOutput } from "../level_port/common.ts";
-import * as levelPortNodes from "../level_port/nodes.ts"; // (the terrain sounds a level loads)
 import * as pedModels from "../level_port/ped_models.ts"; // (the ported levels' own people: their profiles and CAS parts)
 import * as portedLevels from "../level_port/ported_levels.ts"; // (the converted levels: added when <game>\thug2-decomp-<game> exist)
-import * as thug2Col from "../level_port/thug2_col.ts"; // (the front end's collision without THUG2's shop)
 import { parseCli } from "../lib/cli.ts";
 import { DECOMP, NS_DEFAULT, nsMissing, PIPELINE } from "../lib/decomp.ts";
 import type { UnitLookup } from "../lib/edits.ts";
 import { resolveInstall } from "../lib/install.ts";
-import {
-    decodeAsciiReplace,
-    formatFixed,
-    isMain,
-    print,
-    pyExit,
-    pyJoin,
-    pyParseFloat,
-    pyParseInt,
-    pyStrip,
-    readTextPy,
-    runMain,
-    writeTextPy,
-} from "../lib/py.ts";
-import { findall, finditer, type Match, search, sub } from "../lib/re.ts";
+import { decodeAsciiReplace, isMain, print, pyExit, pyJoin, readTextPy, runMain, writeTextPy } from "../lib/py.ts";
+import { findall, search } from "../lib/re.ts";
 import { unpackNumbers } from "../lib/struct.ts";
 import * as thawBmxInstall from "../thaw_bmx/install.ts"; // (THAW's BMX: bike, skeleton, animations - phase 1)
 import { applyTextEdits, CAR_SCRIPTS, DRIVING_EDITS } from "../thug1_levels/driving.ts"; // (PC-THUG1-22, Anteara Mod's copy)
@@ -109,7 +90,6 @@ interface AntearaMod {
         out: string,
         tool: string,
         edits?: ReadonlyMap<string, AntearaEdit>,
-        frontEndEdits?: ReadonlyMap<string, AntearaEdit>,
         thug1?: string,
     ): string | null;
 }
@@ -835,289 +815,18 @@ export function addCreate100Cas(decompile: Decompile, write: Write, pre: string,
     print(`CREATE 100% CAS (GAME OPTIONS):\n${careerComplete.describe(data)}`);
 }
 
-// --- the standard main menu (src/game/front/menu_backdrop.h) ------------------------------------------------------
-
-// The front end's backdrop: the THPS4 skate shop (tools/pipeline/thps4_levels), shown behind the menus by the DLL.
-export const BACKDROP_LEVEL = "thps4_skateshop";
+// --- the standard main menu (the front_end folder, used while the new front end is on) ---------------------------
 
 // create_main_menu as the game's (mainmenu_scripts.qb), but a roundbar menu (make_new_roundbar_menu /
 // add_roundbar_menu_item, as Game Options and Create-A-Modes) where it made the spinning wheel (make_spin_menu: a
 // turned VMenu with filler items, a copy of the items, the highlight bar and icon, the wheel's level objects turned
-// with it). The menu's ids stay main_menu / main_vmenu (scripts find main_vmenu); its place on screen is
-// main_menu_list_pos, the 640 x 480 layout's top left of the items, on a dark backing (main_menu_backing: the shop's
-// wall of decks behind made the items hard to read): centred, above the THPS4 shop's counter in the
-// held view (its glass counter's top - the wheels and decks on it, ~y 20 - projects to screen y ~300; worked out
-// from the node positions, not yet seen in the game). The skater, its camera (mainmenu_camera02 - the
-// DLL holds the view while it plays), the wheel's objects (left as the game shows them: in THUG2's shop, out of
-// sight), the attract mode timer, the second controller check and the rest are as the game's.
-// The items are add_main_menu_items' (the same conditions, ids, scripts and parameters), each chosen through
-// main_menu_choose: main_menu_exit without the wheel's spin (the skater's spin animation, the click, the turns) -
-// a short fade instead, then the item's script. The item chosen is focused when the menu comes back (as the game's
-// spin_menu_selected_index). Items the game makes inactive (active=0) are shown but not focusable; the 2 player
-// item's tag `active` is switched by the game's enable / disable_two_player_option as before, and main_menu_choose
-// doesn't run an inactive item.
-// SKATE NOW (main_menu_skate_now): the menu slides out, the skater gets skating physics (main_menu_skater_skate: the
-// front end's skater is in walking physics mode), then THPS4's practice start: the restart TRG_SS_SkaterDropIn
-// (frontEndNodes) and DropIn. The restart is KillSkater node= - the skater's real restart (ResetSkaters skips the
-// front end's skater; Obj_MoveToNode left the physics behind: the drop-in ended with a snap); it restarts the skater's
-// script, so DropIn is started after it. Esc (root_window's pad_start) brings the menu back (main_menu_skate_stop)
-// behind a short fade to black: built as it is, the menu came back in pieces over a few frames (the items sliding in
-// over the skating view, then the camera, the skater still on his board, then the title).
+// with it). The menu's ids stay main_menu / main_vmenu (scripts find main_vmenu). The skater, its camera
+// (mainmenu_camera02), the wheel's objects, the attract mode timer, the second controller check and the rest are as the
+// game's. The items are add_main_menu_items' (the same conditions, ids, scripts and parameters), each chosen through
+// main_menu_choose: main_menu_exit without the wheel's spin - a short fade instead, then the item's script. The item
+// chosen is focused when the menu comes back (as the game's spin_menu_selected_index). Items the game makes inactive
+// (active=0) are shown but not focusable; main_menu_choose doesn't run an inactive item.
 // (the scripts: main_menu.ts - made each run from the user's game scripts, our changes stored as edits)
-
-// The front end's skater stands in THPS4's shop (the DLL draws only that shop in the front end): its restarts
-// (TRG_Playerrestart - the main menu, Create-A-Skater and the other menus' skater; SS_player_restart - the skate
-// shop menu's) moved to the floor on the left of the held view, a few steps in front of the counter, facing the
-// camera (yaw:
-// the skater faces (sin yaw, 0, cos yaw); the held view's camera is at (565, 74, -1114)).
-export const FRONT_END_SKATER_POS: readonly [number, number, number] = [467.0, 0.0, -1304.0];
-export const FRONT_END_SKATER_ANGLES: readonly [number, number, number] = [0.0, 0.474, 0.0];
-
-// THPS4's practice start (its start_practice_run_skater: ResetSkaters node_name=TRG_SS_SkaterDropIn, MakeSkaterGoto
-// Dropin): the restart on the outside halfpipe's coping that SKATE NOW drops in from.
-export const DROP_IN_NODE = "TRG_SS_SkaterDropIn";
-
-const fx = (x: number, digits: number): string => formatFixed(x, digits);
-
-// Python's float(v) for each of "x, y, z".
-function floats(text: string): number[] {
-    return text.split(",").map((v) => pyParseFloat(v));
-}
-
-export function frontEndNodes(text: string, backdropNodes: string): string {
-    // The front end's node array (levels\mainmenu\mainmenu.qb) with its restarts moved into THPS4's shop, and THPS4's
-    // drop-in restart added at the end (from the converted shop's node array `backdropNodes`, as NeverScript text;
-    // added last, the front end's node indices and links are unchanged).
-    // The front end loaded only TERRAIN_DEFAULT's sounds (its LoadTerrain): THPS4's shop is wood, metal... - silent
-    // rolling after SKATE NOW. Every terrain's, as the ported levels (level_port nodes.loadTerrainNs).
-    const terrain = search(/script LoadTerrain \{\n.*?\n\} \n/s, text);
-    if (!terrain) pyExit("mainmenu.qb: LoadTerrain not found");
-    text = `${text.slice(0, terrain.start())}${levelPortNodes.loadTerrainNs()} \n${text.slice(terrain.end())}`;
-    for (const name of ["TRG_Playerrestart", "SS_player_restart"]) {
-        const node = search(
-            new RegExp(`\\n( *)Pos=\\([^)]*\\) *\\n *Angles=\\([^)]*\\) *\\n *Name=${name} *\\n`),
-            text,
-        );
-        if (!node) pyExit(`mainmenu.qb: the restart ${name} not found`);
-        const indent = node.str(1);
-        const [px, py, pz] = FRONT_END_SKATER_POS;
-        const [ax, ay, az] = FRONT_END_SKATER_ANGLES;
-        const moved =
-            `\n${indent}Pos=(${fx(px, 1)}, ${fx(py, 1)}, ${fx(pz, 1)}) \n` +
-            `${indent}Angles=(${fx(ax, 6)}, ${fx(ay, 6)}, ${fx(az, 6)}) \n${indent}Name=${name} \n`;
-        text = text.slice(0, node.start()) + moved + text.slice(node.end());
-    }
-    const node = search(
-        new RegExp(`\\n *Position=\\(([^)]*)\\) *\\n *Angles=\\(([^)]*)\\) *\\n *Name=${DROP_IN_NODE} *\\n`),
-        backdropNodes,
-    );
-    const end = text.indexOf("\n] \n");
-    if (!node || end < 0 || text.indexOf("\n] \n", end + 1) >= 0) {
-        pyExit(`the front end's node array / ${BACKDROP_LEVEL}'s ${DROP_IN_NODE} not as expected`);
-    }
-    // Written as THUG2's own nodes are: Pos = the legacy Position with z negated (as the engine reads it), THPS4's
-    // angles kept (the skater pitched 90 degrees against the vert at the coping: DropIn's animation - THPS4's, never
-    // used by THUG2 itself - is made for that). Copied verbatim instead (Position= with CreatedAtStart), the game quit
-    // at start-up.
-    const [x, y, z] = floats(node.str(1)) as [number, number, number];
-    const [pitch, yaw, roll] = floats(node.str(2)) as [number, number, number];
-    const dropIn =
-        `    {\n        Pos=(${fx(x, 3)}, ${fx(y, 5)}, ${fx(-z, 3)}) \n        Angles=(${fx(pitch, 6)}, ${fx(yaw, 6)}, ${fx(roll, 6)}) \n        Name=${DROP_IN_NODE} \n` +
-        '        Class=Restart \n        Type=Generic \n        CreatedAtStart \n        RestartName="DropIn" \n' +
-        "        restart_types=[Generic] \n    } \n";
-    return text.slice(0, end + 1) + dropIn + text.slice(end + 1);
-}
-
-// The converted shop's peds, cars and their waypoints (tools/pipeline/level_port/peds_cars.ts: the last nodes of its array).
-export const MOVING_CLASSES: ReadonlySet<string> = new Set(["pedestrian", "vehicle", "waypoint"]);
-
-// re.split(r"[,\s]+", text.strip())
-function splitLinks(text: string): string[] {
-    return pyStrip(text).split(/[,\s]+/);
-}
-
-// "Pos=(%.4f, %.4f, %.4f)" of a legacy Position=(...) with z negated
-function legacyPos(m: Match): string {
-    const [x, y, z] = floats(m.str(1)) as [number, number, number];
-    return `Pos=(${fx(x, 4)}, ${fx(y, 4)}, ${fx(-z, 4)})`;
-}
-
-export function frontEndRails(text: string, backdropNodes: string): string {
-    // The front end's node array with the converted shop's rails (RailNode: THPS4's coping rails on the halfpipes, the
-    // ledges...) added at its end - grindable after SKATE NOW. Their Links (to other rails) renumbered; the legacy
-    // Position written as Pos (z negated, as the engine reads Position: copied as Position, a node made the front end
-    // quit at start-up).
-    const [elements] = arrayElements(backdropNodes, `${BACKDROP_LEVEL}_NodeArray`);
-    const rails: number[] = [];
-    elements.forEach((e, i) => {
-        if (/\bClass=RailNode\b/.test(e)) rails.push(i);
-    });
-    const [own, , close] = arrayElements(text, "mainmenu_NodeArray");
-    const index = new Map(rails.map((old, n) => [old, own.length + n]));
-    const renumber = (match: Match): string => {
-        const links = splitLinks(match.str(1))
-            .filter((v) => v)
-            .map(pyParseInt);
-        if (links.some((v) => !index.has(v))) pyExit(`${BACKDROP_LEVEL}: a rail linked to a node that isn't a rail`);
-        return `Links=[${links.map((v) => String(index.get(v))).join(", ")}]`;
-    };
-    let added = "";
-    for (const i of rails) {
-        let node = sub(/Links=\[([^\]]*)\]/, renumber, elements[i]!);
-        // (the shop's gap scripts are in its own .qb, not the front end's)
-        node = sub(/\n[ \t]*TriggerScript=\w+[ \t]*(?=\n)/, "", node);
-        added += `    ${sub(/\bPosition=\(([^)]*)\)/, legacyPos, node)} \n`;
-    }
-    print(`front end: ${rails.length} rail nodes from ${BACKDROP_LEVEL}`);
-    return text.slice(0, close) + added + text.slice(close);
-}
-
-export function frontEndPedsCars(text: string, backdropNodes: string): string {
-    // The front end's node array with the converted shop's peds and cars (the pros on the outside halfpipe, the people
-    // walking by, the cars on the road: seen after SKATE NOW) added at its end - their Links renumbered, their trigger
-    // scripts copied.
-    const [elements] = arrayElements(backdropNodes, `${BACKDROP_LEVEL}_NodeArray`);
-    const kinds = elements.map((e) => {
-        const m = search(/\bClass=(\w+)/, e);
-        return m ? m.str(1).toLowerCase() : "";
-    });
-    // (the last run of them: the converted shop's own waypoints - its scripts' objects' paths - come earlier)
-    let first = kinds.length;
-    while (first > 0 && MOVING_CLASSES.has(kinds[first - 1]!)) first -= 1;
-    const linksBefore = (start: number): boolean =>
-        elements
-            .slice(start)
-            .some((e) =>
-                [...finditer(/Links=\[([^\]]*)\]/, e)].some((m) =>
-                    splitLinks(m.str(1)).some((v) => v && pyParseInt(v) < start),
-                ),
-            );
-    while (first < kinds.length && linksBefore(first)) first += 1;
-    if (first >= kinds.length) {
-        print(`${BACKDROP_LEVEL} has no peds or cars: none in the front end`);
-        return text;
-    }
-    if (kinds.slice(first).some((kind) => !MOVING_CLASSES.has(kind))) {
-        pyExit(`${BACKDROP_LEVEL}: its peds and cars aren't the last nodes of its array`);
-    }
-    const [own, , close] = arrayElements(text, "mainmenu_NodeArray");
-    const base = own.length;
-    const start = first;
-    const renumber = (match: Match): string =>
-        `Links=[${splitLinks(match.str(1))
-            .map((v) => String(pyParseInt(v) - start + base))
-            .join(", ")}]`;
-    const added = elements
-        .slice(first)
-        .map((e) => `    ${sub(/Links=\[([^\]]*)\]/, renumber, e)} \n`)
-        .join("");
-    text = text.slice(0, close) + added + text.slice(close);
-    const scripts: string[] = [];
-    for (const name of new Set(findall(/\bTriggerScript=(\w+)/, elements.slice(first).join("")))) {
-        const found = search(new RegExp(`(?:^|\\n)(script ${reEscape(name)} \\{\\n.*?\\n\\} \\n)`, "s"), backdropNodes);
-        if (!found) pyExit(`${BACKDROP_LEVEL}: the trigger script ${name} not found`);
-        scripts.push(found.str(1));
-    }
-    const register = text.indexOf("\n__register_checksums__");
-    const at = register >= 0 ? register + 1 : text.length;
-    print(`front end: ${elements.length - first} peds / cars / waypoints from ${BACKDROP_LEVEL}`);
-    return text.slice(0, at) + scripts.join("") + text.slice(at);
-}
-
-// Python's re \b[A-Za-z_]\w*\b (\w Unicode-aware)
-const WORD = /(?<![\p{L}\p{N}_])[A-Za-z_][\p{L}\p{N}_]*/gu;
-
-export function frontEndTriggers(text: string, backdropNodes: string): string {
-    // The front end's node array with the converted shop's trigger geometry added at its end: the LevelGeometry nodes
-    // with a TriggerScript (the outside halfpipe's vert sections SSO_Vert_Section01-03 - their gaps), and the scripts
-    // their triggers run (the trigger scripts and the level's scripts they call, as the backdrop has them). The front
-    // end has the shop's collision (loaded at its start, frontEndScripts), whose trigger faces name these nodes: a
-    // trigger face is looked up by its object's name and the node's TriggerScript read without a check (0x00434A60) -
-    // without the nodes, landing on the vert sections after SKATE NOW crashed (the user, 2026-10-19). Position written
-    // as Pos (z negated); TrickObject / Cluster left out (the front end registers no trick objects).
-    const [elements] = arrayElements(backdropNodes, `${BACKDROP_LEVEL}_NodeArray`);
-    const triggers = elements.filter((e) => /\bClass=LevelGeometry\b/.test(e) && /\bTriggerScript=\w+/.test(e));
-    if (!triggers.length) return text;
-    let added = "";
-    for (let node of triggers) {
-        node = sub(/\n[ \t]*(TrickObject|Cluster=\S+)[ \t]*(?=\n)/, "", node);
-        added += `    ${sub(/\bPosition=\(([^)]*)\)/, legacyPos, node)} \n`;
-    }
-    const [, , close] = arrayElements(text, "mainmenu_NodeArray");
-    text = text.slice(0, close) + added + text.slice(close);
-    // The scripts: the trigger scripts, then every script of the backdrop's they name (not the front end's own).
-    const defined = new Map<string, string>();
-    for (const m of finditer(/^script (\w+) \{\n.*?\n\} \n/ms, backdropNodes)) defined.set(m.str(1), m.str(0));
-    const wanted = [...new Set(findall(/\bTriggerScript=(\w+)/, added))];
-    for (let n = 0; n < wanted.length; n++) {
-        const name = wanted[n]!;
-        const body = defined.get(name);
-        if (body === undefined) pyExit(`${BACKDROP_LEVEL}: the trigger script ${name} not found`);
-        const brace = body.indexOf("{");
-        if (brace < 0) throw new Error("list index out of range");
-        for (const m of body.slice(brace + 1).matchAll(WORD)) {
-            const word = m[0];
-            if (defined.has(word) && !wanted.includes(word) && !text.includes(`\nscript ${word} {`)) wanted.push(word);
-        }
-    }
-    const register = text.indexOf("\n__register_checksums__");
-    const at = register >= 0 ? register + 1 : text.length;
-    print(`front end: ${triggers.length} trigger geometry nodes and ${wanted.length} scripts from ${BACKDROP_LEVEL}`);
-    return text.slice(0, at) + wanted.map((name) => defined.get(name)!).join("") + text.slice(at);
-}
-
-// The dark backing the front end's roundbar menus get (Game Options, Create-A-Modes, the network menus...): over
-// THPS4's lit skate shop their items were hard to read (the main menu has its own, main_menu_backing). Sized from the
-// menu's own dims and width, as main_menu_backing (white2 is 8 units).
-export const ROUNDBAR_BACKING = `    if LevelIs Load_MainMenu {
-        if ! ObjectExists id=main_menu {
-            if ObjectExists id=current_menu {
-                GetScreenElementDims id=current_menu
-                current_menu:GetSingleTag menu_pos
-                current_menu:GetSingleTag width
-                if ScreenElementExists id=front_end_menu_backing {
-                    DestroyScreenElement id=front_end_menu_backing
-                }
-                CreateScreenElement {
-                    type=SpriteElement
-                    parent=current_menu_anchor
-                    id=front_end_menu_backing
-                    texture=white2
-                    pos=(<menu_pos> - (36.0, 9.0))
-                    just=[left top]
-                    rgba=[0 0 0 112]
-                    scale=(((<width> + 72.0) / 8.0) * (1.0, 0.0) + ((<height> + 18.0) / 8.0) * (0.0, 1.0))
-                    z_priority=-1
-                }
-            }
-        }
-    }
-`;
-
-export function frontEndRoundbar(text: string): string {
-    // The game's roundbar menu scripts (scripts\game\menu\roundbarmenu.qb) with roundbar_menu_finish giving the menu a
-    // dark backing in the front end (ROUNDBAR_BACKING; the overlay's front_end folder is read in levels too: the
-    // LevelIs check keeps the pause menu as it is).
-    const start = text.indexOf("script roundbar_menu_finish {");
-    const end = text.indexOf("\n} \n", start);
-    if (start < 0 || end < 0) pyExit("roundbarmenu.qb: roundbar_menu_finish not found");
-    return text.slice(0, end + 1) + ROUNDBAR_BACKING + text.slice(end + 1);
-}
-
-export function frontEndScripts(text: string, look: UnitLookup): string {
-    // The front end's scripts for THPS4's shop: the standard main menu; at the start, the shop's collision (the DLL
-    // loads its scene; the skater skates there after SKATE NOW) and the skater's gameplay animations
-    // (do_load_unloadable: load_level skips them for the front end - without them the skater skates in its bind
-    // pose; once loaded they stay, as after any level); the skater standing idle instead of reaching for the wheel
-    // (the main menu's skater animation: WStand, standing on foot, the board in his hand).
-    text = addNewFrontendMain(standardMainMenu(text, look));
-    const start = "script mainmenu_startup {\n";
-    if (countOf(text, start) !== 1) pyExit("mainmenu_scripts.qb: mainmenu_startup not found");
-    text = replaceFirst(text, start, `${start}    LoadCollision scene="${BACKDROP_LEVEL}" \n    do_load_unloadable \n`);
-    const anim = search(/script SpinMenuGetSkaterAnim \{\n.*?\n\} \n/s, text);
-    if (!anim) pyExit("mainmenu_scripts.qb: SpinMenuGetSkaterAnim not found");
-    return `${text.slice(0, anim.start())}script SpinMenuGetSkaterAnim {\n    return anim=WStand \n} \n${text.slice(anim.end())}`;
-}
 
 export function standardMainMenu(text: string, look: UnitLookup): string {
     // The front end's scripts with create_main_menu replaced by the standard main menu's (main_menu.ts; the wheel's
@@ -1424,42 +1133,13 @@ async function main(): Promise<number> {
             write(`${items}\n${added}`, thawBmxInstall.SPECIAL_ITEMS);
         }
 
-        // The standard main menu, for the front end in THPS4's skate shop (the DLL uses front_end\ while
-        // menu_backdrop is on and the shop is installed).
-        const backdrop = !!ported && ported.levels.some((level) => level.level === BACKDROP_LEVEL);
-        if (backdrop) {
-            const archived = new PrxScripts([prxFiles(qbScripts), prxFiles(menuScripts)], tool, work);
-            write(frontEndScripts(frontEnd, archived), "front_end\\levels\\mainmenu\\mainmenu_scripts.qb");
-            const roundbar = decompile(prxFile(qbScripts, "scripts\\game\\menu\\roundbarmenu.qb"), "roundbarmenu.qb");
-            write(frontEndRoundbar(roundbar), "front_end\\scripts\\game\\menu\\roundbarmenu.qb");
-            // (the nodes' shared fields put back in each node: the front end takes the shop's nodes by their Class -
-            // tools/pipeline/thps4_levels' PC-THPS4-14 shares them, nodes.shareNodeFields)
-            const backdropNodes = decompile(
-                levelPortNodes.unshareNodeFields(
-                    fs.readFileSync(path.join(out, "levels", BACKDROP_LEVEL, `${BACKDROP_LEVEL}.qb`)),
-                    `${BACKDROP_LEVEL}_NodeArray`,
-                    `${BACKDROP_LEVEL}.qb`,
-                ),
-                "backdrop.qb",
-            );
-            write(
-                frontEndTriggers(
-                    frontEndPedsCars(frontEndRails(frontEndNodes(shop, backdropNodes), backdropNodes), backdropNodes),
-                    backdropNodes,
-                ),
-                "front_end\\levels\\mainmenu\\mainmenu.qb",
-            );
-            // THUG2's own shop's collision without its objects: the DLL hides THUG2's shop, but its collision stayed -
-            // x -1372..764, z -1377..471 overlaps THPS4's outside halfpipe (x 465..1155): invisible walls after SKATE
-            // NOW. The front end's skater stands in THPS4's shop (its collision: mainmenu_startup's LoadCollision).
-            const target = pyJoin(out, "front_end", "levels", "mainmenu", "mainmenu.col.xbx");
-            fs.writeFileSync(target, thug2Col.writeCol({ objects: [], pad: 0 }));
-            print("wrote", target);
-        } else {
-            print(
-                `${BACKDROP_LEVEL} not converted (tools/pipeline/thps4_levels): no front end backdrop, the game's main menu kept`,
-            );
-        }
+        // The standard main menu with the new front end's items (the DLL uses front_end\ while [features]
+        // new_frontend is on).
+        const archived = new PrxScripts([prxFiles(qbScripts), prxFiles(menuScripts)], tool, work);
+        write(
+            addNewFrontendMain(standardMainMenu(frontEnd, archived)),
+            "front_end\\levels\\mainmenu\\mainmenu_scripts.qb",
+        );
 
         // Anteara Mod (tools/anteara; the DLL reads anteara\ first while [features] anteara_mod=1): its script
         // set, with the edits above re-applied to the files it also changes or this overlay changes. (With THUG1's
@@ -1496,7 +1176,6 @@ async function main(): Promise<number> {
                               ]
                             : []),
                     ]),
-                    backdrop ? new Map([["scripts\\game\\menu\\roundbarmenu.qb", frontEndRoundbar]]) : new Map(),
                     values.thug1, // (the mod's vehicle scripts are made from THUG1's; default C:\Games\THUG1)
                 ) ?? "Anteara Mod: the game has no Data\\scripts\\qdir.txt - not installed",
             );
