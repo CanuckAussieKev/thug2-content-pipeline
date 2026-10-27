@@ -210,7 +210,7 @@ from 75ba1fa8 scripts\game\skater\bike_scripts.qb bike_playturnanim
 = 7-10
 +         if AnimExists <appended_id> {
 = 12-17
-+     thaw_bmx_playanim anim=<TurnAnim> Cycle BlendPeriod=0.4 NoRestart
++     thaw_bmx_playturnanim anim=<anim> TurnAnim=<TurnAnim>
 = 19-21
 ~ 22 21 4
 = 23-25
@@ -221,6 +221,7 @@ from 75ba1fa8 scripts\game\skater\bike_scripts.qb bike_playturnanim
 new bike_blenturnanims_exit
 from 8733d4e9 scripts\game\skater\bike_scripts.qb bike_blenturnanims_exit
 = 1
++     ThawBmxSteerAnim off
 = 3
 new bike_handbrake
 from 7393afc9 scripts\game\skater\bike_scripts.qb bike_handbrake

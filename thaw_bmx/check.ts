@@ -38,6 +38,7 @@ export const OUR_MEMBERS: readonly string[] = [
     "ClearStallScriptFlag",
     "ExitStallBoost",
     "OnStall",
+    "ThawBmxSteerAnim",
 ];
 // Ours that are C functions (thaw_bmx.cpp RegisterScriptFunctions).
 export const OUR_CFUNCS: readonly string[] = ["ThawBmx_Available"];
