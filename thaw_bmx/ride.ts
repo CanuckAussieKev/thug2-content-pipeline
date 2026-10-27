@@ -93,6 +93,190 @@ export function physicsText(items: Pick<thaw.QbItems, "get">, names: Map<number,
     return `${lines.join("\n")}\n`;
 }
 
+// The parked bikes (src/game/skater/thaw_bmx_parked.h): the level's own, thaw_bmx_home (THAW's bike ped - its place
+// from parked.ts's thaw_bmx_home_bikes or near the start: ThawBmx_HomeSpot), and the one left where the rider got off,
+// bikespot (THAW's bike spot, create_bike_spot). Each runs thaw_bmx_spot_watch: within THAW's 12 feet (its inner
+// radius) of a skater who could start a ped's speech (THUG2's ped_speech_got_trigger's conditions: on the ground, not
+// in a bail or a trick, no score pot) a speech box offers the ride - THUG2's create_speech_box as that shows one, with
+// THAW's text and THUG2's button; Circle (pad_circle, as THUG2's speech boxes) takes it: the toggle with bike=<id>, so
+// thaw_bmx_get_on walks the skater to it first (thaw_bmx_walk_to_bike: THAW's skater_walk_to_bike). THAW's own
+// machinery - setup_ped_speech on an AnyObjectInRadius proximity event - needs a node in THUG2 (its
+// ped_speech_die_with_trigger ends the box when NodeExists fails), which these bikes aren't.
+// dont_create_speech_boxes is THAW's global (none of THUG2's scripts have it): set while getting on / off, cleared by
+// THAW's bmx_finish_on / off.
+export const HOME_BIKE = "thaw_bmx_home";
+export const SPOT_DIALOG = "thaw_bmx_spot_dialog";
+export const SPOT_RADIUS = 12; // feet (THAW's bike_spot_setup inner_radius)
+export const SPOT_TEXT = "Press \\\\m5 to ride the bike.";
+export function parkedScripts(): string {
+    return `dont_create_speech_boxes = 0
+thaw_bmx_spot_radius = ${SPOT_RADIUS}
+script thaw_bmx_offer_off {
+    change dont_create_speech_boxes=1
+    if ScreenElementExists id=${SPOT_DIALOG} {
+        DestroyScreenElement id=${SPOT_DIALOG}
+    }
+}
+// (THAW's switch_all_bike_peds: off - the level's bike gone -, else made if missing, where the game allows it)
+script thaw_bmx_home_bike {
+    if GotParam off {
+        if ObjectExists id=${HOME_BIKE} {
+            ${HOME_BIKE}:Die
+        }
+        return
+    }
+    if ObjectExists id=${HOME_BIKE} {
+        return
+    }
+    if ! ThawBmx_Available {
+        return
+    }
+    if InNetGame {
+        return
+    }
+    if InSplitScreenGame {
+        return
+    }
+    if LevelIs Load_MainMenu {
+        return
+    }
+    if LevelIs load_sk5ed {
+        return
+    }
+    if GameModeEquals is_career {
+        return
+    }
+    if GameModeEquals is_classic {
+        return
+    }
+    if ! ObjectExists id=skater {
+        return
+    }
+    if skater:IsSkaterOnBike {
+        return
+    }
+    if ! ThawBmx_HomeSpot {
+        return
+    }
+    // (the bike's skeleton and animations: loaded once for good, as getting on does)
+    if ! skater:ThawBmxLoadAssets {
+        return
+    }
+    CreateCompositeObject Components=thaw_bmx_spot_components Params={Name=${HOME_BIKE} Pos=<pos> NeverSuspend}
+    if ObjectExists id=${HOME_BIKE} {
+        ${HOME_BIKE}:Obj_SetOrientation y=<heading>
+        ${HOME_BIKE}:Obj_PlayAnim Anim=bmx_getup Speed=0 BlendPeriod=0
+        ${HOME_BIKE}:Obj_SpawnScript thaw_bmx_spot_watch
+    }
+}
+// (a new level: the last level's bikes gone - the DLL, once the level is up)
+script thaw_bmx_level_start {
+    thaw_bmx_home_bike off
+    if ObjectExists id=bikespot {
+        bikespot:Die
+    }
+    change dont_create_speech_boxes=0
+}
+// (on a parked bike)
+script thaw_bmx_spot_watch {
+    Obj_GetId
+    while {
+        offer = 0
+        if (dont_create_speech_boxes = 0) {
+            if ObjectExists id=skater {
+                Obj_GetDistanceToObject skater
+                if (<objectDistance> < thaw_bmx_spot_radius) {
+                    if skater:OnGround {
+                        if ! skater:IsSkaterOnBike {
+                            if ! skater:IsInBail {
+                                if ! skater:DoingTrick {
+                                    if ! SkaterCurrentScorePotGreaterThan 0 {
+                                        offer = 1
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if (<offer> = 1) {
+            if ! ScreenElementExists id=${SPOT_DIALOG} {
+                create_speech_box {
+                    anchor_id=${SPOT_DIALOG}
+                    text="${SPOT_TEXT}"
+                    no_pad_choose
+                    no_pad_start
+                    pad_circle_script=thaw_bmx_spot_ride
+                    pad_circle_params={bike=<objId>}
+                    bg_rgba=[100 100 100 128]
+                    text_rgba=[128 128 128 128]
+                    pos=(320.0, 400.0)
+                    z_priority=5
+                }
+                if ScreenElementExists id=${SPOT_DIALOG} {
+                    ${SPOT_DIALOG}:SetTags thaw_bmx_bike=<objId>
+                    ${SPOT_DIALOG}:Obj_SpawnScript thaw_bmx_spot_dialog_watch Params={bike=<objId>}
+                }
+            }
+        } else {
+            if ScreenElementExists id=${SPOT_DIALOG} {
+                ${SPOT_DIALOG}:GetTags
+                if GotParam thaw_bmx_bike {
+                    if (<thaw_bmx_bike> = <objId>) {
+                        DestroyScreenElement id=${SPOT_DIALOG}
+                    }
+                }
+            }
+        }
+        wait 3 gameframes
+    }
+}
+// (on the speech box: gone with its bike - as THUG2's ped_speech_die_with_trigger)
+script thaw_bmx_spot_dialog_watch {
+    while {
+        if ! ObjectExists id=<bike> {
+            Die
+            return
+        }
+        wait 1 gameframe
+    }
+}
+// (Circle on the speech box - THAW's toggle_bike_on_off On bike_ped_id: not through a wall, its
+// CollisionBetweenSkaterAndPoint)
+script thaw_bmx_spot_ride {
+    speech_box_exit anchor_id=${SPOT_DIALOG} no_pad_start
+    if ! ObjectExists id=<bike> {
+        return
+    }
+    if skater:IsSkaterOnBike {
+        return
+    }
+    if ! ThawBmx_BikeReachable id=<bike> {
+        return
+    }
+    ${TOGGLE} bike=<bike>
+}
+// (THAW's skater_walk_to_bike, on the skater: turned to the bike, walked there, standing as it faces)
+script thaw_bmx_walk_to_bike {
+    if ! ThawBmx_WalkToBike id=<id> {
+        PlayAnim Anim=WWalk Cycle
+        frames = 0
+        while {
+            wait 1 gameframe
+            if ThawBmx_WalkToBike id=<id> {
+                break
+            }
+            frames = (<frames> + 1)
+            if (<frames> > 300) {
+                break
+            }
+        }
+    }
+    PlayAnim Anim=WStand Cycle
+}`;
+}
+
 // The toggle, getting on and off, the bike's own scripts - then THAW's bike scripts (bike_scripts.ts).
 export function rideScripts(thawScripts: UnitLookup): string {
     const loads = SOUNDS.map((s) => `        LoadSound "${SOUND_FOLDER}\\\\${s}"`).join("\n");
@@ -117,22 +301,28 @@ script ${TOGGLE} {
             return
         }
         if skater:OnGround {
+            thaw_bmx_offer_off
             MakeSkaterGoto thaw_bmx_get_off
         }
         return
     }
+    // (THAW's toggle_bike_on_off: no speech boxes until it's done - its bmx_finish_on / off say when; a parked bike
+    // to walk to: bike=<its id>)
     if skater:Walking {
-        MakeSkaterGoto thaw_bmx_get_on
+        thaw_bmx_offer_off
+        MakeSkaterGoto thaw_bmx_get_on Params=<...>
         return
     }
     if skater:OnGround {
-        MakeSkaterGoto thaw_bmx_get_on
+        thaw_bmx_offer_off
+        MakeSkaterGoto thaw_bmx_get_on Params=<...>
     }
 }
 script thaw_bmx_pause_toggle {
     exit_pause_menu
     ${TOGGLE}
 }
+${parkedScripts()}
 // THAW's bike sounds (bike_sfx.qb's and its TERRAIN_BIKE_DEFAULT_* tables'; THAW loads them at start-up with its
 // global sounds) - once, permanently.
 script thaw_bmx_load_sounds {
@@ -147,6 +337,7 @@ ${loads}
 script thaw_bmx_get_on {
     if ! ThawBmxLoadAssets {
         printf "thaw_bmx: the bike's assets didn't load"
+        change dont_create_speech_boxes=0
         MakeSkaterGoto OnGroundAI
         return
     }
@@ -162,6 +353,10 @@ script thaw_bmx_get_on {
     orient_vehicle
     change bike_pedaling=0
     SwitchOffBoard
+    // (THAW's toggle_bike_on_off2: from a parked bike, walked to it first - skater_walk_to_bike)
+    if GotParam bike {
+        thaw_bmx_walk_to_bike id=<bike>
+    }
     bmx_finish_on
 }
 // (THAW's toggle_bike_on_off2, getting off: unflipped as getting on, bmx_getup backwards, the bike gone; then its
@@ -197,6 +392,7 @@ script thaw_bmx_stance_sprite {
     }
 }
 script thaw_bmx_after_reset {
+    change dont_create_speech_boxes=0
     thaw_bmx_stance_sprite scale=(0.75, 1.3)
     kill_bail_bike
     KillSpawnedScript Name=bike_play_looping_sounds

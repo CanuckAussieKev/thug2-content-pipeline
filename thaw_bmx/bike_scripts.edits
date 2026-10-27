@@ -77,21 +77,24 @@ from 4be6f3dc scripts\game\skater\bike_scripts.qb bmx_finish_on
 ~ 3 46 4 thaw_bmx
 = 4
 +     thaw_bmx_playanim anim=bmx_getup BlendPeriod=0 NoRestart
++     thaw_bmx_home_bike off
 = 7
 ~ 8 17 1 D
 = 9-11
 +     thaw_bmx_waitanim
 ~ 14 6 1 p
 +     EnablePlayerInput
+= 18
 ~ 24 4 8
 = 29
 new bmx_finish_off
 from ea1f0f2f scripts\game\skater\bike_scripts.qb bmx_finish_off
 = 1-2
++     thaw_bmx_home_bike
 = 4-5
 ~ 17 6 1 p
 +     EnablePlayerInput
-= 21
+= 20-21
 = 23
 ~ 24 19 10 OnGroundAI
 = 25
@@ -108,6 +111,7 @@ with 4be6f3dc scripts\game\skater\bike_scripts.qb bmx_finish_on
 = 7 @2
 +         bikespot:Obj_SetOrientation quat=<Quat>
 +         bikespot:Obj_PlayAnim Anim=bmx_getup Speed=0 BlendPeriod=0
++         bikespot:Obj_SpawnScript thaw_bmx_spot_watch
 = 15-16
 new bike_start
 from 4e4106af scripts\game\skater\bike_scripts.qb bike_start

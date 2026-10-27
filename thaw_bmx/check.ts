@@ -39,8 +39,13 @@ export const OUR_MEMBERS: readonly string[] = [
     "ExitStallBoost",
     "OnStall",
 ];
-// Ours that are C functions (thaw_bmx.cpp RegisterScriptFunctions).
-export const OUR_CFUNCS: readonly string[] = ["ThawBmx_Available"];
+// Ours that are C functions (thaw_bmx.cpp RegisterScriptFunctions; the parked bikes': thaw_bmx_parked.cpp).
+export const OUR_CFUNCS: readonly string[] = [
+    "ThawBmx_Available",
+    "ThawBmx_HomeSpot",
+    "ThawBmx_WalkToBike",
+    "ThawBmx_BikeReachable",
+];
 
 // The scripts and globals a compiled qb defines, and each script's commands.
 export function qbContents(data: Uint8Array): {

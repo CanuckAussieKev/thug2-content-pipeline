@@ -104,3 +104,14 @@ The animation trees THAW's scripts drive become `thaw_bmx_playanim` (PlayAnim on
 has the animation) and `thaw_bmx_playbarspin` (the anim subset Barspin on both); the manual's pose follows the manual
 angle in the DLL (src/game/skater/thaw_bmx_tricks.cpp). The data overlay gets the sounds (`install.ts` copies `sounds`;
 the DLL's PCWave::Load reads the overlay's copy first).
+
+## Parked bikes: getting on by walking up to one
+
+As THAW: each level has its own bike lying on the ground, and getting off leaves the bike where the rider got off; walk
+(or skate) up to one and a speech box offers it - Circle walks the skater to the bike and gets on with THAW's get-on
+(the engine side: src/game/skater/thaw_bmx_parked.h; F7 and the pause menu still get on / off from anywhere).
+
+| file | what |
+|---|---|
+| `parked.ts` | THAW's bike_ped_ids (its levels' bikes: pedestrian nodes whose body is the bike) read at convert time - each node's place in the THAW level as tools/pipeline/thaw_levels ports it (its THUG2 name and default frame) -> `thaw_bmx_home_bikes`. Elsewhere the DLL puts the level's bike near where the skater started |
+| `ride.ts` `parkedScripts` | the level's bike (`thaw_bmx_home`, THAW's switch_all_bike_peds), the offer on each bike (`thaw_bmx_spot_watch`: within THAW's 12 feet, THUG2's speech box), taking it (`thaw_bmx_spot_ride`) and the walk (`thaw_bmx_walk_to_bike`, THAW's skater_walk_to_bike) |
