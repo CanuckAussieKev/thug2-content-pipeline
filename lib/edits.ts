@@ -31,8 +31,9 @@ export function textCrc(text: string): string {
     return (zlib.crc32(encodeLatin1(text)) >>> 0).toString(16).padStart(8, "0");
 }
 
-// A unit's first line: "script <name> {" or "<name> = ..." ([1]: a script's name, [2]: a global's).
-export const UNIT_START = /^(?:script (\S+?) ?\{|(`[^`\n]+`|[A-Za-z_#][A-Za-z0-9_]*) ?= ?)/;
+// A unit's first line: "script <name> {" (or with defaults: "script <name> a=1 b=2 {") or "<name> = ..." ([1]: a
+// script's name, [2]: a global's).
+export const UNIT_START = /^(?:script (\S+?)(?: [^{\n]*?)? ?\{|(`[^`\n]+`|[A-Za-z_#][A-Za-z0-9_]*) ?= ?)/;
 
 // A unit name as NeverScript shows its checksum (#xxxxxxxx: the checksum's bytes in file order) - names and raw
 // checksums alike, case ignored.

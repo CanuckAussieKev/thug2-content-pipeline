@@ -101,7 +101,42 @@ function rideScripts(): string {
     return rideText;
 }
 
-const scriptNames = (text: string): Set<string> => new Set([...text.matchAll(/\nscript (\w+) \{/g)].map((m) => m[1]!));
+const scriptNames = (text: string): Set<string> =>
+    new Set([...text.matchAll(/\nscript (\w+)(?: [^{\n]*)? \{/g)].map((m) => m[1]!));
+
+// THAW's first-line defaults (BIKE_OLLIE's JumpHeight = 380 ...): in the header, where ns.exe compiles them as the
+// script's defaults the caller's arguments override - never as body lines, which would run as assignments over them
+// (the stall's `BIKE_OLLIE JumpHeight=0` became a second jump of 380).
+const THAW_DEFAULTS: Readonly<Record<string, string>> = {
+    BIKE_OLLIE: "JumpHeight=380",
+    bike_grab_trick: "speed=1.0",
+    bike_grab_trick2: "speed=1.0",
+    BikeStallTrick: "speed=1.0 Type=grind",
+    BIKE_GRIND: "ButtonA=",
+    bike_manual: "score=100",
+    bike_wallplant: "score=750",
+    bike_land2: "RevertTime=5",
+    bike_Flail: "speed=0 bailspeed=999",
+    bike_playturnanim: "controller=0",
+    bike_getpedalanimspeed: "max=1.2 min=0.3",
+    bike_OnGroundAi: "Coasting=0 Pushes=0 PressureTimer=0",
+    bike_bail: "BoardOffFrame=1 BoardVel=",
+    bike_SkateInOrBail: "moveleft=1 moveright=-1 movey=-5",
+};
+test("rideScripts: THAW's first-line defaults are the scripts' defaults (header), not assignments", {
+    skip: NO_THAW,
+}, () => {
+    const text = rideScripts();
+    for (const [name, defaults] of Object.entries(THAW_DEFAULTS)) {
+        const m = new RegExp(`\\nscript ${name}( [^{\\n]*)? \\{\\n([\\s\\S]*?)\\n\\}\\n`).exec(text);
+        assert.ok(m, name);
+        assert.ok((m[1] ?? "").startsWith(` ${defaults}`), `${name}: header ${JSON.stringify(m[1])}`);
+        for (const [, key] of defaults.matchAll(/(\w+)=/g))
+            assert.doesNotMatch(m[2]!, new RegExp(`^\\s*${key} = `, "m"), `${name}: ${key} assigned in the body`);
+    }
+    // the stall's ollie out: one jump, then the bunnyhop with JumpHeight=0 (THAW's ExitPointRailSpin)
+    assert.match(text, /BIKE_OLLIE JumpHeight=0/);
+});
 
 test("rideScripts (phase 4): no vehicle - THAW's own bike scripts; the toggle, getting on and off", {
     skip: NO_THAW,
@@ -175,7 +210,7 @@ test("rideScripts (phase 5): THUG2's manual and revert inputs on the bike, the b
 }, () => {
     const text = rideScripts();
     const body = (name: string): string => {
-        const m = new RegExp(`\\nscript ${name} \\{\\n([\\s\\S]*?)\\n\\}\\n`).exec(text);
+        const m = new RegExp(`\\nscript ${name}(?: [^{\\n]*)? \\{\\n([\\s\\S]*?)\\n\\}\\n`).exec(text);
         assert.ok(m, name);
         return m[1]!;
     };
@@ -235,7 +270,7 @@ test("rideScripts (tricks): the getting on / off animations, the grind's fall-of
 }, () => {
     const text = rideScripts();
     const body = (name: string): string => {
-        const m = new RegExp(`\\nscript ${name} \\{\\n([\\s\\S]*?)\\n\\}\\n`).exec(text);
+        const m = new RegExp(`\\nscript ${name}(?: [^{\\n]*)? \\{\\n([\\s\\S]*?)\\n\\}\\n`).exec(text);
         assert.ok(m, name);
         return m[1]!;
     };

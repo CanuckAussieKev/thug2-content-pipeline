@@ -145,6 +145,26 @@ export function renderNs(toks: readonly Tok[], names: ReadonlyMap<number, string
     return out;
 }
 
+// The tokens a script's first line may hold as header defaults: names, values and `=` (a structure there - THAW's
+// bike_partial_barspin has an unnamed one - ns.exe can't take in a header: such a line stays a body line).
+const DEFAULT_TOKENS = new Set([0x07, 0x16, 0x17, 0x18, 0x1a, 0x1b, 0x1c, 0x1e, 0x1f]);
+
+// A whole script as NeverScript. A script whose tokens don't start with a newline has defaults on its first line
+// (`23 16 BIKE_OLLIE 16 JumpHeight 07 17 380 01 ...`): the runtime parses that line as the script's default
+// parameters, which the caller's arguments override. They are written in the header (`script BIKE_OLLIE
+// JumpHeight=380 {`), which ns.exe compiles back to the same first line - as a body line they would compile after a
+// newline and run as assignments over the caller's arguments.
+export function renderScript(name: string, toks: readonly Tok[], names: ReadonlyMap<number, string>): string {
+    let header = "";
+    let body = toks;
+    const end = toks.findIndex((t) => t.t === 0x01 || t.t === 0x02);
+    if (end > 0 && toks.slice(0, end).every((t) => DEFAULT_TOKENS.has(t.t))) {
+        header = ` ${words(toks.slice(0, end), names).join(" ").replace(/ = /g, "=")}`;
+        body = toks.slice(end);
+    }
+    return `script ${name}${header} {\n${renderNs(body, names).join("\n")}\n}`;
+}
+
 // One token's words (a local's < and its name as one word).
 function words(toks: readonly Tok[], names: ReadonlyMap<number, string>): string[] {
     const out: string[] = [];

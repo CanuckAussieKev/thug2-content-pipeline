@@ -43,7 +43,7 @@ import { isMain, print, runMain } from "../lib/py.ts";
 import * as thaw from "../thaw_levels/thaw.ts";
 import { plain, scriptToks } from "../thaw_levels/thaw_scripts.ts";
 import { renderBody } from "./dump_scripts.ts";
-import { renderNs } from "./thaw_ns.ts";
+import { renderScript } from "./thaw_ns.ts";
 
 // The bike (convert.ts DETAILS' Name) and THAW's name for it.
 export const BIKE = "ThawBmx";
@@ -362,7 +362,7 @@ export class ThawScripts implements UnitLookup {
             if (checksumKey(name) !== key) continue;
             const n = qb.nameText(name, this.names);
             try {
-                return `script ${n} {\n${renderNs(scriptToks(body, this.names, n, items.order), this.names).join("\n")}\n}`;
+                return renderScript(n, scriptToks(body, this.names, n, items.order), this.names);
             } catch {
                 return null;
             }
