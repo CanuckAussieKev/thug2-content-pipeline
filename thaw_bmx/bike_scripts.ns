@@ -252,5 +252,14 @@ script thaw_bmx_bail_bike_control {
 //@unit bike_OnGroundExceptions
 // (THAW's PedKnockDown, tricks.qb - a ped's knock-down - as it runs on the bike: the bike's bail. THUG2's PedKnockDown is
 // the skater's only (its manual bails); the DLL sends a rider there here instead (src/game/skater/thaw_bmx.h
-// SkaterScript). THAW's OnStall is THAW-only: no stall on the bike)
+// SkaterScript).)
 //@unit bike_PedKnockDown
+// (THAW's stall on the bike: R1 held as a grind starts - BIKE_GRIND goes here while ShouldRunStallScript says so;
+// the physics' stall state - src/game/skater/core_rail.cpp DoBikeStallPhysics - keeps the bike still on the rail)
+//@unit BikeStallTrick
+// (THAW's stalltricks.qb, which THUG2 hasn't; on the bike THAW's balance buttons leftright / leftleft - the movement
+// stick's right / left -, here Right / Left as BIKE_GRIND's)
+//@unit PlayStallBalancingAnim
+//@unit StallOllieOut
+// (THAW's ExitPointRailSpin as it runs on the bike - THUG2's own has no bike branch)
+//@unit bike_ExitPointRailSpin

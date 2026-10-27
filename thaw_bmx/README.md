@@ -131,3 +131,9 @@ As THAW: each level has its own bike lying on the ground, and getting off leaves
 |---|---|
 | `parked.ts` | THAW's bike_ped_ids (its levels' bikes: pedestrian nodes whose body is the bike) read at convert time - each node's place in the THAW level as tools/pipeline/thaw_levels ports it (its THUG2 name and default frame) -> `thaw_bmx_home_bikes`. Elsewhere the DLL puts the level's bike near where the skater started |
 | `ride.ts` `parkedScripts` | the level's bike (`thaw_bmx_home`, THAW's switch_all_bike_peds), the offer on each bike (`thaw_bmx_spot_watch`: within THAW's 12 feet, THUG2's speech box), taking it (`thaw_bmx_spot_ride`) and the walk (`thaw_bmx_walk_to_bike`, THAW's skater_walk_to_bike) |
+
+The stall (R1 held as a grind starts): THAW's `BikeStallTrick` (from BIKE_GRIND while `ShouldRunStallScript`), with
+its stalltricks.qb helpers `PlayStallBalancingAnim` and `StallOllieOut` and its ExitPointRailSpin as
+`bike_ExitPointRailSpin` (THUG2's own has no bike branch); THAW's `stall_slip_time` goes into the overlay with its other
+physics globals. The physics' stall state is in the DLL (src/game/skater/core_rail.cpp DoBikeStallPhysics,
+thaw_bmx_physics.cpp).
