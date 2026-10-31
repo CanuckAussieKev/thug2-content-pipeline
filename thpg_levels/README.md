@@ -104,10 +104,14 @@ pieces, skate checks, the goal and story peds, sounds, particles, the Wet / Env 
 
 ## Sizes and timings (2026-10-31, all six levels with mip levels)
 
-See the convert report; recorded on the first full convert:
+| Level | Triangles | Scene | Textures | Collision | qb | Reach (units) |
+|---|---|---|---|---|---|---|
+| thpg_net_wholeworld | 1,631,563 | 114 MB | 106 MB | 9.5 MB | 5.4 MB | 22,236 (IsBigLevel) |
+| thpg_net_philly | 609,970 | 44 MB | 60 MB | 5.3 MB | 1.0 MB | 9,675 |
+| thpg_net_baltimore | 396,341 | 32 MB | 40 MB | 4.1 MB | 0.3 MB | 7,160 |
+| thpg_net_dc | 344,517 | 25 MB | 21 MB | 3.0 MB | 0.4 MB | 10,167 |
+| thpg_net_crib | 31,546 | 1.6 MB | 1.4 MB | 0.03 MB | 0.03 MB | 11,469 |
+| thpg_bedroom | 2,777 | 0.2 MB | 0.9 MB | 0.01 MB | 0.01 MB | 539 |
 
-| Level | Triangles | Scene | Textures | Collision | qb |
-|---|---|---|---|---|---|
-| thpg_net_wholeworld | 1.63 M | 111 MB | 36 MB (no mips) | 9.5 MB | 5.4 MB |
-
-The whole convert takes ~12 minutes (WORLD ~7).
+The whole convert takes ~11 minutes (WORLD ~7 of them). WORLD is the largest level of any of the converters (THP8's
+BEAVER VALLEY: 1.26 million triangles, an 81 MB scene).
