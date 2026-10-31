@@ -36,8 +36,8 @@ export function specialItemsAddition(game: string): string | null {
 }
 
 // The pause menu's RIDE BMX / GET OFF BMX (phase 2: src/game/skater/thaw_bmx.h), after its LEVEL EDITOR item
-// (make_menu_level's addLevelEditor) - when the game has the staging folder. Shown while ThawBmx_Available (the DLL's
-// [features] thaw_bmx, and the scripts there); IsSkaterOnBike is only asked then (a member function the DLL registers
+// (make_menu_level's addLevelEditor) - when the game has the staging folder. Shown while ThawBmx_Available (the game's
+// [features] thaw_bmx, and the scripts there); IsSkaterOnBike is only asked then (a member function the game registers
 // only while the feature is on: an unregistered one after `skater:` would crash the script runtime).
 export function addPauseItem(text: string, game: string): string {
     if (!fs.existsSync(path.join(game, STAGING, MANIFEST))) return text;

@@ -53,7 +53,7 @@ export const nsMissing = (ns: string): string =>
 //   referenceExe   the reference build of THUG2.exe the decompilation's addresses come from (the tools that read the
 //                  original code default to it);
 //   exeNames       other exe names a game folder may have besides THUG2.exe (the game tools accept them too);
-//   ghidraProject / ghidraProgram   the Ghidra project's and program's names (tools/ghidra);
+//   ghidraProject / ghidraProgram   the Ghidra project's and program's names (the decompilation's Ghidra scripts);
 //   protectedFolders   folders the tools never write into (backups you keep), besides the built-in ones;
 //   thawReferenceExe   THAW's reference build, the exe THAW's addresses (the BMX work, tools/pipeline/thaw_bmx) are
 //                  named after;
@@ -97,6 +97,13 @@ function readLocal(): LocalConfig {
 export const LOCAL: LocalConfig = readLocal();
 // The names a game folder's exe may have: THUG2.exe, then local.json's exeNames.
 export const GAME_EXE_NAMES: readonly string[] = ["THUG2.exe", ...(LOCAL.exeNames ?? [])];
+// The game built from the decompilation's source: the exe the game tools launch, copied into the game folder (the
+// decomp's README, "Running"). The game's exe (GAME_EXE_NAMES) only marks the folder; it is never run or changed.
+export const LAUNCH_EXE_NAME = "thug2-decomp.exe";
+// The process names a running game may have (ours, and the game's own exe started by hand).
+export const GAME_PROCESS_NAMES: readonly string[] = [LAUNCH_EXE_NAME, ...GAME_EXE_NAMES].map((n) =>
+    n.replace(/\.exe$/i, ""),
+);
 
 // The reference build's path for a tool's default (`--exe` and the like): local.json's referenceExe, or "" (the tool
 // then asks for it).

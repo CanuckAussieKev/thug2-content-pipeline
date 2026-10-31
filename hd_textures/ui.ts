@@ -3,15 +3,15 @@
 // Real-ESRGAN, the cache, back-projection to the original's colours) into the data overlay. Off by default:
 // tools/pipeline/menu_level/make_menu_level.ts --hd-ui [2|4] adds them, a run without it leaves the overlay without them.
 //
-// The files are written into the overlay's hd_ui folder, which the DLL reads only with [features] hd_ui=1
+// The files are written into the overlay's hd_ui folder, which the game reads only with [features] hd_ui=1
 // (default 0; src/game/gfx/hd_ui.h), and the images keep their on-screen size: a sprite's size comes from its texture's image size, a glyph's from the font's rectangles,
-// so the upscaled files carry a marker the DLL reads and divides by:
+// so the upscaled files carry a marker the game reads and divides by:
 //   .img.xbx  header +0x14 (0 in every game file) = HD_IMG_MARKER | scale; the texels are 32-bit (format 0, the
 //             8-bit paletted ones expanded - the game makes every image A8R8G8B8 anyway), every size in the header
-//             `scale` times the original's. The DLL divides the texture's sizes again after loading.
+//             `scale` times the original's. The game divides the texture's sizes again after loading.
 //   .fnt.xbx  the glyph page's header +8 = HD_FNT_MARKER, +0xC the scale; the page `scale` times the original's,
 //             32-bit BGRA texels (no palette: the final alpha, the game's doubled PS2 alpha applied); the glyph
-//             rectangles, height and base unchanged (the original's pixels): the DLL makes the texture coordinates
+//             rectangles, height and base unchanged (the original's pixels): the game makes the texture coordinates
 //             from the page's original size.
 //
 // Which files: every image and font in the archives the front end and the pause menus load (UI_PACKS), and the

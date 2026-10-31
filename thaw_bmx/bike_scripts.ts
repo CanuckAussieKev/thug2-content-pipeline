@@ -5,7 +5,7 @@
 //   bikeGlobals   THAW's data, read from the user's THAW at convert time (qb.pak) and written as NeverScript: the trick
 //                 lists (Bike_AirTricks, Bike_ManualTricks, Bike_NoseManualTricks - THAW's triggers, its right stick's
 //                 BikePress among them), the exception tables, BikeGrindTrickList, bike_Wallplant_Trick, the wobble
-//                 parameters, THAW's TERRAIN_BIKE_DEFAULT_* sound tables (as thaw_bmx_terrain_*: the DLL's bike sounds)
+//                 parameters, THAW's TERRAIN_BIKE_DEFAULT_* sound tables (as thaw_bmx_terrain_*: the game's bike sounds)
 //                 and the grind tricks' scripts (Trick_Bike_*, data-like: a name, a score, three animations).
 //   bikeScripts   the scripts themselves, ported to THUG2 (made at convert time from the user's THAW: our changes to
 //                 THAW's scripts are stored as edits, bike_scripts.edits - see "the scripts" below; no THAW text is in
@@ -14,11 +14,11 @@
 //                 trees (Skater_Playanim -> Anim_Command DegenerateBlend_AddBranch on the rider and, Skater_Anim_Command,
 //                 on the bike); here the shim thaw_bmx_playanim plays THUG2's PlayAnim on the rider and Obj_PlayAnim on
 //                 the bike (when it has the animation), the partial branches (the barspin) as anim subsets. The manual's
-//                 pose follows the manual angle in the DLL (src/game/skater/thaw_bmx_tricks.cpp ManualPose).
+//                 pose follows the manual angle in the game (src/game/skater/thaw_bmx_tricks.cpp ManualPose).
 //
 // Controls (THUG2's script buttons: X / Circle / Square / Triangle = the player's Ollie / Grab / Flip / Grind keys): as
 // THAW's - its flip tricks on the right stick (BikePress rightup ...), its grabs on square / down then square, the
-// d-pad the camera. THUG2's pad hasn't THAW's stick buttons (leftup ... rightright): the DLL makes them while the
+// d-pad the camera. THUG2's pad hasn't THAW's stick buttons (leftup ... rightright): the game makes them while the
 // feature is on (src/game/skater/thaw_bmx_sticks.cpp), so THAW's triggers and held checks are kept as they are.
 
 import * as fs from "node:fs";
@@ -77,7 +77,7 @@ export const SOUND_TABLES: readonly (readonly [string, string])[] = [
     ["TERRAIN_BIKE_DEFAULT_ROLL", "thaw_bmx_terrain_roll"],
     ["TERRAIN_BIKE_DEFAULT_GRIND", "thaw_bmx_terrain_grind"],
 ];
-// THAW's trick lists (copied as they are: the DLL answers their stick triggers).
+// THAW's trick lists (copied as they are: the game answers their stick triggers).
 export const TRICK_LISTS: readonly string[] = ["Bike_AirTricks", "Bike_ManualTricks", "Bike_NoseManualTricks"];
 // The grind tricks' scripts (bike_grindscripts.qb).
 export const GRIND_SCRIPTS = /^Trick_Bike_/;

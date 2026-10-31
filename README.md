@@ -32,12 +32,11 @@ Each folder has its own README.
 | Needs | Tools | Why |
 |---|---|---|
 | NeverScript's `ns.exe` (the decomp builds it: `tools\build_neverscript.ps1` -> `out\neverscript\ns.exe`) - or `--ns <ns.exe>` | every converter's `convert` (thps2/3/4, thug1, thaw, thp8), `thaw_bmx/convert.ts` (text only without it), `menu_level/make_menu_level.ts`, `game/make_automation_tables.ts`, `game/boot_level.ts`, `thug1_campaign/script_gap.ts --dump` | QB scripts compiled / decompiled |
-| `src/game/*.cpp` + `data/derived/functions.json` | `game/exe_audit.ts` | its REPLACE lines, Ghidra's function list (the decomp's tools/ghidra) |
 | `src/game/net/thugpro_join.h` | `compat/thugpro/scripts_hash.ts` | the constant it checks |
 | `src/game/front/automation_tables.inc` | `game/make_automation_tables.ts` (or `--out`) | what it writes |
 | `notes/data/install_manifest.json` (private notes repo) | `game/install_manifest.ts` (or `--manifest` / `--out`) | the reference install's manifest |
-| `src/game/skater/thaw_bmx*.cpp` | `thaw_bmx/ride.test.ts` (skipped alone) | the script names the DLL runs |
-| the decomp's `dinput8.dll` in the game folder | the game scripts (`game/*.ps1`, `try_spot.ts`, `edit_level.ts`, `scenic_capture.ts`) | they run the game with our DLL (logs, automation channel, `-level`) |
+| `src/game/skater/thaw_bmx*.cpp` | `thaw_bmx/ride.test.ts` (skipped alone) | the script names the game runs |
+| the decomp's `thug2-decomp.exe` (with its DLLs) in the game folder | the game scripts (`game/*.ps1`, `try_spot.ts`, `edit_level.ts`, `scenic_capture.ts`) | they start it (logs, automation channel, `-level`) |
 
 The menu builder also installs Anteara Mod when `tools/anteara` (the anteara-mod repository) is there - beside this
 repository or in the decomp; without it the overlay is made without its `anteara\` folder (a message says so).

@@ -8,7 +8,7 @@
 //
 //   thaw_bmx_home_bikes = [{level=z_ho pos=(x, y, z) heading=<degrees>} ...]
 //
-// (heading: the node's Angles y in degrees - the same rotation, 0 = +z, as Obj_SetOrientation y= makes). The DLL's
+// (heading: the node's Angles y in degrees - the same rotation, 0 = +z, as Obj_SetOrientation y= makes). The game's
 // ThawBmx_HomeSpot reads it by the current level structure's `level`. Nothing of THAW is stored.
 
 import { FormatError } from "../level_port/binio.ts";

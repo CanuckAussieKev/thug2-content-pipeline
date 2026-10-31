@@ -1,6 +1,6 @@
 // NOT ORIGINAL - THAW's BMX for THUG2, phase 4: a check of the ported scripts (convert.ts runs it on the compiled
 // thaw_bmx.qb against the user's THUG2): every command a script runs - a name in command position - is THUG2's
-// (a C function, a member function, a script), ours (a script or global of thaw_bmx.qb) or one of the DLL's bike
+// (a C function, a member function, a script), ours (a script or global of thaw_bmx.qb) or one of the game's bike
 // members (OUR_MEMBERS, src/game/skater/thaw_bmx.cpp kMembers). THAW's scripts call many THAW-only commands; one left
 // in by mistake would do nothing in THUG2 (a member) or stop the script (a script call to nothing).
 
@@ -8,7 +8,7 @@ import * as qb from "../level_port/qb.ts";
 import { checksum } from "../level_port/qb.ts";
 import { Thug2 } from "../level_port/script_port.ts";
 
-// The DLL's bike members (src/game/skater/thaw_bmx.cpp kMembers; ride.test.ts checks the two lists agree).
+// The game's bike members (src/game/skater/thaw_bmx.cpp kMembers; ride.test.ts checks the two lists agree).
 export const OUR_MEMBERS: readonly string[] = [
     "SkaterOnBike",
     "SkaterOffBike",

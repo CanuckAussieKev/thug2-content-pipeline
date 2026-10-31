@@ -78,12 +78,12 @@ colours, outlines and text). Make the files, then switch them on in the ini:
     thug2-decomp.ini  [features] hd_ui=1                                          (default 0: the files are never read)
 
 The files go in the overlay's `thug2-decomp-data\hd_ui` folder (same relative names as the normal overlay; the data
-overlay consults it first only while hd_ui=1), so one install carries them and the ini alone switches. The DLL always
+overlay consults it first only while hd_ui=1), so one install carries them and the ini alone switches. The game always
 has the code.
 
 A sprite's size on screen comes from its texture's image size and a glyph's from the font's rectangles, so the
 upscaled files carry a marker (`.img.xbx` header +0x14 = 0x4844000s, `.fnt.xbx` glyph page header +8 = "HDUI", +0xC
-the scale) and the DLL reports the original's sizes (src/game/gfx/hd_ui.h).
+the scale) and the game reports the original's sizes (src/game/gfx/hd_ui.h).
 
 Files: every image and font in mainmenusprites / panelsprites / Levelselect / multiplayersprites / Themes / fonts.prx
 and the overlay's own level select signs; the loose loading screens at x4 with realesrgan-x4plus as DXT1 (header format

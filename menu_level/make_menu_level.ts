@@ -1,7 +1,7 @@
 // Note: the front-end scripts written out below (create_main_menu, main_menu_* ...) are modified versions of THUG2's own
 // scripts, adapted here; the original scripts belong to their rights holders (see the notice in README.md), not to this project.
 // NOT ORIGINAL - the data overlay (see src/game/front/data_overlay.h): generates, from the game's own files, a
-// folder the DLL reads before the game's archives and data folder:
+// folder the game reads before the game's archives and data folder:
 //   - always used: the skate shop as a playable level (Level_SkateShopLevel, in the level select as "SKATE SHOP"),
 //     TestLevel in the level select, the pause menu's LEVEL EDITOR, the THPS4 levels;
 //   - front_end\, used first while the new front end is on (thug2-decomp.ini [features] new_frontend): the standard
@@ -39,13 +39,13 @@
 //                              in the cache get a filtered picture of the level itself instead (640 x 360; its HD version
 //                              2560 x 1440 from the capture, not upscaled); --scenic-style a|b|c picks the filter, off the crops.
 //   images\loadscrn_sel_<load>__<original>.img.xbx  every level's loading screen: its level select picture (640 x 360,
-//                              loading_select.ts), named in the level's loading_screen; the DLL draws the bar over it
+//                              loading_select.ts), named in the level's loading_screen; the game draws the bar over it
 //                              ([features] level_select_loading_screens=0 loads the original picture named after the "__").
-//   anteara\                  Anteara Mod's script set (tools/anteara/README.md; the DLL reads it first while
+//   anteara\                  Anteara Mod's script set (tools/anteara/README.md; the game reads it first while
 //                              [features] anteara_mod=1), with the edits above re-applied to the files it changes.
-//   frontend\levels.json      the DLL's new front end's level select data (frontend_levels.ts; read while [features]
+//   frontend\levels.json      the game's new front end's level select data (frontend_levels.ts; read while [features]
 //                              new_frontend=1 - src/game/front/new_frontend.h); frontend\fonts\*.ttf its fonts, copied
-//                              from --frontend-fonts <folder> when given (the design's OFL fonts; else the DLL uses
+//                              from --frontend-fonts <folder> when given (the design's OFL fonts; else the game uses
 //                              Windows' own at run time).
 // Nothing of the game is stored in the repo: the files are made from the game folder each time.
 // Needs NeverScript (tools/build_neverscript.ps1 -> out/neverscript/ns.exe).
@@ -73,7 +73,7 @@ import * as thug2Levels from "../thug2_levels/thugpro_apply.ts"; // (THUGPRO's c
 import * as careerComplete from "./career_complete.ts"; // (GAME OPTIONS' CREATE 100% CAS)
 import { reEscape } from "./career_complete.ts";
 import * as frontendArt from "./frontend_art.ts"; // (the new front end's text-free versions of them)
-import * as frontendLevels from "./frontend_levels.ts"; // (the DLL's new front end: frontend\levels.json)
+import * as frontendLevels from "./frontend_levels.ts"; // (the game's new front end: frontend\levels.json)
 import * as levelMap from "./level_map.ts"; // (maps of the levels with no place, in place of the globe)
 import * as levelSelect from "./level_select.ts"; // (the level select's sections, stars and signs)
 import { countOf, replaceFirst } from "./level_select.ts";
@@ -590,7 +590,7 @@ export function addLevelEditor(text: string): string {
         `${indent}if LevelEditor_Available {\n${indent}    add_roundbar_menu_item text="LEVEL EDITOR" id=menu_level_editor ` +
         `pad_choose_script=level_editor_enter \n${indent}} \n`;
     // DEBUG OPTIONS: Neversoft's own hub of debug menus (gamemenu.qb create_debug_options_menu), which the retail
-    // pause menu never offers; shown while CD is false - the DLL's [features] debug_mode (src/game/sys/debug_mode.h).
+    // pause menu never offers; shown while CD is false - the game's [features] debug_mode (src/game/sys/debug_mode.h).
     item +=
         `${indent}if ! CD {\n${indent}    add_roundbar_menu_item text="DEBUG OPTIONS" id=menu_debug_options ` +
         `pad_choose_script=create_debug_options_menu \n${indent}} \n`;
@@ -600,7 +600,7 @@ export function addLevelEditor(text: string): string {
     return text.slice(0, at) + LEVEL_EDITOR_SCRIPTS + text.slice(at);
 }
 
-// --- the new front end's pause menu items (the DLL's src/game/front/new_frontend.h) ----------------------------------
+// --- the new front end's pause menu items (the game's src/game/front/new_frontend.h) ----------------------------------
 
 const NEW_FRONTEND_PAUSE_SCRIPTS = `script newfe_open {
     NewFrontend_Open <...>
@@ -616,7 +616,7 @@ script newfe_pause_restart_after {
 `;
 
 export function addNewFrontendPause(text: string): string {
-    // With [features] new_frontend=1 the pause menu is the game's, restyled by the DLL - so the new front end's own
+    // With [features] new_frontend=1 the pause menu is the game's, restyled by the game - so the new front end's own
     // items are made here, each only while NewFrontend_Item says so (false with the new front end off: the menu as
     // it was): RESTART after CONTINUE (free skate: CONTINUE, then ResetSkaters), CHANGE LEVEL opening our level select
     // (NewFrontend_Open screen=levels) in place of the game's, and OPTIONS (ours; its Game options row opens the game's)
@@ -654,7 +654,7 @@ export function addNewFrontendPause(text: string): string {
     return text.slice(0, at) + NEW_FRONTEND_PAUSE_SCRIPTS + text.slice(at);
 }
 
-// The new front end's main menu (with [features] new_frontend=1 the DLL restyles the game's menus - these say what
+// The new front end's main menu (with [features] new_frontend=1 the game restyles the game's menus - these say what
 // they hold): Career (our menu of THUG2 Story, Classic and THUG Story - not yet), Free Skate, Online, Create, Options
 // (ours) and Quit; back from STORY / CLASSIC MODE OPTIONS to Career.
 const NEW_FRONTEND_MAIN_SCRIPTS = `script newfe_main_menu_items {
@@ -772,7 +772,7 @@ export function addNewFrontendSkateshop(text: string): string {
     return text.slice(0, play.start()) + wrapped + text.slice(play.end());
 }
 
-// --- GAME OPTIONS' CREATE 100% CAS (career_complete.ts; the DLL's src/game/front/career_complete.h) --------------
+// --- GAME OPTIONS' CREATE 100% CAS (career_complete.ts; the game's src/game/front/career_complete.h) --------------
 
 export const OPTIONS_MENU_QB = "levels\\mainmenu\\mainmenu_options.qb";
 
@@ -1051,7 +1051,7 @@ async function main(): Promise<number> {
         };
         let levelsWithShop = overlayLevels(levels);
         // Every level's loading screen is its level select picture (loading_select.ts): images\loadscrn_sel_<load>__<original>
-        // .img.xbx, named in its loading_screen ([features] level_select_loading_screens=0: the DLL loads the original).
+        // .img.xbx, named in its loading_screen ([features] level_select_loading_screens=0: the game loads the original).
         const selectScreens = loadingSelect.buildSelectScreens(out, levelsWithShop, frontArtMap);
         loadingSelect.writeSelectScreens(out, selectScreens);
         for (const line of selectScreens.lines) print(`loading screens: ${line}`);
@@ -1092,7 +1092,7 @@ async function main(): Promise<number> {
         const overlaySprites = (text: string): string => levelSelect.editSprites(text, sectionList);
         const selectText = overlaySelect(select);
         write(selectText, "scripts\\game\\menu\\gamemenu_levelselect.qb");
-        // The DLL's new front end ([features] new_frontend - src/game/front/new_frontend.h): the same sections as data.
+        // The game's new front end ([features] new_frontend - src/game/front/new_frontend.h): the same sections as data.
         const feSections = frontendLevels.frontendSections(
             sectionList,
             selectText,
@@ -1125,7 +1125,7 @@ async function main(): Promise<number> {
             "TestLevel.qb",
         );
         write(testlevelNodes(testlevel), "levels\\TestLevel\\TestLevel.qb");
-        // Always: the pause menu's LEVEL EDITOR (the DLL's [features] level_editor decides whether it shows) and the
+        // Always: the pause menu's LEVEL EDITOR (the game's [features] level_editor decides whether it shows) and the
         // new front end's items (its [features] new_frontend).
         // (and THAW's BMX's RIDE BMX when its staging folder is there - tools/pipeline/thaw_bmx/install.ts)
         write(
@@ -1137,7 +1137,7 @@ async function main(): Promise<number> {
             addNewFrontendSkateshop(decompile(prxFile(qbScripts, "scripts\\game\\menu\\skateshop.qb"), "skateshop.qb")),
             "scripts\\game\\menu\\skateshop.qb",
         );
-        // Always: GAME OPTIONS' CREATE 100% CAS (the DLL's [features] create_100_cas decides whether it shows).
+        // Always: GAME OPTIONS' CREATE 100% CAS (the game's [features] create_100_cas decides whether it shows).
         addCreate100Cas(decompile, write, pre, levels);
         // The ports' own people (tools/pipeline/level_port/ped_models.ts): their CAS parts and profiles added to THUG2's lists.
         const peds = pedModels.readAdditions(game);
@@ -1164,7 +1164,7 @@ async function main(): Promise<number> {
             write(`${items}\n${added}`, thawBmxInstall.SPECIAL_ITEMS);
         }
 
-        // The standard main menu with the new front end's items (the DLL uses front_end\ while [features]
+        // The standard main menu with the new front end's items (the game uses front_end\ while [features]
         // new_frontend is on).
         const archived = new PrxScripts([prxFiles(qbScripts), prxFiles(menuScripts)], tool, work);
         write(
@@ -1172,7 +1172,7 @@ async function main(): Promise<number> {
             "front_end\\levels\\mainmenu\\mainmenu_scripts.qb",
         );
 
-        // Anteara Mod (tools/anteara; the DLL reads anteara\ first while [features] anteara_mod=1): its script
+        // Anteara Mod (tools/anteara; the game reads anteara\ first while [features] anteara_mod=1): its script
         // set, with the edits above re-applied to the files it also changes or this overlay changes. (With THUG1's
         // drivable cars installed - PC-THUG1-22, tools/pipeline/thug1_levels/driving.ts - the mod's car_scripts.qb, THUG1's
         // unchanged, gets their THUG2 edits too: unchanged it hangs THUG1 Vancouver loading. Its own

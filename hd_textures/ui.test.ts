@@ -1,5 +1,5 @@
 // ui.ts with a fake upscaler (nearest-neighbour x4): images (paletted, 32-bit, swizzled or not, the picture smaller
-// than its texture) and fonts come back `scale` times as large with the markers the DLL reads (src/game/gfx/hd_ui.h).
+// than its texture) and fonts come back `scale` times as large with the markers the game reads (src/game/gfx/hd_ui.h).
 
 import assert from "node:assert/strict";
 import * as fs from "node:fs";

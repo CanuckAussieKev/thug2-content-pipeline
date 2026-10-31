@@ -26,8 +26,11 @@ import pyghidra
 
 
 def local_config():
-    """The decomp's tools/ghidra/local_config.py (local.json's settings): the decomp checkout is THUG2_DECOMP or the
-    nearest folder above this one with its CMakeLists.txt and src/game; None when this repository is on its own."""
+    """The decomp's local.json settings (thawGhidraProject / thawGhidraProgram) as attributes: the decomp checkout is
+    THUG2_DECOMP or the nearest folder above this one with its CMakeLists.txt and src/game (a linked git worktree's
+    local.json is its main checkout's: it's gitignored); None when this repository is on its own."""
+    import json
+    from types import SimpleNamespace
     root = os.environ.get("THUG2_DECOMP")
     if not root:
         here = os.path.dirname(os.path.abspath(__file__))
@@ -38,9 +41,23 @@ def local_config():
                 break
     if not root:
         return None
-    sys.path.insert(0, os.path.join(root, "tools", "ghidra"))
-    import local_config as config
-    return config
+    local = os.path.join(root, "local.json")
+    dot_git = os.path.join(root, ".git")
+    if not os.path.exists(local) and os.path.isfile(dot_git):
+        with open(dot_git, encoding="utf-8") as f:
+            line = f.read().strip()
+        gitdir = os.path.join(root, line[len("gitdir:"):].strip()) if line.startswith("gitdir:") else ""
+        commondir = os.path.join(gitdir, "commondir")
+        if gitdir and os.path.isfile(commondir):
+            with open(commondir, encoding="utf-8") as f:
+                main = os.path.dirname(os.path.normpath(os.path.join(gitdir, f.read().strip())))
+            local = os.path.join(main, "local.json")
+    config = {}
+    if os.path.exists(local):
+        with open(local, encoding="utf-8") as f:
+            config = json.load(f)
+    return SimpleNamespace(THAW_GHIDRA_PROJECT=config.get("thawGhidraProject", ""),
+                           THAW_GHIDRA_PROGRAM=config.get("thawGhidraProgram", ""))
 
 
 def main():

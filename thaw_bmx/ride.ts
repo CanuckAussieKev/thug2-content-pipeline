@@ -2,11 +2,11 @@
 // src/game/skater/thaw_bmx.h). The scripts convert.ts adds to thaw_bmx.ns (appended to the overlay's
 // specialitems.qb by make_menu_level):
 //
-//   thaw_bicycle_physics          THAW's bicycle_physics (physics.qb), as THAW has it; the DLL's GetPhysicsStructure
+//   thaw_bicycle_physics          THAW's bicycle_physics (physics.qb), as THAW has it; the game's GetPhysicsStructure
 //                                 gives it while the skater is on the bike ([features] thaw_bmx=1)
 //   thaw_bmx_camera_*             THAW's Skater_Camera_Bike_Near / Medium / Far / Medium_LTG and their array - put in
 //                                 place of Skater_Camera_Array (Change ... resolve) while riding, then put back
-//   thaw_bmx_toggle               on / off (the DLL's key, the pause menu, the automation channel's `run`, the walk
+//   thaw_bmx_toggle               on / off (the game's key, the pause menu, the automation channel's `run`, the walk
 //                                 key on the bike - THAW's BikeToWalkTricks)
 //   thaw_bmx_pause_toggle         the pause menu's RIDE / GET OFF BMX: exit_pause_menu, then the toggle. (Not
 //                                 handle_pause_continue: called from another script it has no device_num, so its
@@ -170,7 +170,7 @@ script thaw_bmx_home_bike {
         ${HOME_BIKE}:Obj_SpawnScript thaw_bmx_spot_watch
     }
 }
-// (a new level: the last level's bikes gone - the DLL, once the level is up)
+// (a new level: the last level's bikes gone - the game, once the level is up)
 script thaw_bmx_level_start {
     thaw_bmx_home_bike off
     if ObjectExists id=bikespot {
@@ -512,7 +512,7 @@ script thaw_bmx_test_push {
 script thaw_bmx_test_skatein {
     MakeSkaterGoto bike_SkateInOrBail params={FallingRight}
 }
-// (a test: a ped's knock-down as a chasing ped's catch sends it - "run thaw_bmx_test_knockdown"; on the bike the DLL
+// (a test: a ped's knock-down as a chasing ped's catch sends it - "run thaw_bmx_test_knockdown"; on the bike the game
 // sends the rider to bike_PedKnockDown)
 script thaw_bmx_test_knockdown {
     MakeSkaterGoto PedKnockDown params={SetVelSpeed=350}

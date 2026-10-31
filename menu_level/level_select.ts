@@ -32,11 +32,11 @@
 //   outside development builds). level_select_valid_choice's dot animation goes over the section's list.
 //
 // The level editor's edited copies (src/game/front/level_editor_layout.h): one more section, EDITED LEVELS (OFFLINE),
-// after the games' - Up from the first - while the DLL's LevelEditor_EditedLevels returns any (one entry for each level
+// after the games' - Up from the first - while the game's LevelEditor_EditedLevels returns any (one entry for each level
 // with a saved layout: the level's own entry titled with the edited copy's name - else "<TEXT> (EDITED)" - flagged
 // edited_layout, its sign labelled with sign_label= - the name, else "EDITED" - map4). Never in the network level
 // select (in_server_options) or a network game. The section count is worked out each time (an edited copy can appear
-// or go: Reset level deletes it). level_select_change_level's first line is LevelEditor_PickLevel <...>: the DLL keeps
+// or go: Reset level deletes it). level_select_change_level's first line is LevelEditor_PickLevel <...>: the game keeps
 // which was chosen - the edited copy (edited_layout) or the level as shipped - and puts the layout in place only for
 // the edited copy.
 
@@ -975,7 +975,7 @@ export function editLevelSelect(text: string, sectionList: readonly Section[]): 
         "level_select_menu_add_item's sign",
     );
 
-    // level_select_change_level: the DLL told which was chosen - the edited copy or the level as shipped.
+    // level_select_change_level: the game told which was chosen - the edited copy or the level as shipped.
     text = replaceOnce(
         text,
         "\nscript level_select_change_level {\n",

@@ -1,6 +1,6 @@
-// NOT ORIGINAL - the data file of the DLL's new front end (src/game/front/new_frontend.h, thug2-decomp.ini [features]
+// NOT ORIGINAL - the data file of the game's new front end (src/game/front/new_frontend.h, thug2-decomp.ini [features]
 // new_frontend=1): the level select's sections as the overlay's sectioned level select has them (level_select.ts),
-// written by make_menu_level.ts as <overlay>\frontend\levels.json so the DLL needn't hard-code a level.
+// written by make_menu_level.ts as <overlay>\frontend\levels.json so the game needn't hard-code a level.
 //
 // Made from the final gamemenu_levelselect.qb text (after level_select.ts editLevelSelect: the same arrays, the same
 // order, the same load scripts as the game's level select uses) and the final Levels.qb text (each load script's
@@ -19,7 +19,7 @@
 //                   ... ] }
 // `art` is an image name under the game's images folder (images\<art>.img.xbx: the overlay's hd_ui copy first with
 // [features] hd_ui=1, as the game's own loading screens). level_num / flag are the entry's (a script name or a
-// number): the DLL resolves them for the career's records and the lock.
+// number): the game resolves them for the career's records and the lock.
 
 import { reEscape } from "./career_complete.ts";
 import type { Section } from "./level_select.ts";
@@ -38,8 +38,8 @@ export const SECTION_STYLE: ReadonlyMap<string, { tab: string; colour: string }>
     ["misc", { tab: "Misc", colour: "#C9CBD0" }],
 ]);
 
-// The main menu's art (the image shown while an item is highlighted), by the DLL's item ids - each item its own, none
-// of THUG2's advert slides off topic (the DLL's DefaultArt has the same and the sub-screens' items; 2026-10-25).
+// The main menu's art (the image shown while an item is highlighted), by the game's item ids - each item its own, none
+// of THUG2's advert slides off topic (the game's DefaultArt has the same and the sub-screens' items; 2026-10-25).
 export const MENU_ART: Readonly<Record<string, string>> = {
     career: "loadscrn_boston_story",
     story: "loadscrn_boston_story",
@@ -155,7 +155,7 @@ export function loadingScreens(levelsText: string): Map<string, string> {
     return out;
 }
 
-// The sections for the DLL, from the final level select and Levels.qb texts.
+// The sections for the game, from the final level select and Levels.qb texts.
 export function frontendSections(
     sectionList: readonly Section[],
     selectText: string,

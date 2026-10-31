@@ -9,7 +9,7 @@
 // convert writes <thug2>\thug2-decomp-thps4\ (not read by the game): levels\thps4_<lvl>\thps4_<lvl>.scn.xbx /
 // .tex.xbx / .col.xbx / .qb (the node array), the skies the same way, and levels.json (what make_menu_level.ts adds to
 // Levels.qb and the level select: tools/pipeline/level_port/ported_levels.ts). make_menu_level.ts copies the levels folder into
-// the overlay (<thug2>\thug2-decomp-data), which the DLL serves in place of the game's files.
+// the overlay (<thug2>\thug2-decomp-data), which the game serves in place of the game's files.
 //
 // The THUG2 formats, the geometry conversion, the node arrays and the installing are shared with tools/pipeline/thug1_levels
 // (tools/pipeline/level_port); this folder has THPS4's own formats (thps4.ts) and its levels.

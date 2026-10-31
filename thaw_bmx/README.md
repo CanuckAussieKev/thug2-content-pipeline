@@ -101,16 +101,16 @@ No vehicle any more: the ride is THAW's own bike scripts.
 
 | file | what |
 |---|---|
-| `bike_scripts.ts` | THAW's bike_scripts.qb / bike_grindscripts.qb / bike_sfx.qb ported (`bikeScripts`) and THAW's data read from the user's THAW at convert time (`bikeGlobals`: the trick lists as THAW has them - its right stick's BikePress, its stick names; the DLL makes THAW's stick buttons, src/game/skater/thaw_bmx_sticks.cpp -, the exception tables, BikeGrindTrickList, the grind tricks' scripts, the sound tables). The ported scripts are made at convert time from the user's THAW too: `bike_scripts.ns` holds our own scripts and a line `//@unit <name>` for each of THAW's we port, `bike_scripts.edits` our changes to each (tools/pipeline/lib/edits.ts: line operations on THAW's script). No THAW text is stored. To change one: `node tools/pipeline/thaw_bmx/bike_scripts.ts dump --out x.ns`, edit, `... extract --from x.ns` |
+| `bike_scripts.ts` | THAW's bike_scripts.qb / bike_grindscripts.qb / bike_sfx.qb ported (`bikeScripts`) and THAW's data read from the user's THAW at convert time (`bikeGlobals`: the trick lists as THAW has them - its right stick's BikePress, its stick names; the game makes THAW's stick buttons, src/game/skater/thaw_bmx_sticks.cpp -, the exception tables, BikeGrindTrickList, the grind tricks' scripts, the sound tables). The ported scripts are made at convert time from the user's THAW too: `bike_scripts.ns` holds our own scripts and a line `//@unit <name>` for each of THAW's we port, `bike_scripts.edits` our changes to each (tools/pipeline/lib/edits.ts: line operations on THAW's script). No THAW text is stored. To change one: `node tools/pipeline/thaw_bmx/bike_scripts.ts dump --out x.ns`, edit, `... extract --from x.ns` |
 | `thaw_ns.ts` | THAW's script bodies (thaw_scripts.ts' THUG2 tokens) written as NeverScript in THUG2's decompiled layout - what the port's edits start from; a script's first-line defaults (`JumpHeight = 380` with no newline before it) go in its header, `script BIKE_OLLIE JumpHeight=380 {`, so they stay defaults the caller overrides |
 | `sounds.ts` | THAW's global_sfx pak (its address table in `global_sfx_dat_wpc.qb`) -> THUG2 .snd (4-bit IMA ADPCM in a RIFF WAVE, a `smpl` loop for the loops) under `sounds\thaw_bmx` |
 | `check.ts` | every command the compiled scripts run is THUG2's (C function, member, script) or ours - convert.ts fails otherwise |
-| `meter.ts` | the bike's manual meter: THAW's panel pictures (`data\images\panelsprites\bike_tailmeter / bike_nosemeter / bike_arc.img.wpc`, DXT5) -> THUG2 32-bit `.img.xbx` under `images\thaw_bmx`. THAW's own meter scripts (create / update / destroy_bike_manual_meter, ported whole) draw it: the bike picture - mirrored (`flip_v`) for a nose manual - turned by 0.9 degrees per point of the manual angle over the arc; they load the pictures with the DLL's `ThawBmx_LoadTexture` |
+| `meter.ts` | the bike's manual meter: THAW's panel pictures (`data\images\panelsprites\bike_tailmeter / bike_nosemeter / bike_arc.img.wpc`, DXT5) -> THUG2 32-bit `.img.xbx` under `images\thaw_bmx`. THAW's own meter scripts (create / update / destroy_bike_manual_meter, ported whole) draw it: the bike picture - mirrored (`flip_v`) for a nose manual - turned by 0.9 degrees per point of the manual angle over the arc; they load the pictures with the game's `ThawBmx_LoadTexture` |
 
 The animation trees THAW's scripts drive become `thaw_bmx_playanim` (PlayAnim on the rider, Obj_PlayAnim on the bike when it
 has the animation) and `thaw_bmx_playbarspin` (the anim subset Barspin on both); the manual's pose follows the manual
-angle in the DLL (src/game/skater/thaw_bmx_tricks.cpp). The data overlay gets the sounds (`install.ts` copies `sounds`;
-the DLL's PCWave::Load reads the overlay's copy first).
+angle in the game (src/game/skater/thaw_bmx_tricks.cpp). The data overlay gets the sounds (`install.ts` copies `sounds`;
+the game's PCWave::Load reads the overlay's copy first).
 
 ## THAW's general scripts' bike branches
 
@@ -120,7 +120,7 @@ skater's only, so the port has them under its own names: `bike_SkateInOrBail` / 
 the board on), the air tricks after rolling off a ledge (THAW's `SetSkaterAirTricks` bike branch), the getting on / off
 animations THAW plays from its `toggle_bike_on_off2` / `bmx_finish_off` (BrakeToStand, THAW's THPS7_BoardCatch_Stand
 backwards, WStand, GetUp_S_RunJump - THUG2 has all but the board catch under the same names), and a ped's knock-down
-(`bike_PedKnockDown`: THAW's PedKnockDown bike branch, the bike's bail - the DLL sends a rider there from MakeSkaterGoto
+(`bike_PedKnockDown`: THAW's PedKnockDown bike branch, the bike's bail - the game sends a rider there from MakeSkaterGoto
 PedKnockDown; a ped in its knock-down state doesn't knock a rider over, as THAW's STATESCRIPT_knockdown). `convert.ts` checks every animation the scripts name is converted or THUG2's own
 (`check.ts unknownAnimations`).
 
@@ -132,11 +132,11 @@ As THAW: each level has its own bike lying on the ground, and getting off leaves
 
 | file | what |
 |---|---|
-| `parked.ts` | THAW's bike_ped_ids (its levels' bikes: pedestrian nodes whose body is the bike) read at convert time - each node's place in the THAW level as tools/pipeline/thaw_levels ports it (its THUG2 name and default frame) -> `thaw_bmx_home_bikes`. Elsewhere the DLL puts the level's bike near where the skater started |
+| `parked.ts` | THAW's bike_ped_ids (its levels' bikes: pedestrian nodes whose body is the bike) read at convert time - each node's place in the THAW level as tools/pipeline/thaw_levels ports it (its THUG2 name and default frame) -> `thaw_bmx_home_bikes`. Elsewhere the game puts the level's bike near where the skater started |
 | `ride.ts` `parkedScripts` | the level's bike (`thaw_bmx_home`, THAW's switch_all_bike_peds), the offer on each bike (`thaw_bmx_spot_watch`: within THAW's 12 feet, THUG2's speech box), taking it (`thaw_bmx_spot_ride`) and the walk (`thaw_bmx_walk_to_bike`, THAW's skater_walk_to_bike) |
 
 The stall (R1 held as a grind starts): THAW's `BikeStallTrick` (from BIKE_GRIND while `ShouldRunStallScript`), with
 its stalltricks.qb helpers `PlayStallBalancingAnim` and `StallOllieOut` and its ExitPointRailSpin as
 `bike_ExitPointRailSpin` (THUG2's own has no bike branch); THAW's `stall_slip_time` goes into the overlay with its other
-physics globals. The physics' stall state is in the DLL (src/game/skater/core_rail.cpp DoBikeStallPhysics,
+physics globals. The physics' stall state is in the game (src/game/skater/core_rail.cpp DoBikeStallPhysics,
 thaw_bmx_physics.cpp).

@@ -4,14 +4,14 @@
 // scenic ones and 640 x 448 for the cropped ones). This writes a loading picture from each of them -
 // images\loadscrn_sel_<load>__<original>.img.xbx, 640 x 360 (the part of the level select picture the front end shows
 // at 16:9) - and points that level's loading_screen (Levels.qb) at it. Nothing else in the game changes: the load
-// script (loading_screens.qb) adds "_story" / "_classic" to a level's picture in those modes, and the DLL
+// script (loading_screens.qb) adds "_story" / "_classic" to a level's picture in those modes, and the game
 // (src/game/gfx/loading_screen.cpp) takes that off again, draws the picture cover-fitted to the screen and puts a plate
 // and a clean bar over it. The name keeps the original picture after the "__": `[features]
-// level_select_loading_screens=0` makes the DLL load that one instead (the original's loading screens, text and all).
+// level_select_loading_screens=0` makes the game load that one instead (the original's loading screens, text and all).
 //
 //   node tools/pipeline/menu_level/loading_select.ts preview <overlay folder> <out folder> [--fraction 0.6] [--per-game 3]
 //        PNGs of the overlay's new loading screens (a few per game) as the game draws them at 1280 x 720, the bar full to
-//        --fraction: the picture, the plate, the bar - the DLL's loading_bar.cpp / loading_screen.cpp geometry.
+//        --fraction: the picture, the plate, the bar - the game's loading_bar.cpp / loading_screen.cpp geometry.
 
 import * as fs from "node:fs";
 import * as path from "node:path";
@@ -22,7 +22,7 @@ import { nativeImg, type Picture, readImg, resize, toPng } from "./loading_art.t
 
 export const SELECT_PREFIX = "loadscrn_sel_";
 export const PICTURE_W = 640;
-export const PICTURE_H = 360; // (16:9: what the DLL fits to the screen)
+export const PICTURE_H = 360; // (16:9: what the game fits to the screen)
 
 // The loading_screen a level gets: its load script (lower case) and the picture it had.
 export const selectName = (load: string, original: string): string =>
@@ -111,9 +111,9 @@ export function writeSelectScreens(overlay: string, built: SelectScreens): void 
     for (const [name, data] of built.images) fs.writeFileSync(path.join(dir, `${name}.img.xbx`), data);
 }
 
-// --- the bar over it, as the DLL draws it ---------------------------------------------------------------------------
+// --- the bar over it, as the game draws it ---------------------------------------------------------------------------
 
-// The look the DLL gives the bar over these pictures (loading_screen.cpp ApplyBarStyle, loading_bar.cpp): 300 of 640
+// The look the game gives the bar over these pictures (loading_screen.cpp ApplyBarStyle, loading_bar.cpp): 300 of 640
 // units wide, paper grey to safety yellow, a dark track, on an ink plate with a yellow rule.
 export const BAR = {
     width: 300,
@@ -126,7 +126,7 @@ export const BAR = {
 
 // `picture` (16:9) at w x h with the plate and the bar `fraction` full drawn the way loading_bar.cpp does.
 export function drawLoadingScreen(picture: Picture, w: number, h: number, fraction: number): Picture {
-    // (the DLL cover-fits the 16:9 picture: nothing left over at a 16:9 size)
+    // (the game cover-fits the 16:9 picture: nothing left over at a 16:9 size)
     const base = resize(picture, w, h);
     const out: Picture = { width: w, height: h, bgra: Buffer.from(base.bgra) };
     const fill = (x0: number, y0: number, x1: number, y1: number, colour: (x: number) => readonly number[]): void => {

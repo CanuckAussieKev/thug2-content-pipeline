@@ -700,7 +700,7 @@ export function nsString(text: string): string {
 }
 
 // mainmenu_options.qb's text with CREATE 100% CAS after GAME PROGRESS in create_setup_options_menu (shown while
-// Career100_Available: the DLL's [features] create_100_cas) and the scripts.
+// Career100_Available: the game's [features] create_100_cas) and the scripts.
 export function optionsMenu(text: string, data: CareerData): string {
     const progress = search(/\n( *)add_roundbar_menu_item \{ *\n *text="GAME PROGRESS"/, text);
     if (!progress || findall(/\n *text="GAME PROGRESS"/, text).length !== 1) {

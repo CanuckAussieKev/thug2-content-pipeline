@@ -47,7 +47,7 @@ test("the home bikes' global", () => {
         text,
         /^thaw_bmx_home_bikes = \[\n {4}\{level=z_ho pos=\(-1617\.660, 96\.370, 0\.000\) heading=-9\.470\}\n\]\n/m,
     );
-    // (none: no global - the DLL then uses the start spot everywhere)
+    // (none: no global - the game then uses the start spot everywhere)
     assert.doesNotMatch(homeBikesText([]), /thaw_bmx_home_bikes =/);
 });
 
@@ -69,7 +69,7 @@ test("the parked bikes' scripts", () => {
     // THAW's 12 feet; THAW's global the toggle sets and bmx_finish_on / off clear
     assert.match(text, /^thaw_bmx_spot_radius = 12$/m);
     assert.match(text, /^dont_create_speech_boxes = 0$/m);
-    // the DLL's commands the scripts use are known to check.ts
+    // the game's commands the scripts use are known to check.ts
     for (const c of text.match(/\bThawBmx_\w+/g) ?? []) assert.ok(OUR_CFUNCS.includes(c), c);
     // the level's bike: its assets loaded before it's made, THAW's pose, the offer
     assert.match(

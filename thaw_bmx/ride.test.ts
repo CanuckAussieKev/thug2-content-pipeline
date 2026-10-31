@@ -157,8 +157,8 @@ test("rideScripts (phase 4): no vehicle - THAW's own bike scripts; the toggle, g
     assert.equal((text.match(/\{/g) ?? []).length, (text.match(/\}/g) ?? []).length);
 });
 
-// (the DLL's script names: the decomp's src/game/skater - skipped when this repository is on its own)
-test("rideScripts: every script the DLL runs is there; THAW's under THAW's names", {
+// (the game's script names: the decomp's src/game/skater - skipped when this repository is on its own)
+test("rideScripts: every script the game runs is there; THAW's under THAW's names", {
     skip: (!DECOMP && "needs the decomp checkout (src/game/skater)") || NO_THAW,
 }, () => {
     const text = rideScripts();
@@ -170,7 +170,7 @@ test("rideScripts: every script the DLL runs is there; THAW's under THAW's names
     const run = [...cpp.matchAll(/constexpr const char\* k\w+Script = "(\w+)";/g)].map((m) => m[1]!);
     assert.ok(run.includes("bike_enter_manual") && run.includes("thaw_bmx_after_reset"), run.join(" "));
     for (const name of run.filter((n) => !n.startsWith("animload_") && n !== "thaw_bmx_load_skeleton"))
-        assert.ok(scripts.has(name), `${name} (the DLL runs it) isn't in the scripts`);
+        assert.ok(scripts.has(name), `${name} (the game runs it) isn't in the scripts`);
     // THAW's bike scripts are there under their own names
     for (const name of [
         "bike_start",

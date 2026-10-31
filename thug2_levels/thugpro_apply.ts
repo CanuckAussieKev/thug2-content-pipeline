@@ -1,7 +1,7 @@
 // NOT ORIGINAL - applies the register's entries for THUGPRO's changes to THUG2's own levels (TP-42,
 // tools/pipeline/compat/thugpro/thug2_levels.json - thugpro_compare.ts --extract-thugpro writes it) through our data overlay:
 // never the game's files. Each changed file is made from the user's THUG2 files (Data\pre) plus the entries' data and
-// written where the DLL reads it first (<game>\thug2-decomp-data - src/game/front/data_overlay.h):
+// written where the game reads it first (<game>\thug2-decomp-data - src/game/front/data_overlay.h):
 //   levels\<L>\<L>.qb          the node array (edited nodes in their places, added nodes appended - every other node's
 //                              bytes kept: qb_write.replaceGlobalArray) and the trigger scripts THUGPRO's file changed;
 //   levels\<L>\<L>_scripts.qb  THUGPRO's scripts the entries need (by reference: read from the THUGPRO install, checked
