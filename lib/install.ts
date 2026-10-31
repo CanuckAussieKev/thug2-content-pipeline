@@ -9,7 +9,7 @@ import * as fs from "node:fs";
 import { GAME_EXE_NAMES } from "./decomp.ts";
 import { pyExit, pyJoin } from "./py.ts";
 
-export type InstallGame = "thug2" | "thps3" | "thps4" | "thug1" | "thaw" | "thps2" | "thp8";
+export type InstallGame = "thug2" | "thps3" | "thps4" | "thug1" | "thaw" | "thps2" | "thp8" | "thpg";
 
 export interface InstallKind {
     title: string; // for messages ("THAW")
@@ -30,6 +30,8 @@ export const INSTALLS: Readonly<Record<InstallGame, InstallKind>> = {
     thps2: { title: "THPS2", markers: [["ALL.PKR"]] },
     // (THP8: the Xbox 360 game's data - game\DATA\COMPRESSED's archives and their table)
     thp8: { title: "THP8", markers: [["DATA\\COMPRESSED\\compress.toc.xen"]] },
+    // (Tony Hawk's Proving Ground: the Xbox 360 game's data, THP8's layout - its scenes are .scn)
+    thpg: { title: "THPG", markers: [["DATA\\COMPRESSED\\compress.toc.xen", "DATA\\COMPRESSED\\PAK\\qb.pak.xen"]] },
 };
 
 const SUBFOLDER = "Game";

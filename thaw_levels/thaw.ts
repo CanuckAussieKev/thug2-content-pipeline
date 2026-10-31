@@ -392,7 +392,7 @@ export class QbItems extends ItemReader {
                     );
                 }
                 this.scriptData.set(key, body);
-                this.scripts.set(key, statements(body, name));
+                this.scripts.set(key, statements(body, name, this.order));
                 this.end = value + 12 + csize;
             } else {
                 this.globals.push([new Name(key), this.value(kind, value)]);
@@ -428,8 +428,12 @@ export function inlineStruct(payload: Uint8Array, names: Map<number, string>, or
 // the script's start, a structure in the item format (offsets from its own start)}.
 const FIXED = qb.FIXED;
 
+// The Xbox 360 games' (order ">": THP8, Tony Hawk's Proving Ground) 0x27, an elseif with two u16 jumps (to the next
+// branch, to the endif): THPG's. THP8's scripts have none; THUG2's / THAW's 0x27 carries nothing.
+export const ELSEIF = 0x27;
+
 // [offset, token, payload] of a script body's tokens.
-export function* tokens(input: Uint8Array): Generator<qb.Token> {
+export function* tokens(input: Uint8Array, order: "<" | ">" = "<"): Generator<qb.Token> {
     const data = Buffer.isBuffer(input) ? input : Buffer.from(input.buffer, input.byteOffset, input.byteLength);
     let i = 0;
     const n = data.length;
@@ -438,7 +442,7 @@ export function* tokens(input: Uint8Array): Generator<qb.Token> {
         const start = i;
         i += 1;
         let payload: Buffer;
-        const fixed = FIXED.get(t);
+        const fixed = t === ELSEIF && order === ">" ? 4 : FIXED.get(t);
         if (fixed !== undefined) {
             payload = data.subarray(i, i + fixed);
             i += fixed;
@@ -466,10 +470,10 @@ export function* tokens(input: Uint8Array): Generator<qb.Token> {
 }
 
 // The script's statements (lines), each a list of [token, payload] - as level_port's QbFile.scripts.
-export function statements(body: Uint8Array, _name = "script"): Statement[] {
+export function statements(body: Uint8Array, _name = "script", order: "<" | ">" = "<"): Statement[] {
     const out: Statement[] = [];
     let line: Statement = [];
-    for (const [, t, payload] of tokens(body)) {
+    for (const [, t, payload] of tokens(body, order)) {
         if (t === 0x01 || t === 0x02) {
             if (line.length) out.push(line);
             line = [];

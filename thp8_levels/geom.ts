@@ -77,9 +77,15 @@ export interface Geom {
 const floats = (d: Buffer, at: number, n: number): number[] =>
     Array.from({ length: n }, (_, k) => d.readFloatBE(at + 4 * k));
 
+// Readers of other material block versions, by version (Tony Hawk's Proving Ground's 0x0410:
+// tools/pipeline/thpg_levels/scene.ts registers its own).
+export const READERS = new Map<number, (data: Buffer, name: string) => Geom>();
+
 export function readGeom(data: Buffer, name = "geom"): Geom {
     const u32 = (at: number): number => data.readUInt32BE(at);
     const version = data.readUInt16BE(0x20);
+    const other = READERS.get(version);
+    if (other) return other(data, name);
     if (version !== 0x0310) throw new FormatError(`${name}: material block version ${version.toString(16)}`);
     const count = data.readUInt16BE(0x22);
     const size = u32(0x24);
@@ -106,7 +112,20 @@ export function readGeom(data: Buffer, name = "geom"): Geom {
             ),
         });
     }
-    const s0 = 0x20 + size;
+    return readScene(data, 0x20 + size, materials, name);
+}
+
+// The scene after the material block (at s0: 0xBABEFACE), with the materials read.
+// (sectorSize / sphereAt: the sector record's size and where its sphere is - THP8's 0x50 / 0x30, Proving Ground's 0x60 / 0x40)
+export function readScene(
+    data: Buffer,
+    s0: number,
+    materials: GeomMaterial[],
+    name = "geom",
+    sectorSize = SEC_SIZE,
+    sphereAt = 0x30,
+): Geom {
+    const u32 = (at: number): number => data.readUInt32BE(at);
     if (u32(s0) !== SCENE) throw new FormatError(`${name}: no scene (0xBABEFACE) at 0x${s0.toString(16)}`);
     const h = s0 + u32(s0 + 4); // (the header's second word: 8 or 0x18 - the fields below move with it)
     const s = h + 8;
@@ -145,7 +164,7 @@ export function readGeom(data: Buffer, name = "geom"): Geom {
     }
     const sectors: GeomSector[] = [];
     for (let i = 0; i < sectorCount; i++) {
-        const sec = sectorsAt + SEC_SIZE * i;
+        const sec = sectorsAt + sectorSize * i;
         const node = nodesAt + NODE_SIZE * i;
         const firstMesh = u32(node + 0x48);
         const n = u32(node + 0x4c);
@@ -157,7 +176,7 @@ export function readGeom(data: Buffer, name = "geom"): Geom {
             checksum: u32(sec + 4),
             flags: u32(sec + 8),
             bbox: [...lo, ...hi],
-            sphere: floats(data, sec + 0x30, 4),
+            sphere: floats(data, sec + sphereAt, 4),
             meshes: meshes.slice(firstMesh, firstMesh + n),
         });
     }
@@ -174,13 +193,24 @@ export function half(h: number): number {
     return sign * (1 + f / 1024) * 2 ** (e - 15);
 }
 
-// The uv fields of a layout: the slot numbers (0-7) whose 2-bit kind is 2 (two 16-bit floats).
+// The uv fields of a layout: the slot numbers (0-7) whose 2-bit kind is 2 (two 16-bit floats) or 3 (four 16-bit floats -
+// Tony Hawk's Proving Ground's vertex-colour wibble meshes: their strides say 8 bytes; read as their first two).
 export function uvSlots(layout: number): number[] {
-    const out: number[] = [];
+    return uvFields(layout).map((f) => f.slot);
+}
+
+export const UV_BYTES: Readonly<Record<number, number>> = { 2: 4, 3: 8 };
+
+// The uv fields with their kind and their place from the uv offset (the fields follow one another).
+export function uvFields(layout: number): { slot: number; kind: number; offset: number }[] {
+    const out: { slot: number; kind: number; offset: number }[] = [];
+    let offset = 0;
     for (let k = 0; k < 8; k++) {
         const kind = (layout >>> (16 + 2 * k)) & 3;
-        if (kind === 2) out.push(k);
-        else if (kind !== 0) throw new FormatError(`vertex layout ${layout.toString(16)}: uv field kind ${kind}`);
+        if (kind === 0) continue;
+        if (kind === 1) throw new FormatError(`vertex layout ${layout.toString(16)}: uv field kind ${kind}`);
+        out.push({ slot: k, kind, offset });
+        offset += UV_BYTES[kind]!;
     }
     return out;
 }
@@ -192,15 +222,15 @@ export interface Vertex {
 }
 
 export function readVertices(m: GeomMesh): Vertex[] {
-    const slots = uvSlots(m.layout);
+    const fields = uvFields(m.layout);
     const out: Vertex[] = [];
     const d = m.vertices;
     for (let i = 0; i < m.vertexCount; i++) {
         const v = i * m.stride;
         const c = v + m.colorOffset;
         const uvs: number[][] = [];
-        slots.forEach((_, k) => {
-            const at = v + m.uvOffset + 4 * k;
+        fields.forEach((f) => {
+            const at = v + m.uvOffset + f.offset;
             uvs.push([half(d.readUInt16BE(at)), half(d.readUInt16BE(at + 2))]);
         });
         out.push({

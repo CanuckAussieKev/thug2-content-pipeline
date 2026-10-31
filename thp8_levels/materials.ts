@@ -54,6 +54,20 @@ export const LAYERED: ReadonlySet<number> = new Set([
 ]);
 // Templates whose pass 0 lists a specular map after its diffuse (and normal) map, and whose pass 1 does too.
 const SPECULAR_FIRST_TWO = new Set([T_DIFFUSE_SPEC_TERRAIN]);
+// Templates whose float4s are the passes' colours alone (no specular power first: passColour reads them as they are).
+const COLOURS_FIRST = new Set([T_DIFFUSE_TERRAIN]);
+
+// Another game's template read as a layered one (Tony Hawk's Proving Ground's: tools/pipeline/thpg_levels/layers.ts):
+// its texture list laid out as the layered templates' above, its pass colours at `colourAt` (none: not read).
+export function addLayered(
+    template: number,
+    how: { specularFirstTwo?: boolean; colourAt?: readonly number[]; coloursFirst?: boolean } = {},
+): void {
+    (LAYERED as Set<number>).add(template);
+    if (how.specularFirstTwo) SPECULAR_FIRST_TWO.add(template);
+    if (how.colourAt) (COLOUR_AT as Map<number, readonly number[]>).set(template, how.colourAt);
+    if (how.coloursFirst) COLOURS_FIRST.add(template);
+}
 
 export const PARAM_FLOAT4S = 0x18;
 export const PARAM_HEADER = 0x50;
@@ -163,7 +177,7 @@ export function passColour(m: geom.GeomMaterial, pass: number): number[] | null 
     const at = COLOUR_AT.get(m.template)?.[pass];
     if (at === undefined) return null;
     const f = float4s(m);
-    if (m.template !== T_DIFFUSE_TERRAIN && !(f[0] !== undefined && f[0][1] === 0 && f[0][2] === 0)) return null;
+    if (!COLOURS_FIRST.has(m.template) && !(f[0] !== undefined && f[0][1] === 0 && f[0][2] === 0)) return null;
     const c = f[at];
     if (c === undefined) return null;
     const ok = c.slice(0, 3).every((x) => Number.isFinite(x) && x >= 0 && x <= 2) && c[3]! >= 0 && c[3]! <= 1;

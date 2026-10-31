@@ -135,19 +135,62 @@ export function signText(info: ZoneInfo, areaNames: ReadonlyMap<string, string>)
     return area !== undefined ? area + (info.suffix ?? "") : info.sign;
 }
 
+// --- the game converted -------------------------------------------------------------------------------------------
+
+// What differs between THP8 and another game of its engine whose data this converter reads too (Tony Hawk's Proving
+// Ground: tools/pipeline/thpg_levels sets its own with useGame). The defaults are THP8's.
+export interface GameProfile {
+    key: string; // the level names' prefix (thp8_net_skatepark, thp8_sky)
+    label: string; // the level select's game ("THP8")
+    install: "thp8" | "thpg"; // (lib/install.ts)
+    staging: string;
+    zones: readonly ZoneInfo[]; // the city's zones (the stand-ins around a level, the border zones), then the standalone
+    netLevelNum: number;
+    retired: readonly string[]; // levels made before that aren't any more (pruneStaging)
+    sky: readonly string[]; // the default sky's archive under COMPRESSED
+    // the levels made (default: allSpecs - the standalone zones and the network levels)
+    specs?: (compressed: string, names: Map<number, string>) => LevelSpec[];
+    // the light baked from a zone's light maps (default zoneLighting: its tod_manager's sun)
+    lighting?: (tod: Struct | undefined) => mats.Lighting;
+    // a zone's files as read, made ready (the light maps wired as THP8's, collision where there is none...)
+    prepareZone?: (zone: ZoneData, file: string, warnings: string[]) => void;
+    textures?: ReadonlyMap<number, xenos.XenosTexture>; // textures every zone may use (a global archive's)
+    faceDrop?: number; // collision face flag bits that aren't THUG2's meaning (left out)
+}
+
+export const THP8_GAME: GameProfile = {
+    key: "thp8",
+    label: "THP8",
+    install: "thp8",
+    staging: STAGING,
+    zones: ZONES,
+    netLevelNum: 113,
+    // (the city's zones as levels of their own, until 2026-10-24)
+    retired: ZONES.filter((z) => !z.standalone).map((z) => `thp8_${z.zone.replace(/^z_/, "")}`),
+    sky: ["SKIES", "DEFAULT_SKY", "default_sky.pak.xen"],
+};
+
+let game: GameProfile = THP8_GAME;
+export function useGame(g: GameProfile): void {
+    game = g;
+}
+export function currentGame(): GameProfile {
+    return game;
+}
+
 export function levelName(info: ZoneInfo): string {
-    return `thp8_${info.zone.replace(/^z_/, "")}`;
+    return `${game.key}_${info.zone.replace(/^z_/, "")}`;
 }
 
 export function findZone(name: string): ZoneInfo | undefined {
     const n = name.toLowerCase();
-    return ZONES.find((z) => z.zone === n || z.zone === `z_${n}` || levelName(z) === n);
+    return game.zones.find((z) => z.zone === n || z.zone === `z_${n}` || levelName(z) === n);
 }
 
 // --- the install ------------------------------------------------------------------------------------------------
 
 export function compressedFolder(thp8Root: string): string {
-    const root = resolveInstall(thp8Root, "thp8");
+    const root = resolveInstall(thp8Root, game.install);
     const found = findCaseless(root, "DATA", "COMPRESSED");
     if (found === null) pyExit(`${root}: no DATA\\COMPRESSED`);
     return found;
@@ -314,6 +357,11 @@ export function interiorLighting(): mats.Lighting {
         sunScale: 0,
         ambientKnee: INTERIOR_KNEE,
     };
+}
+
+// The game's (GameProfile.lighting), else zoneLighting.
+export function lightingOf(tod: Struct | undefined): mats.Lighting {
+    return game.lighting ? game.lighting(tod) : zoneLighting(tod);
 }
 
 export function zoneLighting(tod: Struct | undefined): mats.Lighting {
@@ -699,6 +747,16 @@ export interface ConvertedScene {
         windowed: number; // triangles left out by a part's window (a border zone's)
         border: number; // triangles written by the parts with a window (the border zones, not refined: not in the refine budget)
     };
+}
+
+// A mesh's triangles as strips of at most STRIP_MOST indices (a THUG2 mesh's index count is a u16): one strip, or - a
+// longer one (THPG's big lit meshes, refined) - the triangles halved until each half's strip fits.
+export const STRIP_MOST = 0xffff;
+export function stripsOf(tris: readonly number[][]): number[][] {
+    const strip = trisToStrip(tris);
+    if (strip.length <= STRIP_MOST || tris.length < 2) return [strip];
+    const half = tris.length >> 1;
+    return [...stripsOf(tris.slice(0, half)), ...stripsOf(tris.slice(half))];
 }
 
 // The materials and textures a set of THP8 scenes uses, as THUG2's: each material one pass with its first texture
@@ -1189,7 +1247,11 @@ export function convertScenes(
                 if (plan?.env && tris.length) reflective++;
                 sectorTris.push(...tris);
                 if (part.window) counts.border += tris.length;
-                if (tris.length) meshes.push({ flags: 0, material: id, strip: trisToStrip(tris) });
+                if (tris.length) {
+                    // (a THUG2 mesh's strip is at most 65,535 indices: a longer one - THPG's big lit meshes, refined -
+                    // made several meshes)
+                    for (const strip of stripsOf(tris)) meshes.push({ flags: 0, material: id, strip });
+                }
                 // (the drawn world, for the stand-ins' keepTriangle (see-through too: a backdrop drawn twice blends twice) and
                 // the drawn ground for the audit (opaque only): not a glow, not the sky, not a barrier, the world's own)
                 if (
@@ -1568,7 +1630,7 @@ export const VOLUME_DROP = 10; // metres
 // area ground-like). Round 4 made the 0x1040 ones non-collidable, and the skater went through the skirt into the planter
 // and the tree's roots (the user, round 6) - undone.
 export function faceFlags(material: number): number {
-    let f = material & FACE_KEEP;
+    let f = material & FACE_KEEP & ~(game.faceDrop ?? 0);
     if (f & FACE_VOLUME && f & thug2Col.FACE_NON_COLLIDABLE) f = (f & ~FACE_VOLUME) | 0x40;
     return f;
 }
@@ -2733,6 +2795,8 @@ export function zoneNodes(
             triggers.add(v);
         }
     }
+    // (a node's $global references as plain names - THPG's nodes carry some; NeverScript has no form for them)
+    for (const n of converted) n.entries = n.entries.map(([k, v]) => [k, thawScripts.plain(v)]);
     let text = nodes.nodeArrayNs(`${level}_NodeArray`, converted, names, kills) + extraText;
     [text] = nodes.stripMissingTrickObjects(text, sectors);
     const count = (cls: string): number => converted.filter((n) => nodes.classOf(n, names) === cls).length;
@@ -2766,7 +2830,7 @@ export interface Args {
     leaveOut: RegExp | null; // sectors (and their collision) left out by name
 }
 
-interface ZoneData {
+export interface ZoneData {
     pak: thp8.Pak;
     geom: geom.Geom | null;
     textures: Map<number, xenos.XenosTexture>;
@@ -2780,13 +2844,13 @@ export function readZone(file: string, names: Map<number, string>, warnings: str
     const pak = thp8.openPak(file);
     const main = pak.entries.filter((e) => e.flags === 0);
     const one = (ext: string): thp8.PakEntry | undefined => main.find((e) => e.extension === ext);
-    const g = one(".geom");
+    const g = main.find((e) => e.extension === ".geom" || e.extension === ".scn");
     const t = one(".tex");
     const h = one(".hkc");
     const n = one(".nqb");
-    const textures = new Map<number, xenos.XenosTexture>();
+    const textures = new Map<number, xenos.XenosTexture>(game.textures ?? []);
     if (t) for (const x of xenos.readXenosTex(thp8.entryData(pak, t), file)) textures.set(x.checksum, x);
-    return {
+    const zone: ZoneData = {
         pak,
         geom: g ? geom.readGeom(thp8.entryData(pak, g), file) : null,
         textures,
@@ -2799,6 +2863,8 @@ export function readZone(file: string, names: Map<number, string>, warnings: str
             .filter((e) => e.flags !== 0 && (e.extension === ".qb" || e.extension === ".nqb"))
             .map((e) => new thaw.QbItems(thp8.entryData(pak, e), `${file} sub-zone qb`, names, ">")),
     };
+    game.prepareZone?.(zone, file, warnings);
+    return zone;
 }
 
 // Every zone's scripts (its own and its sub-zones'), read once: a zone's gaps can end in the next zone's scripts
@@ -2916,13 +2982,13 @@ export function readNetworkAreas(globals: ReadonlyMap<number, QbValue>, names: R
 // Every one of THP8's network levels is a level of its own (one zone or several), numbered from NET_LEVEL_NUM in
 // THP8's order (BEAVER VALLEY, the whole town, first); the sign is THP8's text (" AREA" added where a standalone
 // level has the same - none do).
-export const NET_LEVEL_NUM = 113;
+export const NET_LEVEL_NUM = THP8_GAME.netLevelNum;
 // THUG2 sends a skater's x / z in network games in half units (+-16384 units: src/game/net/thugpro_compat.h); a level
 // reaching past this from its middle gets IsBigLevel (whole units).
 export const NET_HALF_REACH = 16000;
 
 export function netLevelName(area: NetArea): string {
-    return `thp8_net_${area.id.toLowerCase()}`;
+    return `${game.key}_net_${area.id.toLowerCase()}`;
 }
 
 export function netSpecs(areas: readonly NetArea[], zoneSigns: ReadonlySet<string>): LevelSpec[] {
@@ -2939,7 +3005,7 @@ export function netSpecs(areas: readonly NetArea[], zoneSigns: ReadonlySet<strin
             barriers: area.barriers ? [area.barriers] : [],
             sign: zoneSigns.has(area.text) ? `${area.text} AREA` : area.text,
             location: `THP8's network level ${area.text}: ${zones.join(" + ")}`,
-            levelNum: NET_LEVEL_NUM + out.length,
+            levelNum: game.netLevelNum + out.length,
         });
     }
     return out;
@@ -3512,7 +3578,7 @@ function sceneParts(p: ZonePart, ctx: Shared): SceneParts[] {
             hiddenTriangles: p.hiddenTriangles,
             oneSided: p.oneSided,
             additive: glowMaterials(g, ctx.names),
-            lighting: zoneLighting(zoneTod(ctx.managers, p.zoneName)),
+            lighting: lightingOf(zoneTod(ctx.managers, p.zoneName)),
             techniques: ctx.techniques,
             local: p.local,
         },
@@ -3733,10 +3799,12 @@ function borderZones(
     warnings: string[],
 ): { zone: string; all: havok.HkBody[]; cells: Set<number> }[] {
     if (!barriers.length) return [];
-    const others = ZONES.filter((z) => !z.standalone && !spec.zones.includes(z.zone)).map((z) => ({
-        zone: z.zone,
-        all: ctx.zoneBodies.of(z.zone, warnings),
-    }));
+    const others = game.zones
+        .filter((z) => !z.standalone && !spec.zones.includes(z.zone))
+        .map((z) => ({
+            zone: z.zone,
+            all: ctx.zoneBodies.of(z.zone, warnings),
+        }));
     const seeds = edges.groundCells(own);
     const ground = edges.groundCells(
         others.map((x) => x.all),
@@ -3808,8 +3876,8 @@ function convertLevel(spec: LevelSpec, ctx: Shared): Record<string, unknown> | n
     });
     const borderGround = new GroundIndex([{ index: 0, triangles: borderDrawn.flatMap((d) => d.seen) }]);
     let standInsUnderBorder = 0;
-    if (spec.zones.some((z) => ZONES.some((x) => x.zone === z && !x.standalone))) {
-        for (const info of ZONES.filter((x) => !x.standalone && !spec.zones.includes(x.zone))) {
+    if (spec.zones.some((z) => game.zones.some((x) => x.zone === z && !x.standalone))) {
+        for (const info of game.zones.filter((x) => !x.standalone && !spec.zones.includes(x.zone))) {
             const file = zonePak(ctx.compressed, `${info.zone}_lod`);
             const lod = file ? readZone(file, names, warnings) : null;
             if (!lod?.geom) continue;
@@ -3834,7 +3902,7 @@ function convertLevel(spec: LevelSpec, ctx: Shared): Record<string, unknown> | n
                 placed,
                 oneSided: lodBack.sets[0]!,
                 additive,
-                lighting: zoneLighting(zoneTod(ctx.managers, names.get(checksum(info.zone)) ?? info.zone)),
+                lighting: lightingOf(zoneTod(ctx.managers, names.get(checksum(info.zone)) ?? info.zone)),
                 techniques: ctx.techniques,
                 keepTriangle: (corners, drawn) => {
                     if (!standInOutside(corners, ownGround) || standInOnDrawn(corners, drawn)) return false;
@@ -3996,7 +4064,7 @@ function convertLevel(spec: LevelSpec, ctx: Shared): Record<string, unknown> | n
     const scriptQbs = parts.flatMap((p) => [p.data.nqb!, ...p.data.qbs]);
     const moreQbs = [
         ...parts.flatMap((p) => p.data.subQbs),
-        ...ZONES.filter((x) => !inLevel.has(x.zone)).flatMap((x) => ctx.zoneScripts.of(x.zone)),
+        ...game.zones.filter((x) => !inLevel.has(x.zone)).flatMap((x) => ctx.zoneScripts.of(x.zone)),
     ];
     const props = new Map(parts.flatMap((p) => [...p.props]));
     const nodeResult = zoneNodes(
@@ -4180,9 +4248,9 @@ function convertLevel(spec: LevelSpec, ctx: Shared): Record<string, unknown> | n
         folder: spec.folder,
         level: name,
         sky: ctx.sky,
-        display: `THP8 ${spec.sign}`,
+        display: `${game.label} ${spec.sign}`,
         name: spec.sign.toLowerCase().replace(/\b\w/g, (ch) => ch.toUpperCase()),
-        game: "THP8",
+        game: game.label,
         location: spec.location,
         icon: "sign_training",
         level_num: spec.levelNum,
@@ -4198,19 +4266,21 @@ function convertLevel(spec: LevelSpec, ctx: Shared): Record<string, unknown> | n
 // were: our own split, cut off at the zone's edge - RETIRED).
 export function allSpecs(compressed: string, names: Map<number, string>): LevelSpec[] {
     const areaNames = zoneNames(compressed, names);
-    const standalone = ZONES.filter((z) => z.standalone).map((z) => zoneSpec(z, areaNames));
+    const standalone = game.zones.filter((z) => z.standalone).map((z) => zoneSpec(z, areaNames));
     return [...standalone, ...netSpecs(networkAreas(compressed, names), new Set(standalone.map((z) => z.sign)))];
 }
 
 // The levels this converter made before that it doesn't any more (the city's zones as levels of their own): their
 // staging folders and levels.json entries are removed by convert.
-export const RETIRED: readonly string[] = ZONES.filter((z) => !z.standalone).map(levelName);
+export const RETIRED: readonly string[] = THP8_GAME.retired;
 
 export function findSpec(specs: readonly LevelSpec[], name: string): LevelSpec | undefined {
     const n = name.toLowerCase();
     const zone = findZone(n);
     if (zone) return specs.find((s) => s.folder === zone.zone);
-    return specs.find((s) => s.level === n || s.folder === n || s.level === `thp8_net_${n}` || s.level === `thp8_${n}`);
+    return specs.find(
+        (s) => s.level === n || s.folder === n || s.level === `${game.key}_net_${n}` || s.level === `${game.key}_${n}`,
+    );
 }
 
 // levels.json without the entries of levels this converter no longer makes (RETIRED, or not in `specs` at all), and
@@ -4219,10 +4289,10 @@ export function pruneStaging(out: string, specs: readonly LevelSpec[]): string[]
     const file = pyJoin(out, portedLevels.MANIFEST);
     const made = new Set(specs.map((x) => x.level.toLowerCase()));
     const old = portedLevels.readManifest(file);
-    const gone = new Set<string>(RETIRED);
+    const gone = new Set<string>(game.retired);
     for (const e of old?.levels ?? []) {
         const level = String(e.level).toLowerCase();
-        if (level !== SKY && !made.has(level)) gone.add(level);
+        if (level !== skyName() && !made.has(level)) gone.add(level);
     }
     const removed: string[] = [];
     for (const level of gone) {
@@ -4240,15 +4310,15 @@ export function pruneStaging(out: string, specs: readonly LevelSpec[]): string[]
 
 export function cmdConvert(args: Args): number {
     const compressed = compressedFolder(args.thp8);
-    const out = args.out || pyJoin(args.thug2, STAGING);
+    const out = args.out || pyJoin(args.thug2, game.staging);
     if (!fs.existsSync(args.ns)) pyExit(common.nsMissing(args.ns));
     const names = thp8.loadNames(findCaseless(compressed, "PAK", "dbg.pak.xen")!);
-    const specs = allSpecs(compressed, names);
+    const specs = (game.specs ?? allSpecs)(compressed, names);
     const wanted: LevelSpec[] = [];
     for (const name of args.levels.length ? args.levels : specs.map((s) => s.level)) {
         const spec = findSpec(specs, name);
         if (spec === undefined)
-            pyExit(`${name}: not a THP8 zone or network level (${specs.map((s) => s.level).join(", ")})`);
+            pyExit(`${name}: not a ${game.label} zone or network level (${specs.map((s) => s.level).join(", ")})`);
         wanted.push(spec);
     }
     const library = findCaseless(compressed, "FXFILES", "MaterialLibrary.bin.xen");
@@ -4301,6 +4371,8 @@ export function cmdConvert(args: Args): number {
 }
 
 export const SKY = "thp8_sky";
+// (the game's: thp8_sky, thpg_sky)
+export const skyName = (): string => `${game.key}_sky`;
 // THUG2 draws a sky around the camera, small: THAW's reaches ~720 units. THP8's dome (1,456 m) made as big.
 export const SKY_UNIT = 0.5;
 
@@ -4331,14 +4403,14 @@ export function convertSky(
     leaveOut: RegExp | null = null,
     names: ReadonlyMap<number, string> = new Map(),
 ): string | null {
-    const file = findCaseless(compressed, "SKIES", "DEFAULT_SKY", "default_sky.pak.xen");
+    const file = findCaseless(compressed, ...game.sky);
     if (file === null) {
         report.push("default_sky.pak.xen not found - no sky");
         return null;
     }
     const warnings: string[] = [];
     const pak = thp8.openPak(file);
-    const g = pak.entries.find((e) => e.extension === ".geom");
+    const g = pak.entries.find((e) => e.extension === ".geom" || e.extension === ".scn");
     const t = pak.entries.find((e) => e.extension === ".tex");
     if (!g || !t) return null;
     const textures = new Map(xenos.readXenosTex(thp8.entryData(pak, t), file).map((x) => [x.checksum, x]));
@@ -4353,9 +4425,9 @@ export function convertSky(
         mips,
         SKY_UNIT,
     );
-    common.writeLevel(pyJoin(out, "levels", SKY), SKY, done.scene, done.textures, null);
-    common.reportLevel(report, SKY, done.scene, done.textures, null, [...new Set(warnings)].sort());
-    return SKY;
+    common.writeLevel(pyJoin(out, "levels", skyName()), skyName(), done.scene, done.textures, null);
+    common.reportLevel(report, skyName(), done.scene, done.textures, null, [...new Set(warnings)].sort());
+    return skyName();
 }
 
 // Every zone archive: its scene, textures (base levels untiled), collision and qb files read; THUG2's LA / TestLevel
@@ -4387,7 +4459,7 @@ export function cmdSelfcheck(args: Args): number {
             const what = `${f} ${e.extension} ${thp8.hex(e.full)}`;
             try {
                 const data = thp8.entryData(pak, e);
-                if (e.extension === ".geom") {
+                if (e.extension === ".geom" || e.extension === ".scn") {
                     const g = geom.readGeom(data, what);
                     for (const s of g.sectors) for (const m of s.meshes) geom.triangles(m);
                 } else if (e.extension === ".tex") {
@@ -4411,10 +4483,10 @@ export function cmdSelfcheck(args: Args): number {
     return failures ? 1 : 0;
 }
 
-function cmdList(args: Args): number {
+export function cmdList(args: Args): number {
     const compressed = compressedFolder(args.thp8);
     const names = thp8.loadNames(findCaseless(compressed, "PAK", "dbg.pak.xen")!);
-    for (const spec of allSpecs(compressed, names)) {
+    for (const spec of (game.specs ?? allSpecs)(compressed, names)) {
         const missing = spec.zones.filter((z) => zonePak(compressed, z) === null);
         print(
             `${spec.level.padEnd(26)} ${String(spec.levelNum).padEnd(4)} ${spec.sign.padEnd(20)} ${[...spec.zones, ...spec.barriers].join(" + ")}${missing.length ? ` (missing ${missing.join(", ")})` : ""}`,

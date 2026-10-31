@@ -267,6 +267,14 @@ export function readMesh(r: Reader): Mesh {
     return m;
 }
 
+// u16s written a block at a time (spread whole, a long index list - tens of thousands - overflowed the call stack)
+function writeU16s(w: Writer, values: readonly number[]): void {
+    for (let i = 0; i < values.length; i += 8192) {
+        const block = values.slice(i, i + 8192);
+        w.write(`${block.length}H`, ...block);
+    }
+}
+
 export function writeMesh(w: Writer, m: Mesh): void {
     w.write("4f", ...m.sphere);
     w.write("6f", ...m.bbox);
@@ -275,14 +283,14 @@ export function writeMesh(w: Writer, m: Mesh): void {
     w.u32(m.lods.length);
     for (const indices of m.lods) {
         w.u32(indices.length);
-        w.write(`${indices.length}H`, ...indices);
+        writeU16s(w, indices);
     }
     // (padded to the 8 slots; more are written as they are, as Python's list + [()] * negative)
     const strips = [...m.strips];
     while (strips.length < STRIP_SLOTS) strips.push([]);
     for (const strip of strips) {
         w.u16(strip.length);
-        w.write(`${strip.length}H`, ...strip);
+        writeU16s(w, strip);
     }
     w.u8(m.stride);
     w.u16(m.vertexCount);
