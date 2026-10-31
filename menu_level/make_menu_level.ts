@@ -64,7 +64,18 @@ import { parseCli } from "../lib/cli.ts";
 import { DECOMP, NS_DEFAULT, nsMissing, PIPELINE } from "../lib/decomp.ts";
 import type { UnitLookup } from "../lib/edits.ts";
 import { resolveInstall } from "../lib/install.ts";
-import { decodeAsciiReplace, isMain, print, pyExit, pyJoin, readTextPy, runMain, writeTextPy } from "../lib/py.ts";
+import {
+    decodeAsciiReplace,
+    decodeLatin1,
+    encodeLatin1,
+    isMain,
+    print,
+    pyExit,
+    pyJoin,
+    readTextPy,
+    runMain,
+    writeTextPy,
+} from "../lib/py.ts";
 import { findall, search } from "../lib/re.ts";
 import { unpackNumbers } from "../lib/struct.ts";
 import * as thawBmxInstall from "../thaw_bmx/install.ts"; // (THAW's BMX: bike, skeleton, animations - phase 1)
@@ -75,6 +86,7 @@ import * as careerComplete from "./career_complete.ts"; // (GAME OPTIONS' CREATE
 import { reEscape } from "./career_complete.ts";
 import * as frontendArt from "./frontend_art.ts"; // (the new front end's text-free versions of them)
 import * as frontendLevels from "./frontend_levels.ts"; // (the game's new front end: frontend\levels.json)
+import { qwertyKeyboard } from "./keyboard_qwerty.ts"; // (the on-screen keyboard's QWERTY layout)
 import * as levelMap from "./level_map.ts"; // (maps of the levels with no place, in place of the globe)
 import * as levelSelect from "./level_select.ts"; // (the level select's sections, stars and signs)
 import { countOf, replaceFirst } from "./level_select.ts";
@@ -796,6 +808,8 @@ function splitextRoot(p: string): string {
     return first === dot ? p : p.slice(0, dot);
 }
 
+const KEYBOARD_QB = "scripts\\engine\\menu\\keyboard.qb";
+
 export function addCreate100Cas(decompile: Decompile, write: Write, pre: string, levels: string): void {
     // The front end's GAME OPTIONS scripts with CREATE 100% CAS: the story's chapters, goals and rewards, the classic
     // goals and every level's gaps read from the game's scripts (Levels.qb's text `levels`, chapter_info,
@@ -1168,6 +1182,22 @@ async function main(): Promise<number> {
             addNewFrontendSkateshop(decompile(prxFile(qbScripts, "scripts\\game\\menu\\skateshop.qb"), "skateshop.qb")),
             "scripts\\game\\menu\\skateshop.qb",
         );
+        // Always: the on-screen keyboard as a QWERTY keyboard (keyboard_qwerty.ts; both front ends use the game's script).
+        // (its foreign letters are not UTF-8: read and written as Latin-1, byte for byte)
+        {
+            const source = path.join(work, "keyboard.qb");
+            fs.writeFileSync(source, prxFile(qbScripts, KEYBOARD_QB));
+            ns(tool, "-d", source, "-o", `${source}.ns`);
+            const edited = path.join(work, "new_keyboard.ns");
+            fs.writeFileSync(
+                edited,
+                encodeLatin1(qwertyKeyboard(decodeLatin1(fs.readFileSync(`${source}.ns`)).replace(/\r\n?/g, "\n"))),
+            );
+            const target = pyJoin(out, KEYBOARD_QB);
+            fs.mkdirSync(path.dirname(target), { recursive: true });
+            ns(tool, "-c", edited, "-o", target, "-targetGame", "thug2");
+            print("wrote", target);
+        }
         // Always: GAME OPTIONS' CREATE 100% CAS (the game's [features] create_100_cas decides whether it shows).
         addCreate100Cas(decompile, write, pre, levels);
         // The ports' own people (tools/pipeline/level_port/ped_models.ts): their CAS parts and profiles added to THUG2's lists.
@@ -1228,6 +1258,7 @@ async function main(): Promise<number> {
                             (text: string) => addNewFrontendPause(addLevelEditor(text)),
                         ],
                         ["scripts\\game\\menu\\skateshop.qb", addNewFrontendSkateshop],
+                        [KEYBOARD_QB, qwertyKeyboard],
                         ...pedEdits,
                         ...(thug1Driving
                             ? [
