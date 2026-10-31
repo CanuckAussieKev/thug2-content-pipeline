@@ -2,7 +2,7 @@
 
 import * as assert from "node:assert/strict";
 import { test } from "node:test";
-import { qwertyKeyboard } from "./keyboard_qwerty.ts";
+import { partyModKeyboard, partyModScripts, qwertyKeyboard } from "./keyboard_qwerty.ts";
 
 function set(name: string, rows: string[][]): string {
     return `${name} = [${rows.map((row) => `[${row.map((key) => `"${key}"`).join(" ")}]`).join(" \n    ")} \n] \n`;
@@ -69,4 +69,21 @@ test("the symbols and foreign sets keep every character, in rows of 10, 10, 9 an
 
 test("a script that isn't the keyboard's is refused", () => {
     assert.throws(() => qwertyKeyboard("script x {\n} \n"), /not found|found 0 times/);
+});
+
+test("PartyMod's changed scripts go into a copy made from the loose script, its own changes kept", () => {
+    const game = "script a {\n    one \n    \n} \nscript b {\n    two \n} \nscript c {\n    three \n} \n";
+    const patched = "script a {\n    one \n    keys \n} \nscript b {\n    two \n} \nscript c {\n    three \n} \n";
+    // (the loose script: with its printf; the mod changed c, which the patch doesn't)
+    const mod = 'script a {\n    one \n    printf "x" \n} \nscript b {\n    two \n} \nscript c {\n    mine \n} \n';
+    assert.equal(
+        partyModScripts(mod, game, patched),
+        "script a {\n    one \n    keys \n} \nscript b {\n    two \n} \nscript c {\n    mine \n} \n",
+    );
+    // (the mod changed a, which the patch changes too: refused)
+    assert.equal(partyModScripts(mod.replace("one", "own"), game, patched), null);
+});
+
+test("PartyMod's keyboard patch is refused for a script it wasn't made for", () => {
+    assert.equal(partyModKeyboard(Buffer.from("not the keyboard script")), null);
 });
