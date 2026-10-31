@@ -38,6 +38,9 @@
 //                              For the games with scenic art (scenic_art.ts: THPS3 so far) the levels with a chosen capture
 //                              in the cache get a filtered picture of the level itself instead (640 x 360; its HD version
 //                              2560 x 1440 from the capture, not upscaled); --scenic-style a|b|c picks the filter, off the crops.
+//   images\loadscrn_sel_<load>__<original>.img.xbx  every level's loading screen: its level select picture (640 x 360,
+//                              loading_select.ts), named in the level's loading_screen; the DLL draws the bar over it
+//                              ([features] level_select_loading_screens=0 loads the original picture named after the "__").
 //   anteara\                  Anteara Mod's script set (tools/anteara/README.md; the DLL reads it first while
 //                              [features] anteara_mod=1), with the edits above re-applied to the files it changes.
 //   frontend\levels.json      the DLL's new front end's level select data (frontend_levels.ts; read while [features]
@@ -75,6 +78,7 @@ import * as levelMap from "./level_map.ts"; // (maps of the levels with no place
 import * as levelSelect from "./level_select.ts"; // (the level select's sections, stars and signs)
 import { countOf, replaceFirst } from "./level_select.ts";
 import * as loadingArtGames from "./loading_art_games.ts"; // (the ported levels' own loading pictures)
+import * as loadingSelect from "./loading_select.ts"; // (every level's loading screen = its level select picture)
 import { mainMenuScripts, PrxScripts } from "./main_menu.ts"; // (the standard main menu's scripts, made from the game's)
 import * as scenicArt from "./scenic_art.ts"; // (pictures of the levels themselves, filtered, in place of the crops)
 
@@ -1030,7 +1034,13 @@ async function main(): Promise<number> {
             text = ported ? portedLevels.addToLevels(text, ported) : text;
             return loadingArt ? loadingArtGames.applyLoadingScreens(text, loadingArt.art) : text;
         };
-        const levelsWithShop = overlayLevels(levels);
+        let levelsWithShop = overlayLevels(levels);
+        // Every level's loading screen is its level select picture (loading_select.ts): images\loadscrn_sel_<load>__<original>
+        // .img.xbx, named in its loading_screen ([features] level_select_loading_screens=0: the DLL loads the original).
+        const selectScreens = loadingSelect.buildSelectScreens(out, levelsWithShop, frontArtMap);
+        loadingSelect.writeSelectScreens(out, selectScreens);
+        for (const line of selectScreens.lines) print(`loading screens: ${line}`);
+        levelsWithShop = loadingSelect.applySelectScreens(levelsWithShop, selectScreens.screens);
         if (ported) {
             const installed = portedLevels.installFiles(game, out);
             print(
