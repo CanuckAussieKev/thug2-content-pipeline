@@ -7,3 +7,5 @@
 *.edits -text diff
 thaw_bmx/bike_scripts.ns -text diff
 menu_level/main_menu.ns -text diff
+# PartyMod's binary patches: bytes
+*.bps binary

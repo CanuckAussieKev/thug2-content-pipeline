@@ -86,7 +86,7 @@ import * as careerComplete from "./career_complete.ts"; // (GAME OPTIONS' CREATE
 import { reEscape } from "./career_complete.ts";
 import * as frontendArt from "./frontend_art.ts"; // (the new front end's text-free versions of them)
 import * as frontendLevels from "./frontend_levels.ts"; // (the game's new front end: frontend\levels.json)
-import { qwertyKeyboard } from "./keyboard_qwerty.ts"; // (the on-screen keyboard's QWERTY layout)
+import { partyModKeyboard, partyModScripts, qwertyKeyboard } from "./keyboard_qwerty.ts"; // (the on-screen keyboard's QWERTY layout)
 import * as levelMap from "./level_map.ts"; // (maps of the levels with no place, in place of the globe)
 import * as levelSelect from "./level_select.ts"; // (the level select's sections, stars and signs)
 import { countOf, replaceFirst } from "./level_select.ts";
@@ -1182,21 +1182,45 @@ async function main(): Promise<number> {
             addNewFrontendSkateshop(decompile(prxFile(qbScripts, "scripts\\game\\menu\\skateshop.qb"), "skateshop.qb")),
             "scripts\\game\\menu\\skateshop.qb",
         );
-        // Always: the on-screen keyboard as a QWERTY keyboard (keyboard_qwerty.ts; both front ends use the game's script).
+        // Always: the on-screen keyboard as a QWERTY keyboard (keyboard_qwerty.ts; both front ends use the game's script),
+        // made from the game's script with PartyMod's patch applied - the game doesn't patch an overlay's copy, and
+        // without the patch the PC keyboard is a text box with no keys. Not the file the patch is for: the game's own
+        // left (patched by the game as it loads it - A to Z).
         // (its foreign letters are not UTF-8: read and written as Latin-1, byte for byte)
+        let keyboardEdit: ((text: string) => string) | null = null;
         {
-            const source = path.join(work, "keyboard.qb");
-            fs.writeFileSync(source, prxFile(qbScripts, KEYBOARD_QB));
-            ns(tool, "-d", source, "-o", `${source}.ns`);
-            const edited = path.join(work, "new_keyboard.ns");
-            fs.writeFileSync(
-                edited,
-                encodeLatin1(qwertyKeyboard(decodeLatin1(fs.readFileSync(`${source}.ns`)).replace(/\r\n?/g, "\n"))),
-            );
-            const target = pyJoin(out, KEYBOARD_QB);
-            fs.mkdirSync(path.dirname(target), { recursive: true });
-            ns(tool, "-c", edited, "-o", target, "-targetGame", "thug2");
-            print("wrote", target);
+            const original = prxFile(qbScripts, KEYBOARD_QB);
+            const patched = partyModKeyboard(original);
+            if (!patched) {
+                print(
+                    `${KEYBOARD_QB}: not the file PartyMod's keyboard patch is for - the game's own left (no QWERTY)`,
+                );
+            } else {
+                const textOf = (data: Uint8Array, name: string): string => {
+                    const file = path.join(work, name);
+                    fs.writeFileSync(file, data);
+                    ns(tool, "-d", file, "-o", `${file}.ns`);
+                    return decodeLatin1(fs.readFileSync(`${file}.ns`)).replace(/\r\n?/g, "\n");
+                };
+                const gameText = textOf(original, "keyboard.qb");
+                const patchedText = textOf(patched, "keyboard_partymod.qb");
+                const edited = path.join(work, "new_keyboard.ns");
+                fs.writeFileSync(edited, encodeLatin1(qwertyKeyboard(patchedText)));
+                const target = pyJoin(out, KEYBOARD_QB);
+                fs.mkdirSync(path.dirname(target), { recursive: true });
+                ns(tool, "-c", edited, "-o", target, "-targetGame", "thug2");
+                print("wrote", target);
+                // (Anteara Mod's, made from the loose script: PartyMod's changed scripts put in, then the QWERTY rows;
+                // left as the mod has it where the mod changed one of those scripts)
+                keyboardEdit = (text: string): string => {
+                    const keys = partyModScripts(text, gameText, patchedText);
+                    if (keys === null) {
+                        print(`Anteara Mod: ${KEYBOARD_QB} changes a script PartyMod's patch changes - left as it is`);
+                        return text;
+                    }
+                    return qwertyKeyboard(keys);
+                };
+            }
         }
         // Always: GAME OPTIONS' CREATE 100% CAS (the game's [features] create_100_cas decides whether it shows).
         addCreate100Cas(decompile, write, pre, levels);
@@ -1258,7 +1282,7 @@ async function main(): Promise<number> {
                             (text: string) => addNewFrontendPause(addLevelEditor(text)),
                         ],
                         ["scripts\\game\\menu\\skateshop.qb", addNewFrontendSkateshop],
-                        [KEYBOARD_QB, qwertyKeyboard],
+                        ...(keyboardEdit ? [[KEYBOARD_QB, keyboardEdit] as const] : []),
                         ...pedEdits,
                         ...(thug1Driving
                             ? [

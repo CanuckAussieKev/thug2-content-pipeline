@@ -17,8 +17,68 @@
 // is the last at most the one left (keyboard_change_key_row sets it to the key's column; the Backspace key is given
 // column 7 as it follows 7 keys), so the shorter rows work and the move wraps at the ends as before.
 // Used by make_menu_level.ts for the data overlay's scripts\engine\menu\keyboard.qb and for Anteara Mod's copy of it.
+//
+// The keys only exist with PartyMod's change to the script: THUG2's own PC keyboard is a text box (the typed text, the
+// helper line, no keys - create_onscreen_keyboard never calls keyboard_create_key_sprites). The game applies PartyMod's
+// binary patch (partymod_keyboard.bps, PartyMod's patches/keyboard.bps - MIT, THIRD_PARTY_NOTICES.md) when it loads
+// the file, but only to the very file it was made for (its size and CRC-32): an overlay's own keyboard.qb is loaded as
+// it is. So the overlay's starts from the patched script (partyModKeyboard), and Anteara Mod's, made from the loose
+// script, gets the scripts the patch changes (partyModScripts).
 
+import * as fs from "node:fs";
+import * as path from "node:path";
+import { fileURLToPath } from "node:url";
+import { applyBps, bpsMadeFor } from "../lib/bps.ts";
 import { countOf, replaceFirst } from "./level_select.ts";
+
+const PARTYMOD_PATCH = path.join(path.dirname(fileURLToPath(import.meta.url)), "partymod_keyboard.bps");
+
+// The game's compiled keyboard.qb with PartyMod's patch applied, or null when it isn't the file the patch is for.
+export function partyModKeyboard(
+    compiled: Uint8Array,
+    patch: Uint8Array = fs.readFileSync(PARTYMOD_PATCH),
+): Buffer | null {
+    return bpsMadeFor(patch, compiled) ? applyBps(patch, compiled) : null;
+}
+
+// A script's text: its "script <name>" line to the "}" closing it (both at the start of a line).
+function scriptAt(text: string, name: string): { start: number; end: number } | null {
+    const head = new RegExp(`^script ${name}\\b[^\\n]*\\{`, "m").exec(text);
+    if (!head) return null;
+    const close = /^\} *$/m.exec(text.slice(head.index));
+    return close ? { start: head.index, end: head.index + close.index + close[0].length } : null;
+}
+function scriptNames(text: string): string[] {
+    return [...text.matchAll(/^script (\S+)/gm)].map((m) => m[1]!);
+}
+// (printf lines aside: the archived scripts were compiled without them, the loose ones with)
+const comparable = (unit: string): string =>
+    unit
+        .split("\n")
+        .map((line) => line.trimEnd())
+        .filter((line) => line.trim() !== "" && !/^\s*printf\b/.test(line))
+        .join("\n");
+
+// text (a keyboard script made from the game's): the scripts PartyMod's patch changes (game -> patched, both
+// decompiled) put in, each where text has the game's own; null when one of them differs in text (changed by a mod).
+export function partyModScripts(text: string, game: string, patched: string): string | null {
+    [text, game, patched] = [text, game, patched].map((t) => t.replace(/\r\n?/g, "\n")) as [string, string, string];
+    for (const name of scriptNames(patched)) {
+        const was = scriptAt(game, name);
+        const now = scriptAt(patched, name)!;
+        const nowText = patched.slice(now.start, now.end);
+        if (was && comparable(game.slice(was.start, was.end)) === comparable(nowText)) continue;
+        const here = scriptAt(text, name);
+        if (
+            !was ||
+            !here ||
+            comparable(text.slice(here.start, here.end)) !== comparable(game.slice(was.start, was.end))
+        )
+            return null;
+        text = text.slice(0, here.start) + nowText + text.slice(here.end);
+    }
+    return text;
+}
 
 const ROW_SIZES = [10, 10, 9, 7];
 const LETTER_ROWS = ["qwertyuiop", "asdfghjkl", "zxcvbnm"];
