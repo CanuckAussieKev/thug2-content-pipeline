@@ -192,7 +192,9 @@ test("thpg: the layered templates' names (pass 0 named in the 3ChkBox families, 
     assert.deepEqual(of("D_N_S_4ChkBox")?.passes, [0]);
     assert.deepEqual(of("D_N_S_4ChkBox_Pass1_Pass3")?.passes, [0, 1, 3]);
     assert.equal(of("D_N_S_4ChkBox_Pass0"), undefined);
-    assert.equal(layers.TEMPLATES.size, 7 + 7 + 8);
+    assert.deepEqual(of("D_N_S_Wet_4ChkBox_Pass2")?.passes, [0, 2]);
+    assert.equal(of("D_N_S_Wet_4ChkBox_Pass2")?.wet, true);
+    assert.equal(layers.TEMPLATES.size, 7 + 7 + 8 + 8);
 });
 
 test("thpg: a decal's texture - the diffuse map with the mask's brightness x the pass colour as its alpha", () => {

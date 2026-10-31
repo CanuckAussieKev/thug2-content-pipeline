@@ -21,6 +21,8 @@
 //   [--thp8 C:\Games\THP8] [--thug2 C:\Games\THUG2 | --staging <folder>]   (default staging: <thug2>\thug2-decomp-thp8)
 //
 // Levels as convert names them (beavervalley, net_skatepark, training...); the default is all, BEAVER VALLEY first.
+// It follows the converter's game profile (thp8_levels.useGame): tools/pipeline/thpg_levels/thpg_levels.ts audit runs it
+// over Tony Hawk's Proving Ground's levels.
 
 import * as fs from "node:fs";
 import * as path from "node:path";
@@ -43,13 +45,12 @@ import {
     allSpecs,
     baseTexture,
     compressedFolder,
+    currentGame,
     findSpec,
     instances,
     type LevelSpec,
     nodeArrayOf,
     nodeName,
-    STAGING,
-    ZONES,
     zonePak,
 } from "./thp8_levels.ts";
 import * as xenos from "./xenos.ts";
@@ -78,9 +79,9 @@ export function readAuditPart(
 ): AuditPart | null {
     const pak = thp8.openPak(file);
     const main = pak.entries.filter((e) => e.flags === 0);
-    const g = main.find((e) => e.extension === ".geom");
+    const g = main.find((e) => e.extension === ".geom" || e.extension === ".scn");
     if (!g) return null;
-    const textures = new Map<number, xenos.XenosTexture>();
+    const textures = new Map<number, xenos.XenosTexture>(currentGame().textures ?? []);
     const elsewhere = new Map<number, string>();
     for (const e of pak.entries) {
         if (e.extension !== ".tex" && e.extension !== ".stex") continue;
@@ -110,10 +111,13 @@ export function readAuditPart(
         }
         for (const [k, v] of instances(array)) masters.set(k, v.master);
     }
+    const read = geom.readGeom(thp8.entryData(pak, g), file);
+    // (another game of the engine: its zone made ready as convert reads it - THPG's decals and light maps)
+    currentGame().prepareZone?.({ pak, geom: read, textures, bodies: [], nqb: null, qbs: [], subQbs: [] }, file, []);
     return {
         zone,
         kind,
-        geom: geom.readGeom(thp8.entryData(pak, g), file),
+        geom: read,
         textures,
         elsewhere,
         nodes,
@@ -132,8 +136,9 @@ export function levelParts(spec: LevelSpec, compressed: string, names: Map<numbe
         if (p) out.push(p);
     };
     for (const z of spec.zones) add(z, "zone");
-    if (spec.zones.some((z) => ZONES.some((x) => x.zone === z && !x.standalone))) {
-        for (const info of ZONES.filter((x) => !x.standalone && !spec.zones.includes(x.zone))) {
+    const zones = currentGame().zones;
+    if (spec.zones.some((z) => zones.some((x) => x.zone === z && !x.standalone))) {
+        for (const info of zones.filter((x) => !x.standalone && !spec.zones.includes(x.zone))) {
             add(`${info.zone}_lod`, "stand-in");
         }
     }
@@ -635,10 +640,11 @@ export function main(argv: readonly string[] = process.argv.slice(2)): number {
         return 2;
     }
     const compressed = compressedFolder(values.thp8 ?? "C:\\Games\\THP8");
-    const staging = values.staging ?? path.join(resolveInstall(values.thug2 ?? "C:\\Games\\THUG2", "thug2"), STAGING);
+    const staging =
+        values.staging ?? path.join(resolveInstall(values.thug2 ?? "C:\\Games\\THUG2", "thug2"), currentGame().staging);
     const names = thp8.loadNames(findCaseless(compressed, "PAK", "dbg.pak.xen")!);
     const templates = templateNames(compressed);
-    const specs = allSpecs(compressed, names);
+    const specs = (currentGame().specs ?? allSpecs)(compressed, names);
     const top = Number(values.top ?? (command === "zfight" ? 25 : 12));
     if (command === "spot") {
         const [levelArg, where, radius] = rest;
@@ -657,8 +663,8 @@ export function main(argv: readonly string[] = process.argv.slice(2)): number {
     }
     // (BEAVER VALLEY first, then the other network levels, then the standalone ones)
     const ordered = [
-        ...specs.filter((s) => s.level.startsWith("thp8_net_")),
-        ...specs.filter((s) => !s.level.startsWith("thp8_net_")),
+        ...specs.filter((s) => s.level.startsWith(`${currentGame().key}_net_`)),
+        ...specs.filter((s) => !s.level.startsWith(`${currentGame().key}_net_`)),
     ];
     const wanted = rest.length
         ? rest.map(

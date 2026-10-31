@@ -25,9 +25,12 @@ crib`; `net_dc`, `thpg_net_dc`, `bedroom` all work); the default is all six. `--
 
     node tools/pipeline/thpg_levels/thpg_levels.ts selfcheck
     node tools/pipeline/thpg_levels/thpg_levels.ts list
+    node tools/pipeline/thpg_levels/thpg_levels.ts audit {textures,zfight,black,spot} [levels...] [--thug2 C:\Games\THUG2]
 
 `selfcheck` reads every file of every zone archive (scenes and their strips, textures' base levels untiled, collision,
-qb / node arrays) and round-trips THUG2's LA / TestLevel files; `list` shows the levels (what each is made of).
+qb / node arrays) and round-trips THUG2's LA / TestLevel files; `list` shows the levels (what each is made of). `audit`
+is tools/pipeline/thp8_levels/render_audit.ts over THPG's levels (its README): `spot net_philly "(5440.8, 158.8,
+-4604.8)"` lists the meshes at a screenshot sidecar's position with their THPG templates and textures.
 
 ## The levels
 
@@ -79,9 +82,27 @@ All big-endian. Worked out from the data; no format notes for THPG's files that 
   laid out as THP8's layered templates' and read as layers (layers.ts); a 3ChkBox material with pass 0 off is a decal
   (shadows, dirt, graffiti), made one texture with its mask as alpha. The global stand-ins (white, black, grey, the
   default normal and cube maps) are in `PAK\global_env_tex.pak.xen`, not in the zones' `.tex`.
-- **Light maps**: one a zone (its last texture, 2048 x 2048 DXT1, the vertex's last uv field), the light baked whole
-  and dark (the cities' maps average 0.22): baked into the vertex colours as map x 4.5 / (1 + 1.5 x map) - ours (THPG's
-  shaders aren't read). THP8's two maps (ambient + shadow) are made from it (light.ts), so THP8's light refining runs.
+  - D_N_S_4ChkBox's float4s: the specular power, pass 0's colour, tiling and specular colour, then each further pass's
+    colour (A its opacity) and tiling. The tiling float4 is per sampler (the library's m_psPass<k>Tiling): x the
+    diffuse map's (u and v alike), y the mask's (pass 0: the normal map's) - Love Park's granite is pass 0 x 3 under
+    a big colour wash, pass 1 x 0.125. A mask tiled otherwise than its diffuse map is made one texture over a period
+    of the coarser of the two (thp8_levels.ts layerRepeat).
+  - The Wet terrains (D_N_S_Wet_4ChkBox...: most roads, pavements and plazas) are D_N_S_4ChkBox's plus a wet layer: a
+    cube map and a big wet mask before the light map, the mask's uv field before the light map's. The wet sheen isn't
+    drawn: both left out, the rest read as D_N_S_4ChkBox's.
+  - The glass towers (EnvMask_D_N_S_2ChkBox_Pass1...): pass 0 a black glass map with a cube map's reflection, pass 1
+    the facade (brick with windows) over it by a mask black at the panes. Made pass 1's facade, solid, with a layer of
+    the glass's colour (the cube map's mean x 0.6) at the panes; the other EnvMask materials (pass 0 not dark: metal,
+    awnings) draw their pass 0.
+  - Not read: D_NBlend_S (their float4s not worked out - pass 0 only), D_S_'s colours and tilings, the specular /
+    normal maps, the reflections, Wibble / water.
+- **Light maps**: one a zone (its last texture, 2048 x 2048 DXT1, the vertex's last uv field). The outdoor maps hold
+  the light as it is, the sun's at 1: at the city zones' lit vertices their brightest tenth is 1.0 (the sunlit ground,
+  clipped) and the middle 0.3-0.6. Baked into the vertex colours as map x 1.2 / (1 + 0.2 x map) - 1 draws the
+  texture as it is, the shade lifted a little. The interiors' maps are darker (inside the air and space museum half
+  the vertices under 0.15): z_museum_int, the lounge and the bedroom as map x 4.5 / (1 + 1.5 x map). Ours, from the
+  data (THPG's shaders aren't read). THP8's two maps (ambient + shadow) are made from it (light.ts), so THP8's light
+  refining runs.
 - **Collision** (`.hkc`): Havok 4.6 packfiles ("Havok-4.6.0-r1"; THP8's are 4.0): the MOPP's child an
   `hkNxStorageExtendedMeshShape` - triangle subparts read from their `meshstorage` (float4 vertices, 16 / 32-bit
   indices, per-triangle materials {filterInfo, nodeInfo, friction}), convex shape subparts from their `shapestorage`
@@ -99,8 +120,10 @@ light maps in the vertex colours, collision with terrains and face flags, restar
 single-player ones), rails, kill zones, gaps and the scripts they call, script objects, moving objects, THPG's
 bouncy props (GO_Cafe_Chair, GO_TrafficCone... from ZONES\global.pak), the barrier walls, the `_lod` stand-ins, the
 sky. THPG-only features aren't: climbing (its climb nodes and anims), Nail the Trick / Nail the Grab, the rigger
-pieces, skate checks, the goal and story peds, sounds, particles, the Wet / Env / NBlend / Wibble shaders' extra maps
-(their pass 0 only); their script commands are left out by the script translator (THUG2 has none).
+pieces, skate checks, the goal and story peds, sounds, particles, the wet sheen, reflections and the NBlend / Wibble
+shaders' further passes; their script commands are left out by the script translator (THUG2 has none). The
+billboards' faces are drawn as the zone lists them: a grey blank panel (Z_Slums_I_g_sl_billboard_01's 534C742A, 128 x
+128) - whatever THPG shows there instead isn't in its material.
 
 ## Sizes and timings (2026-10-31, all six levels with mip levels)
 
