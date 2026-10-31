@@ -70,6 +70,7 @@ import { unpackNumbers } from "../lib/struct.ts";
 import * as thawBmxInstall from "../thaw_bmx/install.ts"; // (THAW's BMX: bike, skeleton, animations - phase 1)
 import { applyTextEdits, CAR_SCRIPTS, DRIVING_EDITS } from "../thug1_levels/driving.ts"; // (PC-THUG1-22, Anteara Mod's copy)
 import * as thug2Levels from "../thug2_levels/thugpro_apply.ts"; // (THUGPRO's changes to THUG2's levels: TP-42)
+import * as artPicksFile from "./art_picks.ts"; // (the user's decided pictures and the shared placeholder)
 import * as careerComplete from "./career_complete.ts"; // (GAME OPTIONS' CREATE 100% CAS)
 import { reEscape } from "./career_complete.ts";
 import * as frontendArt from "./frontend_art.ts"; // (the new front end's text-free versions of them)
@@ -1001,9 +1002,12 @@ async function main(): Promise<number> {
         const frontArtMap = new Map(frontArt?.art ?? []);
         const scenicHd = new Map<string, Buffer>();
         const artVariants = new Map<string, string[]>();
-        // The user's picture choices from the level select (Q / E): the game folder's file unless --art-choices names one.
-        const choicesFile = values["art-choices"] ?? path.join(game, "thug2-decomp-art.txt");
-        const artChoices = fs.existsSync(choicesFile)
+        const artLabels = new Map<string, string[]>();
+        // The decided pictures (art_picks.json: a scenic picture or the shared placeholder per level) ...
+        const artPicks = artPicksFile.readPicks();
+        // ... and the level select's saved choices (Q / E) from --art-choices, which override them per level.
+        const choicesFile = values["art-choices"];
+        const artChoices = choicesFile
             ? scenicArt.parseArtChoices(fs.readFileSync(choicesFile, "utf-8"))
             : new Map<string, number>();
         if (artChoices.size) print(`scenic art: ${artChoices.size} picture choices from ${choicesFile}`);
@@ -1017,6 +1021,7 @@ async function main(): Promise<number> {
                     scenicStyle as scenicArt.Style,
                     (load) => frontendArt.frontArtName(g, load),
                     artChoices,
+                    artPicks,
                 );
                 fs.mkdirSync(path.join(out, "images"), { recursive: true });
                 for (const [name, data] of scenic.images)
@@ -1024,6 +1029,7 @@ async function main(): Promise<number> {
                 for (const [load, name] of scenic.art) frontArtMap.set(load, name);
                 for (const [name, data] of scenic.hd) scenicHd.set(name, data);
                 for (const [load, names] of scenic.variants) artVariants.set(load, names);
+                for (const [load, labels] of scenic.labels) artLabels.set(load, labels);
                 for (const line of scenic.lines) print(`scenic art: ${line}`);
             }
             // THUG2's own levels too (the front end's art only; the real loading screens stay THUG2's)
@@ -1034,6 +1040,7 @@ async function main(): Promise<number> {
                     scenicStyle as scenicArt.Style,
                     (load) => `frontend_art_thug2_${load.replace(/^load_/, "")}`,
                     artChoices,
+                    artPicks,
                 );
                 fs.mkdirSync(path.join(out, "images"), { recursive: true });
                 for (const [name, data] of scenic.images)
@@ -1041,8 +1048,28 @@ async function main(): Promise<number> {
                 for (const [load, name] of scenic.art) frontArtMap.set(load, name);
                 for (const [name, data] of scenic.hd) scenicHd.set(name, data);
                 for (const [load, names] of scenic.variants) artVariants.set(load, names);
+                for (const [load, labels] of scenic.labels) artLabels.set(load, labels);
                 for (const line of scenic.lines) print(`scenic art: ${line}`);
             }
+        }
+        // The levels decided "not happy": one shared placeholder picture (art_picks.ts), as the level's picture and loading screen.
+        const placeholderLoads = [...artPicks]
+            .filter(([load, p]) => p.placeholder && !artChoices.has(load))
+            .map(([l]) => l);
+        if (placeholderLoads.length) {
+            const placeholder = artPicksFile.placeholderArt();
+            fs.mkdirSync(path.join(out, "images"), { recursive: true });
+            fs.writeFileSync(
+                path.join(out, "images", `${artPicksFile.PLACEHOLDER_ART}.img.xbx`),
+                placeholder.nativeFile,
+            );
+            scenicHd.set(path.join("images", `${artPicksFile.PLACEHOLDER_ART}.img.xbx`), placeholder.hdFile);
+            for (const load of placeholderLoads) {
+                frontArtMap.set(load, artPicksFile.PLACEHOLDER_ART);
+                artVariants.delete(load);
+                artLabels.delete(load);
+            }
+            print(`scenic art: ${placeholderLoads.length} levels on the placeholder picture`);
         }
         const overlayLevels = (text: string): string => {
             text = addSkateshopLevel(text);
@@ -1099,7 +1126,11 @@ async function main(): Promise<number> {
             levelsWithShop,
             frontArtMap,
             artVariants,
+            artLabels,
         );
+        for (const sec of feSections)
+            for (const lv of sec.levels)
+                if (!artPicks.has(lv.load.toLowerCase())) print(`scenic art: no pick for ${sec.id}/${lv.name}`);
         const feFile = pyJoin(out, frontendLevels.FRONTEND_LEVELS);
         fs.mkdirSync(path.dirname(feFile), { recursive: true });
         fs.writeFileSync(feFile, frontendLevels.frontendJson(feSections));

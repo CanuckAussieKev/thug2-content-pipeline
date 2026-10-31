@@ -29,6 +29,7 @@ import * as path from "node:path";
 import { encodeImg } from "../hd_textures/ui.ts";
 import { parseCli } from "../lib/cli.ts";
 import { isMain, print, runMain } from "../lib/py.ts";
+import type { ArtPick } from "./art_picks.ts";
 import { nativeImg, type Picture, readPng, resize, toPng } from "./loading_art.ts";
 import { capturePath } from "./scenic_capture.ts";
 import { type Candidate, type LevelSpots, readSpots, type SpotsFile } from "./scenic_spots.ts";
@@ -522,11 +523,27 @@ export function levelArt(
     capture: Picture,
     style: StyleParams,
     colour: string,
+    strength = 1, // 0-1: the styled picture blended over the raw capture by this much (1: the style as it is)
 ): { hd: Picture; native: Picture; nativeFile: Buffer; hdFile: Buffer } {
-    const hd = applyStyle(fitCapture(capture, ART_W * HD_SCALE, ART_H * HD_SCALE), style, colour);
+    const raw = fitCapture(capture, ART_W * HD_SCALE, ART_H * HD_SCALE);
+    const styled = applyStyle(raw, style, colour);
+    const hd = strength >= 1 ? styled : blendPictures(raw, styled, strength);
     const native = resize(hd, ART_W, ART_H);
     const original = { tw: ART_W, th: ART_H, iw: ART_W, ih: ART_H, bgra: Buffer.alloc(0) };
     return { hd, native, nativeFile: nativeImg(native), hdFile: encodeImg(original, hd.bgra, HD_SCALE, true) };
+}
+
+// `top` over `base` by `amount` (0-1), channel by channel on the stored values (same size, opaque): the filter-strength
+// trial's way of weakening a style (the styled picture blended over the raw capture).
+export function blendPictures(base: Picture, top: Picture, amount: number): Picture {
+    const out = Buffer.alloc(base.bgra.length);
+    for (let i = 0; i < out.length; i += 4) {
+        out[i] = Math.round(base.bgra[i]! + (top.bgra[i]! - base.bgra[i]!) * amount);
+        out[i + 1] = Math.round(base.bgra[i + 1]! + (top.bgra[i + 1]! - base.bgra[i + 1]!) * amount);
+        out[i + 2] = Math.round(base.bgra[i + 2]! + (top.bgra[i + 2]! - base.bgra[i + 2]!) * amount);
+        out[i + 3] = 255;
+    }
+    return { width: base.width, height: base.height, bgra: out };
 }
 
 // --- for make_menu_level --------------------------------------------------------------------------------------------
@@ -581,7 +598,9 @@ export interface BuiltScenicArt {
     images: Map<string, Buffer>; // art name -> images\<name>.img.xbx (640 x 360)
     hd: Map<string, Buffer>; // images\<name>.img.xbx (relative) -> the HD file (x4, for hd_ui)
     art: Map<string, string>; // load script (lower case) -> art name
-    variants: Map<string, string[]>; // load script -> the names of its pictures to choose from ([0] is `art`; absent: one picture)
+    variants: Map<string, string[]>; // load script -> the names of its pictures to choose from (absent: one picture)
+    labels: Map<string, string[]>; // load script -> a label per picture ("70%": the strength trial), when it has them
+    placeholder: string[]; // the loads set to the shared placeholder picture (art_picks.ts): not built here
     baked: string[]; // the loads whose picture is the user's choice (art-choices file), not today's
     lines: string[];
 }
@@ -606,12 +625,15 @@ export function buildScenicArt(
     style: Style,
     artName: (load: string) => string,
     choices: ReadonlyMap<string, number> = new Map(), // the user's picks (parseArtChoices): baked in as the level's art
+    picks: ReadonlyMap<string, ArtPick> = new Map(), // the decided pictures (art_picks.ts); `choices` override them
 ): BuiltScenicArt {
     const built: BuiltScenicArt = {
         images: new Map(),
         hd: new Map(),
         art: new Map(),
         variants: new Map(),
+        labels: new Map(),
+        placeholder: [],
         baked: [],
         lines: [],
     };
@@ -630,23 +652,49 @@ export function buildScenicArt(
         }
         const name = artName(load);
         const colour = GAME_COLOURS[game] ?? "#C9CBD0";
-        const pick = choices.get(load) ?? 0;
-        if (pick > 0 && pick < ids.length) {
-            // the user's pick becomes the level's picture (and its loading screen); the other pictures are dropped
-            const art = levelArt(readPng(fs.readFileSync(capturePath(game, level, ids[pick]!))), STYLES[style], colour);
+        const decided = picks.get(load);
+        const choice = choices.get(load);
+        if (decided?.placeholder && choice === undefined) {
+            built.placeholder.push(load);
+            continue;
+        }
+        const capture = (id: number): Picture => readPng(fs.readFileSync(capturePath(game, level, id)));
+        // The level's pictures: its captures in turn, or - the strength trial - one view at several strengths.
+        const strengths = decided?.strengths;
+        const view = decided && !decided.placeholder ? Math.min(decided.variant, ids.length - 1) : 0;
+        const count = strengths ? strengths.length : ids.length;
+        const make = (n: number): ReturnType<typeof levelArt> =>
+            strengths
+                ? levelArt(capture(ids[view]!), STYLES[style], colour, strengths[n]! / 100)
+                : levelArt(capture(ids[n]!), STYLES[style], colour);
+        // the one picture to keep: the user's (Q / E) over the decided one; a trial keeps all its pictures unless chosen
+        const pick = choice ?? (strengths || !decided || decided.placeholder ? undefined : decided.variant);
+        if (pick !== undefined && pick < count) {
+            // the pick becomes the level's picture (and its loading screen); the other pictures are dropped
+            const art = make(pick);
             built.images.set(name, art.nativeFile);
             built.hd.set(path.join("images", `${name}.img.xbx`), art.hdFile);
             built.baked.push(load);
         } else {
             const names: string[] = [];
-            ids.forEach((id, n) => {
-                const art = levelArt(readPng(fs.readFileSync(capturePath(game, level, id))), STYLES[style], colour);
-                const picture = variantName(name, n);
+            for (let n = 0; n < count; n++) {
+                const art = make(n);
+                // (a trial's loading screen, `name`, is its last picture - the full style)
+                const picture = strengths
+                    ? n === count - 1
+                        ? name
+                        : `${name}_s${strengths[n]}`
+                    : variantName(name, n);
                 built.images.set(picture, art.nativeFile);
                 built.hd.set(path.join("images", `${picture}.img.xbx`), art.hdFile);
                 names.push(picture);
-            });
+            }
             if (names.length > 1) built.variants.set(load, names);
+            if (strengths)
+                built.labels.set(
+                    load,
+                    strengths.map((v) => `${v}%`),
+                );
         }
         built.art.set(load, name);
         made += 1;

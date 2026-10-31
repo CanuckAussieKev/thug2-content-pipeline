@@ -58,7 +58,8 @@ export interface FrontendLevel {
     name: string;
     load: string;
     art: string;
-    art_variants?: string[]; // the level select's pictures to choose from (Q / E), [0] is `art` (scenic_art.ts)
+    art_variants?: string[]; // the level select's pictures to choose from (Q / E), the first shown (scenic_art.ts)
+    art_labels?: string[]; // a label per picture for the indicator ("70%"), when it has them (the strength trial)
     level_num: string | number;
     flag: string;
     seen_flag?: string; // (outside a career the game's level select locks by it, and hides nothing)
@@ -162,6 +163,7 @@ export function frontendSections(
     levelsText: string,
     frontArt: ReadonlyMap<string, string> = new Map(),
     artVariants: ReadonlyMap<string, readonly string[]> = new Map(), // load script (lower case) -> picture names
+    artLabels: ReadonlyMap<string, readonly string[]> = new Map(), // load script (lower case) -> a label per picture
 ): FrontendSection[] {
     const screens = loadingScreens(levelsText);
     const out: FrontendSection[] = [];
@@ -194,7 +196,11 @@ export function frontendSections(
             if (tag) level.game_tag = tag;
             if (isGeneric) level.generic_art = true;
             const variants = artVariants.get(load.toLowerCase());
-            if (variants && variants.length > 1 && variants[0] === art) level.art_variants = [...variants];
+            if (variants && variants.length > 1 && variants.includes(art)) {
+                level.art_variants = [...variants];
+                const labels = artLabels.get(load.toLowerCase());
+                if (labels && labels.length === variants.length) level.art_labels = [...labels];
+            }
             levels.push(level);
         }
         if (levels.length) out.push({ id, tab: style.tab, title, colour: style.colour, levels });
