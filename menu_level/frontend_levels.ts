@@ -35,6 +35,7 @@ export const SECTION_STYLE: ReadonlyMap<string, { tab: string; colour: string }>
     ["thps2", { tab: "THPS2", colour: "#FF4F9A" }],
     ["thaw", { tab: "THAW", colour: "#F2C230" }],
     ["thp8", { tab: "P8", colour: "#5FE0D0" }],
+    ["thpg", { tab: "PG", colour: "#E0A05F" }],
     ["misc", { tab: "Misc", colour: "#C9CBD0" }],
 ]);
 

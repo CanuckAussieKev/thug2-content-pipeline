@@ -1082,6 +1082,7 @@ async function main(): Promise<number> {
             thps2: byGame.get("thug2-decomp-thps2"),
             thaw: byGame.get("thug2-decomp-thaw"),
             thp8: byGame.get("thug2-decomp-thp8"),
+            thpg: byGame.get("thug2-decomp-thpg"),
         });
         // Levels with no place get a map of themselves in place of the globe (a level not converted keeps the globe).
         const maps = levelMap.attachMaps(game, sectionList, print);

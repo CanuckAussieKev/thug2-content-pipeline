@@ -1962,6 +1962,151 @@ function compass(): Layer[] {
     ];
 }
 
+// --- Tony Hawk's Proving Ground's network levels (tools/pipeline/thpg_levels) ----------------------------------------------
+
+// (drawn on the 64 x 64 grid, then scaled about the middle to sit inside the sign's diamond)
+const fitted = (layers: Layer[], k: number): Layer[] => scaleAll(layers, 32, 32, k);
+
+// WORLD (the three cities and their bridges): a map folded in three, a route over it.
+function foldedmap(): Layer[] {
+    return fitted(
+        [
+            [INK, poly([13, 19], [25, 14], [25, 46], [13, 51])],
+            [INK, poly([27, 14], [37, 19], [37, 51], [27, 46])],
+            [INK, poly([39, 19], [51, 14], [51, 46], [39, 51])],
+            [
+                CUT,
+                polyline(
+                    [
+                        [17, 44],
+                        [22, 34],
+                        [31, 38],
+                        [35, 27],
+                        [45, 24],
+                    ],
+                    2,
+                ),
+            ],
+            [CUT, circle(45, 24, 3)],
+        ],
+        0.66,
+    );
+}
+
+// PHILLY: the Liberty Bell on its yoke, its crack.
+function libertybell(): Layer[] {
+    return fitted(
+        [
+            [INK, rect(19, 12, 45, 16)],
+            [INK, rect(30, 16, 34, 19)],
+            [
+                INK,
+                poly(
+                    [32, 18],
+                    [37, 19.5],
+                    [39.5, 25],
+                    [40, 33],
+                    [46, 40],
+                    [46, 43],
+                    [18, 43],
+                    [18, 40],
+                    [24, 33],
+                    [24.5, 25],
+                    [27, 19.5],
+                ),
+            ],
+            [
+                CUT,
+                polyline(
+                    [
+                        [33, 25],
+                        [31, 30],
+                        [34, 34],
+                        [31.5, 39],
+                    ],
+                    1.4,
+                ),
+            ],
+            [INK, circle(32, 47, 2.6)],
+        ],
+        0.76,
+    );
+}
+
+// DC: the Washington Monument, an obelisk on its steps.
+function obelisk(): Layer[] {
+    return fitted(
+        [
+            [INK, poly([28, 46], [29.6, 15], [32, 10], [34.4, 15], [36, 46])],
+            [CUT, rect(29, 15, 35, 15.8)],
+            [INK, rect(23, 46, 41, 49)],
+            [INK, rect(19, 49, 45, 52)],
+        ],
+        0.76,
+    );
+}
+
+// BALTIMORE: a crab, claws up.
+function crab(): Layer[] {
+    const side = (k: number): Layer[] => {
+        const x = (v: number): number => 32 + k * v;
+        return [
+            [INK, line(x(7), 30, x(13), 22, 2.5)],
+            [INK, circle(x(15), 19, 4.2)],
+            [CUT, poly([x(15), 19], [x(19.5), 14], [x(20), 19.5])],
+            [INK, line(x(9), 36, x(18), 38, 1.8)],
+            [INK, line(x(9), 38, x(17), 43, 1.8)],
+            [INK, line(x(7), 39.5, x(13), 47, 1.8)],
+        ];
+    };
+    return fitted(
+        [
+            ...side(1),
+            ...side(-1),
+            [INK, ellipse(32, 35, 11, 7)],
+            [INK, line(29, 29, 28, 24, 1.4)],
+            [INK, line(35, 29, 36, 24, 1.4)],
+            [INK, circle(28, 23.5, 1.8)],
+            [INK, circle(36, 23.5, 1.8)],
+        ],
+        0.74,
+    );
+}
+
+// SKATE LOUNGE: a sofa.
+function sofa(): Layer[] {
+    return fitted(
+        [
+            [INK, rrect(18, 21, 46, 33, 3)],
+            [INK, rect(18, 32, 46, 40)],
+            [INK, rrect(12, 26, 20, 42, 2.5)],
+            [INK, rrect(44, 26, 52, 42, 2.5)],
+            [CUT, rect(20, 33, 44, 34)],
+            [INK, rect(15, 42, 18, 46)],
+            [INK, rect(46, 42, 49, 46)],
+        ],
+        0.8,
+    );
+}
+
+// THPG's BEDROOM: an alarm clock (THP8's bedroom has the bed).
+function alarmclock(): Layer[] {
+    return fitted(
+        [
+            [INK, circle(24, 22, 4.5)],
+            [INK, circle(40, 22, 4.5)],
+            [INK, line(26, 42, 22, 47, 2.5)],
+            [INK, line(38, 42, 42, 47, 2.5)],
+            [INK, circle(32, 33, 11)],
+            [CUT, circle(32, 33, 8.5)],
+            [INK, line(32, 33, 32, 27, 1.8)],
+            [INK, line(32, 33, 36.5, 35.5, 1.8)],
+            [INK, rect(30.5, 18, 33.5, 22)],
+        ],
+        0.95,
+    );
+}
+
 export const PICTOGRAMS: ReadonlyMap<string, () => Layer[]> = new Map(
     [
         skateboard,
@@ -2054,6 +2199,12 @@ export const PICTOGRAMS: ReadonlyMap<string, () => Layer[]> = new Map(
         pediment,
         ticket,
         compass,
+        foldedmap,
+        libertybell,
+        obelisk,
+        crab,
+        sofa,
+        alarmclock,
     ].map((f) => [f.name, f]),
 );
 
@@ -2177,7 +2328,7 @@ async function main(): Promise<number> {
     const groups: [Img[], string[]][] = [];
     const ours = (names: string[]): [Img[], string[]] => [names.map((name) => readImg(makeSign(frame, name))), names];
     if (values.sheet) {
-        // THUG2's own signs, then ours section by section (THUG2's added two, THUG1, THPS4, THPS3, THAW, THP8), in yellow
+        // THUG2's own signs, then ours section by section (THUG2's added two, THUG1, THPS4, THPS3, THAW, THP8, THPG), in yellow
         const own = [...prxFiles(prx, ".img.xbx")].filter(([name]) => /\\sign_/i.test(name));
         groups.push([
             own.map(([, data]) => readImg(data)),
@@ -2190,6 +2341,7 @@ async function main(): Promise<number> {
             levelSelect.THPS3_LEVELS,
             levelSelect.THAW_LEVELS,
             levelSelect.THP8_LEVELS,
+            levelSelect.THPG_LEVELS,
         ]) {
             groups.push(ours([...table.values()].map((e) => e.icon!).filter((icon) => !icon.startsWith("texture:"))));
         }

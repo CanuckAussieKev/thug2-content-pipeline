@@ -288,6 +288,13 @@ const THP8_TO_THUG2: Record<string, (typeof THUG2_TERRAIN_TYPES)[number]> = {
     GOLDCOINS: "METALTIN",
     ZEROFRICTION: "ICE",
     HIGHFRICTION: "CARPET",
+    // (Tony Hawk's Proving Ground's own names - tools/pipeline/thpg_levels)
+    CARPET: "CARPET",
+    CORRPLASTIC: "FIBERGLASS",
+    LEAVESCONC: "CONCROUGH",
+    METALFLIMSY: "METALTIN",
+    SHINGLES: "WOODSHINGLE",
+    TILE: "TILE",
 };
 
 // --- node flags ----------------------------------------------------------------------------------------------------
