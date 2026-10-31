@@ -59,14 +59,22 @@ const COLOURS_FIRST = new Set([T_DIFFUSE_TERRAIN]);
 
 // Another game's template read as a layered one (Tony Hawk's Proving Ground's: tools/pipeline/thpg_levels/layers.ts):
 // its texture list laid out as the layered templates' above, its pass colours at `colourAt` (none: not read).
+// `samplerTiling`: the float4 after each pass's colour is its samplers' tilings - x the diffuse map's (u and v alike),
+// y the mask's (passTiling / passMaskTiling).
 export function addLayered(
     template: number,
-    how: { specularFirstTwo?: boolean; colourAt?: readonly number[]; coloursFirst?: boolean } = {},
+    how: {
+        specularFirstTwo?: boolean;
+        colourAt?: readonly number[];
+        coloursFirst?: boolean;
+        samplerTiling?: boolean;
+    } = {},
 ): void {
     (LAYERED as Set<number>).add(template);
     if (how.specularFirstTwo) SPECULAR_FIRST_TWO.add(template);
     if (how.colourAt) (COLOUR_AT as Map<number, readonly number[]>).set(template, how.colourAt);
     if (how.coloursFirst) COLOURS_FIRST.add(template);
+    if (how.samplerTiling) SAMPLER_TILED.add(template);
 }
 
 export const PARAM_FLOAT4S = 0x18;
@@ -78,6 +86,7 @@ export interface Layer {
     slot: number; // uv slot of the diffuse map
     maskSlot: number; // uv slot of the mask (= slot when shared)
     tiling: readonly number[]; // the factors its u and v are multiplied by (passTiling)
+    maskTiling?: readonly number[]; // the mask's, where the template gives it one of its own (passMaskTiling)
     colour: number[]; // R, G, B tint, A opacity (passColour; 1, 1, 1, 1 when unknown)
 }
 
@@ -160,7 +169,25 @@ const TILED = new Set([
 // value doesn't read as one.
 export const TILING_MIN = 0.05;
 export const TILING_MAX = 8;
+// Another game's templates whose tiling float4 is per sampler (addLayered samplerTiling): x the pass's diffuse map, y its
+// mask (pass 0: its normal map), z its specular map.
+const SAMPLER_TILED = new Set<number>();
+const tilingFloat4 = (m: geom.GeomMaterial, pass: number): number[] | undefined => {
+    const at = COLOUR_AT.get(m.template)?.[pass];
+    if (at === undefined) return undefined;
+    const f = float4s(m);
+    if (!(f[0] !== undefined && f[0][1] === 0 && f[0][2] === 0)) return undefined;
+    return f[at + 1];
+};
+// (per-sampler tilings reach 16 - THPG's (16, 16, 16, 1) on fine-grained ground)
+export const SAMPLER_TILING_MAX = 32;
+const tilingOk = (x: number | undefined): x is number =>
+    Number.isFinite(x) && x! >= TILING_MIN && x! <= SAMPLER_TILING_MAX;
 export function passTiling(m: geom.GeomMaterial, pass: number): number[] {
+    if (SAMPLER_TILED.has(m.template)) {
+        const x = tilingFloat4(m, pass)?.[0];
+        return tilingOk(x) ? [x, x] : [1, 1];
+    }
     const at = COLOUR_AT.get(m.template)?.[pass];
     if (at === undefined || !TILED.has(m.template)) return [1, 1];
     const f = float4s(m);
@@ -169,6 +196,13 @@ export function passTiling(m: geom.GeomMaterial, pass: number): number[] {
     if (t === undefined) return [1, 1];
     const ok = (x: number): boolean => Number.isFinite(x) && x >= TILING_MIN && x <= TILING_MAX;
     return ok(t[0]!) && ok(t[1]!) ? [t[0]!, t[1]!] : [1, 1];
+}
+
+// Pass p's mask's tiling (a samplerTiling template's: its tiling float4's y), else undefined (as the pass's).
+export function passMaskTiling(m: geom.GeomMaterial, pass: number): number[] | undefined {
+    if (!SAMPLER_TILED.has(m.template)) return undefined;
+    const y = tilingFloat4(m, pass)?.[1];
+    return tilingOk(y) ? [y, y] : [1, 1];
 }
 
 // Pass p's colour [R, G, B, A], or null when the template's isn't known or the value doesn't read as one (a few
@@ -245,6 +279,7 @@ export function planMaterial(
     let s = env ? 2 : 1; // (the reflective template's pass 0 mask has the field after pass 0's)
     const layers = [base];
     for (const [k, p] of passes.entries()) {
+        const maskTiling = passMaskTiling(m, k + 1);
         if (fixed) {
             layers.push({
                 diffuse: p.diffuse,
@@ -252,6 +287,7 @@ export function planMaterial(
                 slot: 1 + 2 * k,
                 maskSlot: 2 + 2 * k,
                 tiling: passTiling(m, k + 1),
+                ...(maskTiling ? { maskTiling } : {}),
                 colour: colour(k + 1),
             });
             continue;
@@ -264,6 +300,7 @@ export function planMaterial(
             slot: s,
             maskSlot: own ? s + 1 : s,
             tiling: passTiling(m, k + 1),
+            ...(maskTiling ? { maskTiling } : {}),
             colour: colour(k + 1),
         });
         s += own ? 2 : 1;
@@ -629,6 +666,40 @@ export function maskedLayer(diffuse: Decoded, mask: Decoded, opacity = 1): Buffe
         }
     }
     return out;
+}
+
+// maskedLayer for a diffuse map and a mask tiled differently over the same uvs: one period of the coarser of the two -
+// the diffuse map repeated `diffuseRepeat` times across it, the mask `maskRepeat` times (both whole numbers) - at the
+// finer one's texel density (at most `maxSize` texels a side), alpha = the diffuse map's x the mask's brightness x
+// opacity.
+export function repeatedMaskedLayer(
+    diffuse: Decoded,
+    mask: Decoded,
+    opacity: number,
+    diffuseRepeat: number,
+    maskRepeat: number,
+    maxSize = 1024,
+): Decoded {
+    const pow2 = (x: number): number => 2 ** Math.round(Math.log2(Math.max(1, x)));
+    const width = Math.min(maxSize, pow2(Math.max(diffuse.width * diffuseRepeat, mask.width * maskRepeat)));
+    const height = Math.min(maxSize, pow2(Math.max(diffuse.height * diffuseRepeat, mask.height * maskRepeat)));
+    const bgra = Buffer.alloc(width * height * 4);
+    const at = (t: Decoded, repeat: number, x: number, y: number): number => {
+        const tx = Math.floor((((x + 0.5) * repeat) / width) * t.width) % t.width;
+        const ty = Math.floor((((y + 0.5) * repeat) / height) * t.height) % t.height;
+        return 4 * (ty * t.width + tx);
+    };
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            const d = at(diffuse, diffuseRepeat, x, y);
+            const k = at(mask, maskRepeat, x, y);
+            const o = 4 * (y * width + x);
+            diffuse.bgra.copy(bgra, o, d, d + 3);
+            const lum = (mask.bgra[k]! + mask.bgra[k + 1]! + mask.bgra[k + 2]!) / 3;
+            bgra[o + 3] = Math.round((diffuse.bgra[d + 3]! * lum * opacity) / 255);
+        }
+    }
+    return { width, height, bgra };
 }
 
 // --- environment maps -----------------------------------------------------------------------------------------------

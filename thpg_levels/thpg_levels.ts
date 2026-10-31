@@ -18,6 +18,7 @@ import * as common from "../level_port/common.ts";
 import { parseCli } from "../lib/cli.ts";
 import { findCaseless, resolveInstall } from "../lib/install.ts";
 import { isMain, print, pyExit, runMain } from "../lib/py.ts";
+import * as renderAudit from "../thp8_levels/render_audit.ts";
 import * as thp8 from "../thp8_levels/thp8.ts";
 import * as T from "../thp8_levels/thp8_levels.ts";
 import * as xenos from "../thp8_levels/xenos.ts";
@@ -122,9 +123,11 @@ export const THPG_GAME: T.GameProfile = {
     retired: [],
     sky: ["SKIES", "S_DEFAULT", "s_default.pak.xen"],
     specs: allSpecs,
-    lighting: () => light.LIGHTING,
+    lighting: (_tod, zone) => light.lightingOf(zone),
     prepareZone: (zone, file, warnings) => {
         if (!zone.geom) return;
+        layers.dropWet(zone.geom, zone.textures);
+        layers.facades(zone.geom, zone.textures);
         layers.decals(zone.geom, zone.textures);
         light.wireLightMaps(zone.geom, zone.textures);
         // (only a level's own zone: the _lod stand-ins are drawn only)
@@ -157,12 +160,13 @@ export function globalTextures(compressed: string): Map<number, xenos.XenosTextu
     return out;
 }
 
-const USAGE = `usage: thpg_levels.ts {convert,selfcheck,list} [levels ...] [--thug2 THUG2] [--thpg THPG] [--out OUT]
+const USAGE = `usage: thpg_levels.ts {convert,selfcheck,list,audit} [levels ...] [--thug2 THUG2] [--thpg THPG] [--out OUT]
                      [--ns NS] [--no-mips]
 
   convert     the levels (default all) into <thug2>\\${STAGING}
   selfcheck   read every zone archive's scene / textures / collision / qb files; round-trip THUG2's LA / TestLevel
   list        the levels and their zones
+  audit       thp8_levels/render_audit.ts over THPG's levels (textures / zfight / black / spot <level> <x,y,z>)
 
   --thug2     THUG2's folder (default C:\\Games\\THUG2) - the install root or its Game folder
   --thpg      Proving Ground's folder, holding DATA\\COMPRESSED (default ${DEFAULT_ROOT})
@@ -202,6 +206,16 @@ export function parseCommandLine(argv: readonly string[]): T.Args {
 }
 
 export function main(argv: readonly string[] = process.argv.slice(2)): number {
+    if (argv[0] === "audit") {
+        // (thp8_levels/render_audit.ts over THPG's levels: textures / zfight / black / spot, its own options)
+        const rest = argv.slice(1);
+        const i = rest.indexOf("--thpg");
+        const root = i >= 0 ? rest[i + 1]! : DEFAULT_ROOT;
+        if (i >= 0) rest.splice(i, 2);
+        T.useGame(THPG_GAME);
+        T.useGame({ ...THPG_GAME, textures: globalTextures(T.compressedFolder(root)) });
+        return renderAudit.main([...rest, "--thp8", root]);
+    }
     const args = parseCommandLine(argv);
     T.useGame(THPG_GAME);
     if (args.command === "list") return T.cmdList(args);

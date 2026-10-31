@@ -118,6 +118,41 @@ export function repack(m: geom.GeomMesh, copyLast = false): geom.GeomMesh {
     return { ...m, layout: layout >>> 0, colorOffset: 16, uvOffset: 20, stride, vertices: out };
 }
 
+// The material's parameter block made again (THP8's layout, as readMaterial makes it) with these float4s and its
+// current textures - its header words (template, blend, alpha reference...) kept.
+export function setParams(m: geom.GeomMaterial, float4s: readonly (readonly number[])[]): void {
+    const params = Buffer.alloc(P_HEADER + 16 * float4s.length + 4 * m.textures.length);
+    m.params.copy(params, 0, 0, P_HEADER);
+    params.writeUInt32BE(m.template, P_TEMPLATE);
+    params.writeUInt32BE(m.textures.length, P_TEXTURES);
+    params.writeUInt32BE(params.length - 0x10, P_SIZE);
+    params.writeUInt32BE(float4s.length, P_FLOAT4S);
+    float4s.forEach((f, i) => {
+        for (let c = 0; c < 4; c++) params.writeFloatBE(f[c] ?? 0, P_HEADER + 16 * i + 4 * c);
+    });
+    m.textures.forEach((t, k) => {
+        params.writeUInt32BE(t, P_HEADER + 16 * float4s.length + 4 * k);
+    });
+    m.params = params;
+}
+
+// A re-packed mesh (repack's layout) with only the uv fields `keep` (by their place, in that order).
+export function keepFields(m: geom.GeomMesh, keep: readonly number[]): geom.GeomMesh {
+    const stride = 20 + 4 * keep.length;
+    const out = Buffer.alloc(stride * m.vertexCount);
+    for (let i = 0; i < m.vertexCount; i++) {
+        const v = i * m.stride;
+        const w = i * stride;
+        m.vertices.copy(out, w, v, v + 20);
+        keep.forEach((f, k) => {
+            m.vertices.copy(out, w + 20 + 4 * k, v + 20 + 4 * f, v + 24 + 4 * f);
+        });
+    }
+    let layout = m.layout & 0xffff;
+    for (let k = 0; k < keep.length; k++) layout |= 2 << (16 + 2 * k);
+    return { ...m, layout: layout >>> 0, stride, vertices: out };
+}
+
 export function readThpgGeom(data: Buffer, name = "scn"): geom.Geom {
     const version = data.readUInt16BE(0x20);
     if (version !== VERSION) throw new FormatError(`${name}: material block version ${version.toString(16)}`);

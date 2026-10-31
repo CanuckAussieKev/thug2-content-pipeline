@@ -19,15 +19,17 @@
 
 import { checksum } from "../level_port/qb.ts";
 import * as dxt from "../thp8_levels/dxt.ts";
-import type * as geom from "../thp8_levels/geom.ts";
+import * as geom from "../thp8_levels/geom.ts";
 import * as mats from "../thp8_levels/materials.ts";
 import * as thp8 from "../thp8_levels/thp8.ts";
 import * as xenos from "../thp8_levels/xenos.ts";
+import { keepFields, setParams } from "./scene.ts";
 
 export interface TemplateInfo {
     name: string;
     family: "D" | "D_S" | "D_N_S";
     passes: number[]; // the passes that are on (0 first when it is)
+    wet?: boolean; // D_N_S_Wet_4ChkBox...: D_N_S_4ChkBox's with a wet mask and its cube map (dropWet)
 }
 
 const subsets = (items: readonly number[]): number[][] =>
@@ -36,25 +38,34 @@ const subsets = (items: readonly number[]): number[][] =>
 // Every name of the three families, by checksum.
 export const TEMPLATES: ReadonlyMap<number, TemplateInfo> = (() => {
     const out = new Map<number, TemplateInfo>();
-    const add = (family: TemplateInfo["family"], base: string, passes: number[]): void => {
+    const add = (family: TemplateInfo["family"], base: string, passes: number[], wet = false): void => {
         const name =
             base +
             passes
                 .filter((p) => p || family !== "D_N_S")
                 .map((p) => `_Pass${p}`)
                 .join("");
-        out.set(checksum(name), { name, family, passes });
+        out.set(checksum(name), { name, family, passes, ...(wet ? { wet } : {}) });
     };
     for (const s of subsets([0, 1, 2]).filter((x) => x.length)) {
         add("D", "D_3ChkBox", s);
         add("D_S", "D_S_3ChkBox", s);
     }
-    for (const s of subsets([1, 2, 3])) add("D_N_S", "D_N_S_4ChkBox", [0, ...s]);
+    for (const s of subsets([1, 2, 3])) {
+        add("D_N_S", "D_N_S_4ChkBox", [0, ...s]);
+        add("D_N_S", "D_N_S_Wet_4ChkBox", [0, ...s], true);
+    }
     return out;
 })();
 
 // D_3ChkBox's pass colours: float4 k is the k-th pass that is on.
 const COLOURS = [0, 1, 2, 3];
+// D_N_S_4ChkBox's (and its Wet twin's) float4s: the specular power, then pass 0's colour, its tiling and its specular
+// colour, then each further pass that is on its colour (A its opacity) and its tiling. The tiling float4 is per
+// sampler: x the diffuse map's, y the mask's (pass 0: the normal map's), z the specular map's (the library names them
+// m_psPass<k>MaterialColor / m_psPass<k>Tiling; the order read from the values over the zones' materials: colours vary
+// in R, G, B with an opacity in A, tilings are (1, 1, 1, 1), (16, 16, 16, 1), (2, 1, 1, 1)...).
+const D_N_S_COLOURS = [1, 4, 6, 8];
 let registered = false;
 export function registerTemplates(): void {
     if (registered) return;
@@ -62,8 +73,127 @@ export function registerTemplates(): void {
     for (const [c, t] of TEMPLATES) {
         if (!t.passes.includes(0)) continue; // (decals: made one texture - decals())
         if (t.family === "D") mats.addLayered(c, { colourAt: COLOURS, coloursFirst: true });
-        else mats.addLayered(c, { specularFirstTwo: t.family === "D_S" });
+        else if (t.family === "D_N_S") mats.addLayered(c, { colourAt: D_N_S_COLOURS, samplerTiling: true });
+        else mats.addLayered(c, { specularFirstTwo: true });
     }
+}
+
+// The Wet terrains (D_N_S_Wet_4ChkBox...: roads, pavements, plazas) are D_N_S_4ChkBox's with a wet layer: two more
+// textures before the light map - a cube map and a big wet mask, in either order - and the mask's uv field before the
+// light map's. THUG2 draws no wet sheen: both left out (and the field), so the material reads as D_N_S_4ChkBox's
+// layers. Returns how many.
+export function dropWet(g: geom.Geom, textures: ReadonlyMap<number, xenos.XenosTexture>): number {
+    const wet = new Set<number>();
+    for (const m of g.materials) {
+        const n = m.textures.length;
+        if (!TEMPLATES.get(m.template)?.wet || n < 4) continue;
+        const pair = m.textures.slice(n - 3, n - 1);
+        if (!pair.some((t) => textures.get(t)?.cube)) continue;
+        m.textures = [...m.textures.slice(0, n - 3), m.textures[n - 1]!];
+        wet.add(m.checksum);
+    }
+    for (const s of g.sectors) {
+        s.meshes = s.meshes.map((mesh) => {
+            const fields = geom.uvFields(mesh.layout).length;
+            if (!wet.has(mesh.material) || fields < 3) return mesh;
+            return keepFields(
+                mesh,
+                [...Array(fields).keys()].filter((k) => k !== fields - 2),
+            );
+        });
+    }
+    return wet.size;
+}
+
+// The glass towers (EnvMask_D_N_S_2ChkBox_Pass1...): pass 0 the glass - a black map (E7247FD8: mean 0, alpha 242)
+// with its cube map's reflection by the mask after it -, pass 1 the facade over it - brick with windows, panels - by
+// its own mask, black where the panes are. THUG2 draws neither the reflection nor the dark glass under a blend: drawn
+// as pass 1's facade, solid and lit, with the glass over it where its mask is black - a layer of the glass's colour
+// (the cube map's mean x GLASS_REFLECTION, as the dark glass reflects it) whose alpha is the mask's inverse, on the
+// mask's own uv field. The material is made a D_N_S_4ChkBox_Pass1 (layers.ts's layout: facade, glass layer, a white
+// mask, the light map) and its meshes keep pass 1's field, the mask's and the light map's. Only where pass 0's map is
+// dark (materials.darkTexture): the other EnvMask materials (metal, awnings, sign frames) draw their pass 0 as before.
+// Returns how many.
+export const ENV_MASK_PASS1: ReadonlySet<number> = new Set(
+    ["EnvMask_D_N_S_2ChkBox_Pass1", "EnvMask_D_N_S_2ChkBox_Pass1_Normal"].map(checksum),
+);
+export const GLASS_REFLECTION = 0.6;
+// The texture lists: D0 N0 S0, the cube map, mask 0, then D1 (N1 S1), mask 1, then the light map. Float4s: the
+// specular power, pass 0's colour, tiling, specular colour, the reflection (Remap), pass 1's colour, tiling, specular.
+const FACADE_LAYOUTS: ReadonlyMap<number, { textures: number; mask: number }> = new Map([
+    [checksum("EnvMask_D_N_S_2ChkBox_Pass1"), { textures: 8, mask: 6 }],
+    [checksum("EnvMask_D_N_S_2ChkBox_Pass1_Normal"), { textures: 10, mask: 8 }],
+]);
+const FACADE_CUBE = 3;
+const FACADE_DIFFUSE = 5;
+export const FACADE_TEMPLATE = checksum("D_N_S_4ChkBox_Pass1");
+export const WHITE = 0xd729d3b1; // (PAK\global_env_tex's white stand-in)
+
+export function glassColour(cube: xenos.XenosTexture | undefined): number[] {
+    const faces = cube?.cube ? mats.decodeCube(cube) : null;
+    return [0, 1, 2].map((ch) => {
+        if (!faces) return 0;
+        let sum = 0;
+        let n = 0;
+        for (const f of faces) {
+            for (let i = 0; i < f.width * f.height; i++) sum += f.bgra[4 * i + ch]!;
+            n += f.width * f.height;
+        }
+        return Math.round((sum / Math.max(1, n)) * GLASS_REFLECTION);
+    });
+}
+
+// The glass layer: the glass's colour (B, G, R), alpha the mask's inverse brightness (the panes).
+export function glassTexels(mask: mats.Decoded, glass: readonly number[]): mats.Decoded {
+    const bgra = Buffer.alloc(mask.width * mask.height * 4);
+    for (let i = 0; i < mask.width * mask.height; i++) {
+        const lum = (mask.bgra[4 * i]! + mask.bgra[4 * i + 1]! + mask.bgra[4 * i + 2]!) / 3;
+        bgra.set([glass[0]!, glass[1]!, glass[2]!, Math.round(255 - lum)], 4 * i);
+    }
+    return { width: mask.width, height: mask.height, bgra };
+}
+
+export function facades(g: geom.Geom, textures: Map<number, xenos.XenosTexture>): number {
+    // (materials some mesh of which hasn't the five uv fields: left as they are)
+    const short = new Set<number>();
+    for (const s of g.sectors)
+        for (const mesh of s.meshes) if (geom.uvFields(mesh.layout).length !== 5) short.add(mesh.material);
+    const made = new Set<number>();
+    for (const m of g.materials) {
+        const layout = FACADE_LAYOUTS.get(m.template);
+        if (!layout || m.textures.length !== layout.textures || short.has(m.checksum)) continue;
+        const glassMap = textures.get(m.textures[0]!);
+        if (!glassMap || !mats.darkTexture(glassMap)) continue;
+        const cube = m.textures[FACADE_CUBE]!;
+        const facade = m.textures[FACADE_DIFFUSE]!;
+        const mask = m.textures[layout.mask]!;
+        const light = m.textures[layout.textures - 1]!;
+        const k = textures.get(mask);
+        const kk = k ? mats.decode(k) : null;
+        if (!textures.has(facade) || !kk || !textures.has(WHITE)) continue;
+        const glass = glassColour(textures.get(cube));
+        const id = checksum(`thpg_glass_${thp8.hex(mask)}_${glass.join("_")}`);
+        if (!textures.has(id)) {
+            const out = glassTexels(kk, glass);
+            textures.set(id, madeTexture(id, out.width, out.height, out.bgra));
+        }
+        const f = mats.float4s(m);
+        const one = [1, 1, 1, 1];
+        m.template = FACADE_TEMPLATE;
+        m.textures = [facade, id, WHITE, light];
+        // (D_N_S_4ChkBox_Pass1's float4s: the specular power, pass 0 = the facade's colour and tiling, its specular
+        // colour, then the glass layer's colour (opaque) and tiling)
+        setParams(m, [f[0] ?? [15, 0, 0, 0], f[5] ?? one, f[6] ?? one, f[7] ?? one, one, one]);
+        m.params.writeUInt32BE(0, mats.PARAM_BLEND);
+        m.params.writeUInt32BE(0, mats.PARAM_ALPHA_REF);
+        made.add(m.checksum);
+    }
+    // (the uv fields: pass 1's (2), its mask's (3), the light map's)
+    for (const s of g.sectors)
+        s.meshes = s.meshes.map((mesh) => {
+            return made.has(mesh.material) ? keepFields(mesh, [2, 3, 4]) : mesh;
+        });
+    return made.size;
 }
 
 // A texture we make as a THP8 texture would read: DXT5 (THUG2's block layout, no swap, untiled).

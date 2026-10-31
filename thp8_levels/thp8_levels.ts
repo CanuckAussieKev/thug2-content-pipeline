@@ -150,8 +150,8 @@ export interface GameProfile {
     sky: readonly string[]; // the default sky's archive under COMPRESSED
     // the levels made (default: allSpecs - the standalone zones and the network levels)
     specs?: (compressed: string, names: Map<number, string>) => LevelSpec[];
-    // the light baked from a zone's light maps (default zoneLighting: its tod_manager's sun)
-    lighting?: (tod: Struct | undefined) => mats.Lighting;
+    // the light baked from a zone's light maps (default zoneLighting: its tod_manager's sun); zone: z_houses
+    lighting?: (tod: Struct | undefined, zone: string) => mats.Lighting;
     // a zone's files as read, made ready (the light maps wired as THP8's, collision where there is none...)
     prepareZone?: (zone: ZoneData, file: string, warnings: string[]) => void;
     textures?: ReadonlyMap<number, xenos.XenosTexture>; // textures every zone may use (a global archive's)
@@ -367,8 +367,8 @@ export function interiorLighting(): mats.Lighting {
 }
 
 // The game's (GameProfile.lighting), else zoneLighting.
-export function lightingOf(tod: Struct | undefined): mats.Lighting {
-    return game.lighting ? game.lighting(tod) : zoneLighting(tod);
+export function lightingOf(tod: Struct | undefined, zone = ""): mats.Lighting {
+    return game.lighting ? game.lighting(tod, zone.toLowerCase()) : zoneLighting(tod);
 }
 
 export function zoneLighting(tod: Struct | undefined): mats.Lighting {
@@ -563,8 +563,18 @@ interface Plan {
     scales?: (readonly number[])[]; // (per slot: the factors u and v are multiplied by - the pass's tiling)
     // (inside: an interior's lighting - interiorLighting - else the part's own: its zone's sun)
     light?: { ambient: mats.Decoded; shadow: mats.Decoded; inside: boolean; placeholder?: boolean }; // placeholder: the "maps" are THP8 dither stand-ins - not lit by them (only the triangles refined as before)
-    vertexMask: { slot: number; mask: mats.Decoded; opacity: number } | null;
+    vertexMask: { slot: number; mask: mats.Decoded; opacity: number; tiling?: readonly number[] } | null;
     env?: boolean; // an environment pass over the surface: its sector gets vertex normals
+}
+
+// A layer whose diffuse map and mask are tiled differently (diffuse x d, mask x m): drawn as one texture over a period
+// of the coarser tiling, the two repeated across it a whole number of times (at most LAYER_REPEAT_MAX).
+export const LAYER_REPEAT_MAX = 16;
+export function layerRepeat(d: number, m: number): { period: number; diffuse: number; mask: number } | null {
+    if (d === m) return null;
+    const period = Math.min(d, m);
+    const times = (x: number): number => Math.min(LAYER_REPEAT_MAX, Math.max(1, Math.round(x / period)));
+    return { period, diffuse: times(d), mask: times(m) };
 }
 
 // THP8's glows and light shafts (lamp halos, sun shafts: textures on black that its shaders add): a material is drawn
@@ -957,26 +967,31 @@ export function convertScenes(
                         );
                     if (alpha && !shared) continue;
                     let layerTexture: number;
+                    // (a mask tiled otherwise than its diffuse map - another game's per-sampler tilings: one period of
+                    // the coarser of the two made, the other repeated across it - layerRepeat)
+                    const maskTexture = layer.mask === null ? undefined : part.textures.get(layer.mask);
+                    const repeat =
+                        shared && layer.maskTiling && maskTexture && mats.blankKind(maskTexture) !== "flat"
+                            ? layerRepeat(layer.tiling[0]!, layer.maskTiling[0]!)
+                            : null;
                     if (shared) {
                         // (mask in the texture's alpha)
                         const opacity = Math.round(layer.colour[3]! * 100);
                         const flatKey = stipple ? thp8.hex(rgbKey(albedo()) >>> 0) : "";
                         layerTexture = checksum(
-                            `thp8_layer_${stipple ? `tint${flatKey}` : thp8.hex(layer.diffuse)}_${thp8.hex(layer.mask!)}_${opacity}`,
+                            `thp8_layer_${stipple ? `tint${flatKey}` : thp8.hex(layer.diffuse)}_${thp8.hex(layer.mask!)}_${opacity}` +
+                                (repeat ? `_x${repeat.diffuse}_${repeat.mask}` : ""),
                         );
                         if (!texOut.has(layerTexture)) {
                             const k = decode(layer.mask!);
                             const d = stipple && k ? flatLike(k, albedo()) : decode(layer.diffuse);
                             if (!d || !k) continue;
+                            const made = repeat
+                                ? mats.repeatedMaskedLayer(d, k, opacity / 100, repeat.diffuse, repeat.mask)
+                                : { width: d.width, height: d.height, bgra: mats.maskedLayer(d, k, opacity / 100) };
                             texOut.set(
                                 layerTexture,
-                                xenos.fromBgra(
-                                    layerTexture,
-                                    d.width,
-                                    d.height,
-                                    mats.maskedLayer(d, k, opacity / 100),
-                                    mips,
-                                ),
+                                xenos.fromBgra(layerTexture, made.width, made.height, made.bgra, mips),
                             );
                         }
                     } else {
@@ -1003,6 +1018,7 @@ export function convertScenes(
                             slot: layer.maskSlot,
                             mask: decode(layer.mask!)!,
                             opacity: layer.colour[3]!,
+                            ...(layer.maskTiling ? { tiling: layer.maskTiling } : {}),
                         };
                         layerTexture = stipple ? flatTexture : layer.diffuse;
                     }
@@ -1014,7 +1030,7 @@ export function convertScenes(
                     tint(pass, layer.colour);
                     mat.passes.push(pass);
                     out.slots.push(layer.slot);
-                    out.scales!.push(layer.tiling);
+                    out.scales!.push(repeat ? [repeat.period, repeat.period] : layer.tiling);
                     counts.layers++;
                     if (stipple) counts.whitened++;
                     if (alpha) counts.glazed++;
@@ -1224,7 +1240,8 @@ export function convertScenes(
                     let alpha = blend ? Math.round((a >> 1) * fade * (plan?.opacity ?? 1)) : 128;
                     if (plan?.vertexMask) {
                         const [mu, mv] = uvOf(plan.vertexMask.slot) as [number, number];
-                        const s2 = mats.sample(plan.vertexMask.mask, mu, mv);
+                        const mt = plan.vertexMask.tiling ?? [1, 1];
+                        const s2 = mats.sample(plan.vertexMask.mask, mu * mt[0]!, mv * mt[1]!);
                         alpha = Math.round(((s2[0]! + s2[1]! + s2[2]!) / 3) * plan.vertexMask.opacity * 128);
                     }
                     colors.push([
@@ -3585,7 +3602,7 @@ function sceneParts(p: ZonePart, ctx: Shared): SceneParts[] {
             hiddenTriangles: p.hiddenTriangles,
             oneSided: p.oneSided,
             additive: glowMaterials(g, ctx.names),
-            lighting: lightingOf(zoneTod(ctx.managers, p.zoneName)),
+            lighting: lightingOf(zoneTod(ctx.managers, p.zoneName), p.zoneName),
             techniques: ctx.techniques,
             local: p.local,
         },
@@ -3909,7 +3926,7 @@ function convertLevel(spec: LevelSpec, ctx: Shared): Record<string, unknown> | n
                 placed,
                 oneSided: lodBack.sets[0]!,
                 additive,
-                lighting: lightingOf(zoneTod(ctx.managers, names.get(checksum(info.zone)) ?? info.zone)),
+                lighting: lightingOf(zoneTod(ctx.managers, names.get(checksum(info.zone)) ?? info.zone), info.zone),
                 techniques: ctx.techniques,
                 keepTriangle: (corners, drawn) => {
                     if (!standInOutside(corners, ownGround) || standInOnDrawn(corners, drawn)) return false;

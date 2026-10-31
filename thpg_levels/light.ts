@@ -15,16 +15,35 @@ import * as thp8 from "../thp8_levels/thp8.ts";
 import * as xenos from "../thp8_levels/xenos.ts";
 import { repack } from "./scene.ts";
 
-// light = map x LIGHT_SCALE / (1 + LIGHT_KNEE x map) - ours (THPG's shaders aren't read): the average map near THUG2's
-// full brightness (0.22 -> 0.74), its bright spots rolled off (0.5 -> 1.29).
-export const LIGHT_SCALE = 4.5;
-export const LIGHT_KNEE = 1.5;
+// light = map x LIGHT_SCALE / (1 + LIGHT_KNEE x map) - ours (THPG's shaders aren't read). The outdoor maps hold the
+// light as it is, the sun's at 1: sampled at the lit vertices of the city's zones their brightest tenth is 1.0 - the
+// sunlit ground, clipped - and the middle 0.3-0.6 (shade, walls turned from the sun). So the map is the light: 1 draws
+// the texture as it is (THUG2's vertex colour 128), the curve lifting the shade a little (0.4 -> 0.44, 0.2 -> 0.23).
+// The 0.22 average the first guess was set from (x 4.5 / (1 + 1.5 x)) counts the maps' black padding too; it made the
+// sunlit ground x 1.8 - white.
+export const LIGHT_SCALE = 1.2;
+export const LIGHT_KNEE = 0.2;
 export const LIGHTING: mats.Lighting = {
     sun: [0, 0, 0],
     ambientScale: LIGHT_SCALE,
     sunScale: 0,
     ambientKnee: LIGHT_KNEE,
 };
+// The interiors' maps are darker (inside the air and space museum: half its vertices under 0.15, the lounge's 0.2):
+// THPG lights them brighter than the map - its own exposure, not read. Lit as the first guess: x 4.5 / (1 + 1.5 x)
+// (0.15 -> 0.55, 0.4 -> 1.13).
+export const INTERIOR_SCALE = 4.5;
+export const INTERIOR_KNEE = 1.5;
+export const INTERIOR_ZONES: ReadonlySet<string> = new Set(["z_museum_int", "z_crib", "z_crib_default", "z_bedroom"]);
+export const INTERIOR_LIGHTING: mats.Lighting = {
+    sun: [0, 0, 0],
+    ambientScale: INTERIOR_SCALE,
+    sunScale: 0,
+    ambientKnee: INTERIOR_KNEE,
+};
+export function lightingOf(zone: string): mats.Lighting {
+    return INTERIOR_ZONES.has(zone.toLowerCase()) ? INTERIOR_LIGHTING : LIGHTING;
+}
 
 // A texture is a zone's light map when it stands last in at least this share of the materials that list it.
 export const LAST_SHARE = 0.8;
