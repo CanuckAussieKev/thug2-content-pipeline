@@ -64,7 +64,18 @@ import { parseCli } from "../lib/cli.ts";
 import { DECOMP, NS_DEFAULT, nsMissing, PIPELINE } from "../lib/decomp.ts";
 import type { UnitLookup } from "../lib/edits.ts";
 import { resolveInstall } from "../lib/install.ts";
-import { decodeAsciiReplace, isMain, print, pyExit, pyJoin, readTextPy, runMain, writeTextPy } from "../lib/py.ts";
+import {
+    decodeAsciiReplace,
+    decodeLatin1,
+    encodeLatin1,
+    isMain,
+    print,
+    pyExit,
+    pyJoin,
+    readTextPy,
+    runMain,
+    writeTextPy,
+} from "../lib/py.ts";
 import { findall, search } from "../lib/re.ts";
 import { unpackNumbers } from "../lib/struct.ts";
 import * as thawBmxInstall from "../thaw_bmx/install.ts"; // (THAW's BMX: bike, skeleton, animations - phase 1)
@@ -1141,7 +1152,21 @@ async function main(): Promise<number> {
             "scripts\\game\\menu\\skateshop.qb",
         );
         // Always: the on-screen keyboard as a QWERTY keyboard (keyboard_qwerty.ts; both front ends use the game's script).
-        write(qwertyKeyboard(decompile(prxFile(qbScripts, KEYBOARD_QB), "keyboard.qb")), KEYBOARD_QB);
+        // (its foreign letters are not UTF-8: read and written as Latin-1, byte for byte)
+        {
+            const source = path.join(work, "keyboard.qb");
+            fs.writeFileSync(source, prxFile(qbScripts, KEYBOARD_QB));
+            ns(tool, "-d", source, "-o", `${source}.ns`);
+            const edited = path.join(work, "new_keyboard.ns");
+            fs.writeFileSync(
+                edited,
+                encodeLatin1(qwertyKeyboard(decodeLatin1(fs.readFileSync(`${source}.ns`)).replace(/\r\n?/g, "\n"))),
+            );
+            const target = pyJoin(out, KEYBOARD_QB);
+            fs.mkdirSync(path.dirname(target), { recursive: true });
+            ns(tool, "-c", edited, "-o", target, "-targetGame", "thug2");
+            print("wrote", target);
+        }
         // Always: GAME OPTIONS' CREATE 100% CAS (the game's [features] create_100_cas decides whether it shows).
         addCreate100Cas(decompile, write, pre, levels);
         // The ports' own people (tools/pipeline/level_port/ped_models.ts): their CAS parts and profiles added to THUG2's lists.
