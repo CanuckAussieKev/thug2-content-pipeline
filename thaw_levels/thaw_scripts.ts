@@ -198,7 +198,7 @@ export function scriptToks(
 ): Tok[] {
     for (const [, renamed] of RENAME_TEXT) setDefault(names, checksum(renamed), renamed);
     for (const text of NAMES_MADE) setDefault(names, checksum(text), text);
-    const toks: qb.Token[] = [...thaw.tokens(body)].map(([off, t, p]) => {
+    const toks: qb.Token[] = [...thaw.tokens(body, order)].map(([off, t, p]) => {
         const renamed = t === 0x16 ? RENAMES.get(u32(p)) : undefined;
         return [off, t, renamed !== undefined ? pack("<I", renamed) : p];
     });
@@ -214,18 +214,28 @@ export function scriptToks(
     };
     const out: Tok[] = [];
     let depth = 0;
+    // (per open if: its elseifs - THPG's 0x27, made `else` + a nested `if`, each closed by one more endif at the end)
+    const elseifs: number[] = [];
+    const none = Buffer.alloc(0);
     for (let k = 0; k < toks.length; k++) {
         const [off, t, p] = toks[k]!;
         if (t === 0x24) break;
         if (t === 0x47) {
+            elseifs.push(0);
             const end = inManual(toks, k, out);
             if (end !== null) {
                 k = end - 1; // (on with the line's end)
                 continue;
             }
-            out.push(new Tok(0x25, Buffer.alloc(0), k));
+            out.push(new Tok(0x25, none, k));
         } else if (t === 0x48) {
-            out.push(new Tok(0x26, Buffer.alloc(0), k));
+            out.push(new Tok(0x26, none, k));
+        } else if (t === thaw.ELSEIF && order === ">") {
+            if (elseifs.length) elseifs[elseifs.length - 1]! += 1;
+            out.push(new Tok(0x26, none, k), new Tok(0x01, none, k), new Tok(0x25, none, k));
+        } else if (t === 0x28) {
+            out.push(new Tok(0x28, none, k));
+            for (let e = elseifs.pop() ?? 0; e > 0; e--) out.push(new Tok(0x01, none, k), new Tok(0x28, none, k));
         } else if (t === 0x4b) {
             // (THP8's "$": the next name's global value - `QueryFlag ... $FLAG_THINGY_SPINNING`, `params_Script={
             // $GP_HO_BambooFence_Dust01 ...}`. THUG2 has no such token: the plain name - a global structure named

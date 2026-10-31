@@ -72,6 +72,7 @@ const EXTENSIONS = [
     ".mqb",
     ".tex",
     ".geom",
+    ".scn", // (Tony Hawk's Proving Ground's scenes: .geom's layout, material block 0x0410)
     ".col",
     ".hkc",
     ".mdl",

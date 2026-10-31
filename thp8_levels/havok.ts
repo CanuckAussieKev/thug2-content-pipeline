@@ -528,6 +528,11 @@ export function readCollision(
             case "hkStorageMeshShape":
                 meshTriangles(pf, s, m, material, out, owner, warnings);
                 return;
+            case "hkNxStorageExtendedMeshShape":
+                extendedMeshTriangles(pf, s, m, material, out, owner, warnings, (child, t, word) =>
+                    walk(child, t, word, out, owner),
+                );
+                return;
             default:
                 warnings.push(`shape ${c} left out`);
         }
@@ -614,5 +619,120 @@ function meshTriangles(
                 owner,
             });
         }
+    }
+}
+
+// --- Tony Hawk's Proving Ground's collision (Havok 4.6) ------------------------------------------------------------
+//
+// THPG's packfiles ("Havok-4.6.0-r1") hold the same tree of fixed rigid bodies, but a MOPP's child is an
+// hkNxStorageExtendedMeshShape : hkExtendedMeshShape: its subparts' own pointers (vertexBase, indexBase,
+// materialIndexBase, materialBase - runtime only, not serialised) are filled from the storages that follow it:
+//   trianglesSubparts[k] (hkExtendedMeshShapeTrianglesSubpart: counts, strides, stridingType 1 = 16-bit / 2 = 32-bit
+//     indices, flipAlternateTriangles, materialIndexStridingType 1 = 8-bit / 2 = 16-bit) reads meshstorage[k]
+//     (hkNxStorageExtendedMeshShapeMeshSubpartStorage: vertices as float4s, indices16 / indices32,
+//     materialIndices / materialIndices16, materials - hkNxMeshMaterial {filterInfo, nodeInfo, friction});
+//   shapesSubparts[k] (hkExtendedMeshShapeShapesSubpart: a transform when offsetSet / rotationSet) reads
+//     shapestorage[k] (hkNxStorageExtendedMeshShapeShapeSubpartStorage: the convex shapes, their material indices,
+//     materials).
+// When trianglesSubparts is empty, the one inline embeddedTrianglesSubpart reads meshstorage[0]. A triangle's word is
+// its material's filterInfo (terrain << 16 | face flags, as THP8's).
+function extendedMeshTriangles(
+    pf: Packfile,
+    s: Ptr,
+    m: Mat,
+    material: number,
+    out: HkBody,
+    owner: number,
+    warnings: string[],
+    walk: (child: Ptr | null, m: Mat, material: number) => void,
+): void {
+    const c = "hkNxStorageExtendedMeshShape";
+    const ts = "hkExtendedMeshShapeTrianglesSubpart";
+    const ss = "hkExtendedMeshShapeShapesSubpart";
+    const sub = "hkExtendedMeshShapeSubpart";
+    const ms = "hkNxStorageExtendedMeshShapeMeshSubpartStorage";
+    const shs = "hkNxStorageExtendedMeshShapeShapeSubpartStorage";
+    const scale = pf.floats(s, pf.member(c, "scaling").offset, 3);
+    const [tris, ntris] = pf.array(s, c, "trianglesSubparts");
+    const [storage, nstorage] = pf.array(s, c, "meshstorage");
+    const tsize = pf.classes.get(ts)!.size;
+    const subparts: Ptr[] = [];
+    for (let k = 0; k < ntris; k++) subparts.push(pf.at(tris!, tsize * k));
+    if (!ntris && nstorage === 1) subparts.push(pf.at(s, pf.member(c, "embeddedTrianglesSubpart").offset));
+    if (subparts.length !== nstorage)
+        throw new FormatError(`${pf.name}: ${subparts.length} triangle subparts, ${nstorage} storages`);
+    // (a subpart's material word: its storage's materials by the per-item index)
+    const materialWord = (part: Ptr, st: Ptr, cls: string, i: number): number => {
+        const [mats, nmats] = pf.array(st, cls, "materials");
+        if (!nmats) return material;
+        const mtype = pf.u8(part, pf.member(sub, "materialIndexStridingType").offset); // 1: 8-bit, 2: 16-bit
+        const mstride = pf.int(part, sub, "materialIndexStriding") || (mtype === 2 ? 2 : 1);
+        const matStride = pf.int(part, sub, "materialStriding") || (pf.classes.get("hkNxMeshMaterial")?.size ?? 12);
+        const [mi8, nmi8] = pf.array(st, cls, "materialIndices");
+        const [mi16, nmi16] = pf.array(st, cls, "materialIndices16");
+        let mi = 0;
+        if (mtype === 1 && mi8 && i * mstride < nmi8) mi = pf.u8(mi8, i * mstride);
+        else if (mtype === 2 && mi16 && (i * mstride) / 2 < nmi16) mi = pf.u16(mi16, i * mstride);
+        if (mi >= nmats) {
+            warnings.push(`material index ${mi} of ${nmats}`);
+            return material;
+        }
+        return pf.u32(mats!, mi * matStride);
+    };
+    subparts.forEach((part, k) => {
+        const st = pf.field(storage!, 4 * k)!;
+        const vstride = pf.int(part, ts, "vertexStriding") || 16;
+        const nv = pf.int(part, ts, "numVertices");
+        const istride = pf.int(part, ts, "indexStriding");
+        const ntri = pf.int(part, ts, "numTriangleShapes");
+        const itype = pf.u8(part, pf.member(ts, "stridingType").offset); // 1: 16-bit indices, 2: 32-bit
+        const flip = pf.u8(part, pf.member(ts, "flipAlternateTriangles").offset) !== 0;
+        const [verts, vcount] = pf.array(st, ms, "vertices"); // float4s
+        const [i16, n16] = pf.array(st, ms, "indices16");
+        const [i32, n32] = pf.array(st, ms, "indices32");
+        if (vstride < 12 || (nv && (nv - 1) * vstride + 12 > vcount * 16)) {
+            throw new FormatError(`${pf.name}: subpart of ${nv} vertices (stride ${vstride}), ${vcount} float4s`);
+        }
+        const vertex = (i: number): number[] => {
+            if (i >= nv) throw new FormatError(`${pf.name}: vertex ${i} of ${nv}`);
+            const p = pf.floats(verts!, i * vstride, 3);
+            return apply(m, [p[0]! * scale[0]!, p[1]! * scale[1]!, p[2]! * scale[2]!]);
+        };
+        const index = (t: number, j: number): number => {
+            if (itype === 1) {
+                if (!i16 || (t * istride) / 2 + j >= n16) throw new FormatError(`${pf.name}: index past indices16`);
+                return pf.u16(i16, t * istride + 2 * j);
+            }
+            if (!i32 || (t * istride) / 4 + j >= n32) throw new FormatError(`${pf.name}: index past indices32`);
+            return pf.u32(i32, t * istride + 4 * j);
+        };
+        for (let t = 0; t < ntri; t++) {
+            const [a, b, cc] = [index(t, 0), index(t, 1), index(t, 2)];
+            // (a strip's every other triangle turned back, when the subpart says so)
+            const [p, q] = flip && t % 2 ? [cc, b] : [b, cc];
+            out.triangles.push({
+                a: vertex(a),
+                b: vertex(p),
+                c: vertex(q),
+                material: materialWord(part, st, ms, t),
+                owner,
+            });
+        }
+    });
+    // the convex shapes' subparts (boxes and the like, placed by their subpart's transform)
+    const [shapes, nshapes] = pf.array(s, c, "shapesSubparts");
+    const [sstorage, nsstorage] = pf.array(s, c, "shapestorage");
+    if (nshapes !== nsstorage)
+        throw new FormatError(`${pf.name}: ${nshapes} shape subparts, ${nsstorage} shape storages`);
+    const ssize = pf.classes.get(ss)?.size ?? 128;
+    for (let k = 0; k < nshapes; k++) {
+        const part = pf.at(shapes!, ssize * k);
+        const st = pf.field(sstorage!, 4 * k)!;
+        const moved =
+            pf.u8(part, pf.member(ss, "offsetSet").offset) !== 0 ||
+            pf.u8(part, pf.member(ss, "rotationSet").offset) !== 0;
+        const t = moved ? compose(m, transformAt(pf, part, pf.member(ss, "transform").offset)) : m;
+        const [kids, nkids] = pf.array(st, shs, "shapes");
+        for (let i = 0; i < nkids; i++) walk(pf.field(kids!, 4 * i), t, materialWord(part, st, shs, i));
     }
 }

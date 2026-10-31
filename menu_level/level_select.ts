@@ -1,5 +1,5 @@
 // NOT ORIGINAL - the level select in sections, one per game, for make_menu_level.ts's data overlay:
-//   - Up / Down switch between the games (THUG2, then THUG1, THPS4, THPS3, THPS2, THAW, THP8 when converted); Left /
+//   - Up / Down switch between the games (THUG2, then THUG1, THPS4, THPS3, THPS2, THAW, THP8, THPG when converted); Left /
 //     Right move through the section's levels as before. A header above the signs names the section; the helper text
 //     says "Up/Down = Game". Classic mode (its brackets use Up / Down) keeps the game's own list.
 //   - every level we add gets a star (the game's level_dot) at its real-world place on the globe, which turns to it
@@ -499,6 +499,24 @@ export const THP8_LEVELS: ReadonlyMap<string, TableEntry> = new Map<string, Tabl
     ["z_bedroom", { text: "BEDROOM", icon: "bed", place: "THP8's bedroom (no place)", location: null, misc: "P8" }],
 ]);
 
+// Tony Hawk's Proving Ground's levels (tools/pipeline/thpg_levels' manifest, by folder): its network levels in its own
+// order (qb.pak's online_level_select_menu_level_info: WORLD - the three cities and their bridges -, DC, BALTIMORE,
+// PHILLY, the SKATE LOUNGE; the signs' text is THPG's), then the bedroom (MISCELLANEOUS). Stars on the real cities.
+export const THPG_LEVELS: ReadonlyMap<string, TableEntry> = new Map<string, TableEntry>([
+    [
+        "net_wholeworld",
+        { text: "WORLD", icon: "foldedmap", place: "THPG's Philadelphia, Washington DC and Baltimore", location: null },
+    ],
+    ["net_dc", { text: "WASHINGTON DC", icon: "obelisk", place: "Washington DC", location: [-77.04, 38.89] }],
+    ["net_baltimore", { text: "BALTIMORE", icon: "crab", place: "Baltimore", location: [-76.61, 39.27] }],
+    ["net_philly", { text: "PHILADELPHIA", icon: "libertybell", place: "Philadelphia", location: [-75.17, 39.95] }],
+    ["net_crib", { text: "SKATE LOUNGE", icon: "sofa", place: "THPG's skate lounge (no place)", location: null }],
+    [
+        "z_bedroom",
+        { text: "BEDROOM", icon: "alarmclock", place: "THPG's bedroom (no place)", location: null, misc: "PG" },
+    ],
+]);
+
 // THUG2's own list (level_select_menu_level_info) with what make_menu_level adds to it: SKATE SHOP and TEST LEVEL
 // get signs of their own and no star (they were TRAINING's sign and star).
 // They go to the MISCELLANEOUS section (level_num as make_menu_level's SKATESHOP_SIGN_LEVEL / TESTLEVEL_SIGN_LEVEL).
@@ -533,6 +551,7 @@ export const MISC_ORDER: readonly string[] = [
     "THUG2:SKATE SHOP",
     "THUG2:TEST LEVEL",
     "THP8:z_bedroom",
+    "THPG:z_bedroom",
     "THP8:z_skateshop",
     "THP8:z_training",
     "THPS3:SkateShop",
@@ -556,6 +575,7 @@ export function sections(
         thps2?: Manifest | undefined;
         thaw?: Manifest | undefined;
         thp8?: Manifest | undefined;
+        thpg?: Manifest | undefined;
     } = {},
 ): Section[] {
     const out: Section[] = [["thug2", "TONY HAWK'S UNDERGROUND 2", "level_select_menu_level_info", null]];
@@ -606,6 +626,14 @@ export function sections(
             "TONY HAWK'S PROJECT 8",
             "level_select_menu_thp8_level_info",
             manifestLevels(games.thp8, THP8_LEVELS, "THP8"),
+        ]);
+    }
+    if (games.thpg) {
+        out.push([
+            "thpg",
+            "TONY HAWK'S PROVING GROUND",
+            "level_select_menu_thpg_level_info",
+            manifestLevels(games.thpg, THPG_LEVELS, "THPG"),
         ]);
     }
     // The skate shops, tutorials and test levels of all the games go to one last section instead.
