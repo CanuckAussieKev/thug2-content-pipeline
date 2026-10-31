@@ -83,7 +83,7 @@ import { mainMenuScripts, PrxScripts } from "./main_menu.ts"; // (the standard m
 import * as scenicArt from "./scenic_art.ts"; // (pictures of the levels themselves, filtered, in place of the crops)
 
 const USAGE =
-    "usage: make_menu_level.ts [--game GAME] [--out OUT] [--ns NS] [--hd-ui 2|4] [--hd-ui-model M] [--frontend-fonts DIR] [--scenic-style a|b|c|off]";
+    "usage: make_menu_level.ts [--game GAME] [--out OUT] [--ns NS] [--hd-ui 2|4] [--hd-ui-model M] [--frontend-fonts DIR] [--scenic-style a|b|c|off] [--art-choices FILE]";
 
 // Anteara Mod (the anteara-mod repository, the decomp's submodule tools/anteara) is optional: without it the
 // overlay is made without its anteara\ folder. (AntearaMod: the part of its anteara.ts this uses.)
@@ -888,6 +888,7 @@ async function main(): Promise<number> {
             "hd-ui-model": { type: "string" },
             "hd-ui-globe-ai": { type: "boolean" }, // the level select globe's tiles upscaled, not redrawn from map data
             "hd-ui-loading-model": { type: "string" }, // the loading screens only (default: the same)
+            "art-choices": { type: "string" }, // the level select's picture choices (thug2-decomp-art.txt: Q / E), baked in as the art
             "scenic-style": { type: "string", default: "a" }, // the scenic art's filter (scenic_art.ts STYLES), off: the crops
             "frontend-fonts": { type: "string" }, // a folder of .ttf files for the new front end (frontend\fonts)
             // where the ported games are, for their loading pictures (default C:\Games\<GAME>; loading_art.ts)
@@ -999,18 +1000,30 @@ async function main(): Promise<number> {
         // with a chosen capture in the cache; its HD version is made from the capture (kept out of the hd_ui upscaling).
         const frontArtMap = new Map(frontArt?.art ?? []);
         const scenicHd = new Map<string, Buffer>();
+        const artVariants = new Map<string, string[]>();
+        // The user's picture choices from the level select (Q / E): the game folder's file unless --art-choices names one.
+        const choicesFile = values["art-choices"] ?? path.join(game, "thug2-decomp-art.txt");
+        const artChoices = fs.existsSync(choicesFile)
+            ? scenicArt.parseArtChoices(fs.readFileSync(choicesFile, "utf-8"))
+            : new Map<string, number>();
+        if (artChoices.size) print(`scenic art: ${artChoices.size} picture choices from ${choicesFile}`);
         if (ported && scenicStyle !== "off") {
             const loads = new Set(ported.levels.map((e) => `load_${portedLevels.loadOf(e)}`.toLowerCase()));
             for (const g of loadingArtGames.GAMES) {
                 if (!fs.existsSync(scenicArt.spotsFile(g))) continue;
-                const scenic = scenicArt.buildScenicArt(g, loads, scenicStyle as scenicArt.Style, (load) =>
-                    frontendArt.frontArtName(g, load),
+                const scenic = scenicArt.buildScenicArt(
+                    g,
+                    loads,
+                    scenicStyle as scenicArt.Style,
+                    (load) => frontendArt.frontArtName(g, load),
+                    artChoices,
                 );
                 fs.mkdirSync(path.join(out, "images"), { recursive: true });
                 for (const [name, data] of scenic.images)
                     fs.writeFileSync(path.join(out, "images", `${name}.img.xbx`), data);
                 for (const [load, name] of scenic.art) frontArtMap.set(load, name);
                 for (const [name, data] of scenic.hd) scenicHd.set(name, data);
+                for (const [load, names] of scenic.variants) artVariants.set(load, names);
                 for (const line of scenic.lines) print(`scenic art: ${line}`);
             }
             // THUG2's own levels too (the front end's art only; the real loading screens stay THUG2's)
@@ -1020,12 +1033,14 @@ async function main(): Promise<number> {
                     null,
                     scenicStyle as scenicArt.Style,
                     (load) => `frontend_art_thug2_${load.replace(/^load_/, "")}`,
+                    artChoices,
                 );
                 fs.mkdirSync(path.join(out, "images"), { recursive: true });
                 for (const [name, data] of scenic.images)
                     fs.writeFileSync(path.join(out, "images", `${name}.img.xbx`), data);
                 for (const [load, name] of scenic.art) frontArtMap.set(load, name);
                 for (const [name, data] of scenic.hd) scenicHd.set(name, data);
+                for (const [load, names] of scenic.variants) artVariants.set(load, names);
                 for (const line of scenic.lines) print(`scenic art: ${line}`);
             }
         }
@@ -1078,7 +1093,13 @@ async function main(): Promise<number> {
         const selectText = overlaySelect(select);
         write(selectText, "scripts\\game\\menu\\gamemenu_levelselect.qb");
         // The DLL's new front end ([features] new_frontend - src/game/front/new_frontend.h): the same sections as data.
-        const feSections = frontendLevels.frontendSections(sectionList, selectText, levelsWithShop, frontArtMap);
+        const feSections = frontendLevels.frontendSections(
+            sectionList,
+            selectText,
+            levelsWithShop,
+            frontArtMap,
+            artVariants,
+        );
         const feFile = pyJoin(out, frontendLevels.FRONTEND_LEVELS);
         fs.mkdirSync(path.dirname(feFile), { recursive: true });
         fs.writeFileSync(feFile, frontendLevels.frontendJson(feSections));

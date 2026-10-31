@@ -58,6 +58,7 @@ export interface FrontendLevel {
     name: string;
     load: string;
     art: string;
+    art_variants?: string[]; // the level select's pictures to choose from (Q / E), [0] is `art` (scenic_art.ts)
     level_num: string | number;
     flag: string;
     seen_flag?: string; // (outside a career the game's level select locks by it, and hides nothing)
@@ -160,6 +161,7 @@ export function frontendSections(
     selectText: string,
     levelsText: string,
     frontArt: ReadonlyMap<string, string> = new Map(),
+    artVariants: ReadonlyMap<string, readonly string[]> = new Map(), // load script (lower case) -> picture names
 ): FrontendSection[] {
     const screens = loadingScreens(levelsText);
     const out: FrontendSection[] = [];
@@ -191,6 +193,8 @@ export function frontendSections(
             const tag = field(entry, "game_tag");
             if (tag) level.game_tag = tag;
             if (isGeneric) level.generic_art = true;
+            const variants = artVariants.get(load.toLowerCase());
+            if (variants && variants.length > 1 && variants[0] === art) level.art_variants = [...variants];
             levels.push(level);
         }
         if (levels.length) out.push({ id, tab: style.tab, title, colour: style.colour, levels });

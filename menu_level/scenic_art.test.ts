@@ -19,9 +19,15 @@ import {
     halftone,
     hash01,
     levelArt,
+    parseArtChoices,
+    pickVariants,
     STYLES,
+    STYLES_PREVIOUS,
     type Style,
+    variantName,
+    viewDistance,
 } from "./scenic_art.ts";
+import type { Candidate } from "./scenic_spots.ts";
 
 // A 16:9 test picture: a colour gradient with a bright disc and a dark bar (edges for the outlines).
 function scene(w: number, h: number): { width: number; height: number; bgra: Buffer } {
@@ -44,6 +50,12 @@ const sha = (b: Buffer): string => createHash("sha256").update(b).digest("hex").
 
 // The pinned outputs: change a style's parameters or code and these change (re-pin after looking at the sheets).
 const PINNED: Record<Style, string> = {
+    a: "adcb76f079403a7f",
+    b: "c7b9953718dea344",
+    c: "774c37dd5b6cab70",
+};
+// The styles before they were toned down a notch (2026-10-31): kept for the sheets' comparison rows.
+const PINNED_PREVIOUS: Record<Style, string> = {
     a: "83d9767759091fd3",
     b: "865926b251bb49e4",
     c: "97f645ae3bb51cac",
@@ -127,4 +139,77 @@ test("contact sheet: tiles on the ink ground with labels", () => {
     assert.equal(sheet.width, 2 * 64 + 3 * 12);
     assert.equal(sheet.height, 2 * (36 + 26) + 3 * 12);
     assert.equal(sheet.bgra[0], 0x0a);
+});
+
+test("the previous styles are kept as they were; the new ones are a notch lighter", () => {
+    const pic = scene(160, 90);
+    for (const style of Object.keys(STYLES) as Style[]) {
+        const old = applyStyle(pic, STYLES_PREVIOUS[style], GAME_COLOURS.thps3!);
+        assert.equal(sha(old.bgra), PINNED_PREVIOUS[style], `previous style ${style}`);
+        assert.ok(STYLES[style].desaturate > 0 && STYLES_PREVIOUS[style].desaturate === 0);
+        const grain = (p: { grain: number }): number => p.grain;
+        assert.ok(
+            grain(STYLES[style] as { grain: number }) < grain(STYLES_PREVIOUS[style] as { grain: number }),
+            `${style}: less grain`,
+        );
+    }
+    const a = STYLES.a as { period: number; inkMax: number };
+    const was = STYLES_PREVIOUS.a as { period: number; inkMax: number };
+    assert.ok(a.period < was.period && a.inkMax < was.inkMax, "smaller dots, lighter coverage");
+});
+
+const cand = (id: number, x: number, heading: number, score: number): Candidate => ({
+    id,
+    pose: { pos: [x, 400, 0], heading, pitch: 30 },
+    target: [x, 0, 500],
+    score: { score } as Candidate["score"],
+    ground: null,
+});
+
+test("pickVariants: the chosen picture first, then the best-scoring, most different views", () => {
+    const entry = {
+        chosen: 2,
+        candidates: [
+            cand(0, 0, 0, 1.7),
+            cand(1, 50, 5, 1.69), // (almost the same view as #0 and #2)
+            cand(2, 20, 2, 1.5),
+            cand(3, 4000, 180, 1.6),
+            cand(4, -4000, 90, 1.4),
+            cand(5, 100, 270, 1.3),
+        ],
+    };
+    const all = (): boolean => true;
+    const ids = pickVariants(entry, all);
+    assert.equal(ids.length, 4);
+    assert.equal(ids[0], 2);
+    assert.equal(new Set(ids).size, 4);
+    assert.ok(ids.includes(3) && ids.includes(4), "the far-off views are taken before the near duplicates");
+    assert.deepEqual(pickVariants(entry, all), ids, "deterministic");
+    assert.ok(
+        viewDistance(entry.candidates[0]!, entry.candidates[3]!) >
+            viewDistance(entry.candidates[0]!, entry.candidates[1]!),
+    );
+    // fewer captures: what there is; none: nothing; the chosen one missing is left to the caller (it is not first)
+    assert.deepEqual(
+        pickVariants(entry, (id) => id === 3 || id === 2),
+        [2, 3],
+    );
+    assert.deepEqual(
+        pickVariants(entry, () => false),
+        [],
+    );
+    assert.notEqual(pickVariants(entry, (id) => id !== 2)[0], 2);
+    assert.equal(variantName("frontend_art_thps3_foun", 0), "frontend_art_thps3_foun");
+    assert.equal(variantName("frontend_art_thps3_foun", 2), "frontend_art_thps3_foun_v2");
+});
+
+test("the choices file: load script and number per line, comments and junk skipped", () => {
+    const m = parseArtChoices("# picks\r\nLoad_Foun 2\r\nload_can   3\n\nbad\nload_x -1\nload_y 1000\nload_z two\n");
+    assert.deepEqual(
+        [...m],
+        [
+            ["load_foun", 2],
+            ["load_can", 3],
+        ],
+    );
 });

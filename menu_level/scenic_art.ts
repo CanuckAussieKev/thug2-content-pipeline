@@ -31,7 +31,7 @@ import { parseCli } from "../lib/cli.ts";
 import { isMain, print, runMain } from "../lib/py.ts";
 import { nativeImg, type Picture, readPng, resize, toPng } from "./loading_art.ts";
 import { capturePath } from "./scenic_capture.ts";
-import { readSpots, type SpotsFile } from "./scenic_spots.ts";
+import { type Candidate, type LevelSpots, readSpots, type SpotsFile } from "./scenic_spots.ts";
 
 export const ART_W = 640;
 export const ART_H = 360;
@@ -59,6 +59,7 @@ export const GAME_COLOURS: Readonly<Record<string, string>> = {
 // --- the filters' parameters (all sizes in pixels of the 640-wide picture) ------------------------------------------
 
 export interface DuotoneParams {
+    desaturate: number; // how far the game's colour is pulled towards its own grey (0-1): more of the level shows through
     equalise: number; // how much of the histogram equalisation (0-1)
     kind: "duotone";
     black: number; // levels: the share of pixels clipped to black / white
@@ -73,6 +74,7 @@ export interface DuotoneParams {
     seed: number;
 }
 export interface ScreenprintParams {
+    desaturate: number;
     equalise: number; // how much of the histogram equalisation (0-1)
     kind: "screenprint";
     black: number;
@@ -87,6 +89,7 @@ export interface ScreenprintParams {
     seed: number;
 }
 export interface GradedParams {
+    desaturate: number;
     equalise: number; // how much of the histogram equalisation (0-1)
     kind: "graded";
     black: number;
@@ -102,9 +105,12 @@ export interface GradedParams {
 export type StyleParams = DuotoneParams | ScreenprintParams | GradedParams;
 export type Style = "a" | "b" | "c";
 
-export const STYLES: Readonly<Record<Style, StyleParams>> = {
+// The styles as they were before the user asked for them toned down a notch (2026-10-31); kept for the comparison rows
+// of the sheets.
+export const STYLES_PREVIOUS: Readonly<Record<Style, StyleParams>> = {
     a: {
         kind: "duotone",
+        desaturate: 0,
         equalise: 0.5,
         black: 0.01,
         white: 0.005,
@@ -119,6 +125,7 @@ export const STYLES: Readonly<Record<Style, StyleParams>> = {
     },
     b: {
         kind: "screenprint",
+        desaturate: 0,
         equalise: 0.5,
         black: 0.01,
         white: 0.01,
@@ -133,6 +140,7 @@ export const STYLES: Readonly<Record<Style, StyleParams>> = {
     },
     c: {
         kind: "graded",
+        desaturate: 0,
         equalise: 0.3,
         black: 0.005,
         white: 0.005,
@@ -142,6 +150,52 @@ export const STYLES: Readonly<Record<Style, StyleParams>> = {
         grain: 0.07,
         grainSize: 0.9,
         vignette: 0.35,
+        seed: 7,
+    },
+};
+export const STYLES: Readonly<Record<Style, StyleParams>> = {
+    a: {
+        kind: "duotone",
+        desaturate: 0.2,
+        equalise: 0.4,
+        black: 0.01,
+        white: 0.005,
+        gamma: 1.05,
+        mid: 0.55,
+        period: 4.0,
+        inkFrom: 0.34,
+        inkMax: 0.6,
+        colourFrom: 0.78,
+        grain: 0.04,
+        seed: 3,
+    },
+    b: {
+        kind: "screenprint",
+        desaturate: 0.2,
+        equalise: 0.4,
+        black: 0.01,
+        white: 0.01,
+        blur: 1.7,
+        levels: [0.24, 0.48, 0.74],
+        darkColour: 0.46,
+        edge: 0.17,
+        edgeBlur: 0.8,
+        offset: [1.0, 0.6],
+        grain: 0.035,
+        seed: 5,
+    },
+    c: {
+        kind: "graded",
+        desaturate: 0.2,
+        equalise: 0.25,
+        black: 0.005,
+        white: 0.005,
+        saturation: 0.36,
+        contrast: 0.52,
+        tint: 0.42,
+        grain: 0.05,
+        grainSize: 0.9,
+        vignette: 0.3,
         seed: 7,
     },
 };
@@ -429,9 +483,15 @@ function graded(p: Picture, s: GradedParams, colour: Rgb): Picture {
     return { width: w, height: h, bgra: out };
 }
 
+// `colour` pulled `amount` of the way to the grey of the same brightness.
+export function desaturated(colour: Rgb, amount: number): Rgb {
+    const grey = 0.299 * colour[0] + 0.587 * colour[1] + 0.114 * colour[2];
+    return mix(colour, [grey, grey, grey], amount);
+}
+
 // A style applied to a picture in the game's colour.
 export function applyStyle(p: Picture, params: StyleParams, colour: string): Picture {
-    const c = hex(colour);
+    const c = desaturated(hex(colour), params.desaturate);
     if (params.kind === "duotone") return duotone(p, params, c);
     if (params.kind === "screenprint") return screenprint(p, params, c);
     return graded(p, params, c);
@@ -473,11 +533,69 @@ export function levelArt(
 
 export const spotsFile = (game: string): string => path.join(import.meta.dirname, "scenic_art", `${game}.json`);
 
+// --- the level select's pictures to choose from (the user's request, 2026-10-31: 4 per level, Q / E in the level select) ---
+
+export const VARIANT_COUNT = 4;
+
+// How different two candidates' views are: the camera's distance (in units of ~1000) and the heading's turn (in 45s),
+// the target's distance too. Candidates are kept apart by scenic_spots.ts already; this orders the rest.
+export function viewDistance(a: Candidate, b: Candidate): number {
+    const d = (p: readonly number[], q: readonly number[]): number =>
+        Math.hypot(p[0]! - q[0]!, p[1]! - q[1]!, p[2]! - q[2]!);
+    const turn = Math.abs(((a.pose.heading - b.pose.heading + 540) % 360) - 180);
+    return d(a.pose.pos, b.pose.pos) / 1000 + turn / 45 + d(a.target, b.target) / 1000;
+}
+
+// The candidate ids of a level's pictures, `count` of them: the chosen one first (today's picture), then greedily the
+// candidate with the best score plus how different its view is from those already taken. Only ids `available` (captured).
+// Fewer than `count` when the level has fewer captures. Deterministic (ties go to the lower id).
+export function pickVariants(entry: LevelSpots, available: (id: number) => boolean, count = VARIANT_COUNT): number[] {
+    const pool = entry.candidates.filter((c) => available(c.id));
+    const picked: Candidate[] = [];
+    const first =
+        pool.find((c) => c.id === entry.chosen) ??
+        pool.slice().sort((a, b) => b.score.score - a.score.score || a.id - b.id)[0];
+    if (!first) return [];
+    picked.push(first);
+    while (picked.length < count) {
+        let best: Candidate | undefined;
+        let bestValue = -Infinity;
+        for (const c of pool) {
+            if (picked.includes(c)) continue;
+            const apart = Math.min(...picked.map((p) => viewDistance(c, p)));
+            const value = c.score.score + 0.35 * Math.min(apart, 4);
+            if (value > bestValue + 1e-9) {
+                best = c;
+                bestValue = value;
+            }
+        }
+        if (!best) break;
+        picked.push(best);
+    }
+    return picked.map((c) => c.id);
+}
+
+export const variantName = (name: string, n: number): string => (n === 0 ? name : `${name}_v${n}`);
+
 export interface BuiltScenicArt {
     images: Map<string, Buffer>; // art name -> images\<name>.img.xbx (640 x 360)
     hd: Map<string, Buffer>; // images\<name>.img.xbx (relative) -> the HD file (x4, for hd_ui)
     art: Map<string, string>; // load script (lower case) -> art name
+    variants: Map<string, string[]>; // load script -> the names of its pictures to choose from ([0] is `art`; absent: one picture)
+    baked: string[]; // the loads whose picture is the user's choice (art-choices file), not today's
     lines: string[];
+}
+
+// thug2-decomp-art.txt (the level select's Q / E choices): `<load script> <number from 0>` lines, '#' comments.
+export function parseArtChoices(text: string): Map<string, number> {
+    const out = new Map<string, number>();
+    for (const raw of text.split(/\r?\n/)) {
+        const line = raw.trim();
+        if (!line || line.startsWith("#")) continue;
+        const m = /^(\S+)\s+(\d{1,3})$/.exec(line);
+        if (m) out.set(m[1]!.toLowerCase(), Number(m[2]));
+    }
+    return out;
 }
 
 // The scenic art of `game`'s levels in `loads` (lower-case load scripts) that have a chosen capture in the cache.
@@ -487,8 +605,16 @@ export function buildScenicArt(
     loads: ReadonlySet<string> | null, // (null: every level of the spots file - THUG2's own, which Levels.qb lists itself)
     style: Style,
     artName: (load: string) => string,
+    choices: ReadonlyMap<string, number> = new Map(), // the user's picks (parseArtChoices): baked in as the level's art
 ): BuiltScenicArt {
-    const built: BuiltScenicArt = { images: new Map(), hd: new Map(), art: new Map(), lines: [] };
+    const built: BuiltScenicArt = {
+        images: new Map(),
+        hd: new Map(),
+        art: new Map(),
+        variants: new Map(),
+        baked: [],
+        lines: [],
+    };
     const file = spotsFile(game);
     if (!fs.existsSync(file)) return built;
     const spots = readSpots(file);
@@ -497,20 +623,38 @@ export function buildScenicArt(
     for (const [level, entry] of Object.entries(spots.levels).sort(([a], [b]) => (a < b ? -1 : 1))) {
         const load = (entry.load ?? `load_${level}`).toLowerCase();
         if ((loads !== null && !loads.has(load)) || entry.chosen === undefined) continue;
-        const shot = capturePath(game, level, entry.chosen);
-        if (!fs.existsSync(shot)) {
+        const ids = pickVariants(entry, (id) => fs.existsSync(capturePath(game, level, id)));
+        if (!ids.length || ids[0] !== entry.chosen) {
             missing.push(level);
             continue;
         }
-        const art = levelArt(readPng(fs.readFileSync(shot)), STYLES[style], GAME_COLOURS[game] ?? "#C9CBD0");
         const name = artName(load);
-        built.images.set(name, art.nativeFile);
-        built.hd.set(path.join("images", `${name}.img.xbx`), art.hdFile);
+        const colour = GAME_COLOURS[game] ?? "#C9CBD0";
+        const pick = choices.get(load) ?? 0;
+        if (pick > 0 && pick < ids.length) {
+            // the user's pick becomes the level's picture (and its loading screen); the other pictures are dropped
+            const art = levelArt(readPng(fs.readFileSync(capturePath(game, level, ids[pick]!))), STYLES[style], colour);
+            built.images.set(name, art.nativeFile);
+            built.hd.set(path.join("images", `${name}.img.xbx`), art.hdFile);
+            built.baked.push(load);
+        } else {
+            const names: string[] = [];
+            ids.forEach((id, n) => {
+                const art = levelArt(readPng(fs.readFileSync(capturePath(game, level, id))), STYLES[style], colour);
+                const picture = variantName(name, n);
+                built.images.set(picture, art.nativeFile);
+                built.hd.set(path.join("images", `${picture}.img.xbx`), art.hdFile);
+                names.push(picture);
+            });
+            if (names.length > 1) built.variants.set(load, names);
+        }
         built.art.set(load, name);
         made += 1;
     }
     built.lines.push(
-        `${game}: ${made} scenic pictures (style ${style}, ${STYLE_NAMES[style]})` +
+        `${game}: ${made} scenic levels (style ${style}, ${STYLE_NAMES[style]}; ${built.variants.size} with several pictures` +
+            (built.baked.length ? `, ${built.baked.length} set to the user's choice` : "") +
+            `)` +
             (missing.length
                 ? `; no capture in the cache for ${missing.join(", ")} (scenic_capture.ts): their crops kept`
                 : ""),
@@ -662,13 +806,88 @@ function sheets(spots: SpotsFile, out: string): string[] {
     return written;
 }
 
-const USAGE = "usage: scenic_art.ts sheets <out folder> | check [--game thps3] [--spots <json>]";
+// The sheets of the level select's pictures (the user chooses between them with Q / E in the game): per game one PNG with
+// each level's pictures side by side, and one comparison sheet, a row per game: a level's capture raw, in the style as it
+// was and in the toned-down one. (The pictures are made at the native size here - the style's sizes are in 640-wide
+// pixels, so the look is the build's - to keep the 100 or so sheets' pictures quick.)
+export function variantSheets(games: readonly string[], out: string, style: Style = "a"): string[] {
+    const written: string[] = [];
+    const compare: { picture: Picture; label: string }[] = [];
+    const tileW = 400;
+    const tileH = 225;
+    for (const game of games) {
+        const file = spotsFile(game);
+        if (!fs.existsSync(file)) continue;
+        const spots = readSpots(file);
+        const colour = GAME_COLOURS[game] ?? "#C9CBD0";
+        const tiles: { picture: Picture; label: string }[] = [];
+        let first = true;
+        for (const [level, entry] of Object.entries(spots.levels)) {
+            const ids = pickVariants(entry, (id) => fs.existsSync(capturePath(game, level, id)));
+            ids.forEach((id, n) => {
+                const capture = readPng(fs.readFileSync(capturePath(game, level, id)));
+                const small = fitCapture(capture, ART_W, ART_H);
+                tiles.push({
+                    picture: resize(applyStyle(small, STYLES[style], colour), tileW, tileH),
+                    label: `${level} ${n + 1}/${ids.length}${n === 0 ? " NOW" : ""}`,
+                });
+                if (n === 0 && first) {
+                    first = false;
+                    compare.push(
+                        { picture: resize(small, tileW, tileH), label: `${game} ${level} RAW` },
+                        {
+                            picture: resize(applyStyle(small, STYLES_PREVIOUS[style], colour), tileW, tileH),
+                            label: "BEFORE",
+                        },
+                        {
+                            picture: resize(applyStyle(small, STYLES[style], colour), tileW, tileH),
+                            label: "TONED DOWN",
+                        },
+                    );
+                }
+            });
+            // (a level with fewer than four pictures leaves its row short: pad so the rows stay whole)
+            for (let pad = ids.length; pad < VARIANT_COUNT; pad++)
+                tiles.push({
+                    picture: { width: tileW, height: tileH, bgra: Buffer.alloc(tileW * tileH * 4, 0x0a) },
+                    label: "",
+                });
+        }
+        if (!tiles.length) continue;
+        const sheet = path.join(out, `variants_${game}.png`);
+        fs.writeFileSync(sheet, toPng(contactSheet(tiles, VARIANT_COUNT, tileW, tileH)));
+        written.push(sheet);
+    }
+    if (compare.length) {
+        const sheet = path.join(out, "style_before_after.png");
+        fs.writeFileSync(sheet, toPng(contactSheet(compare, 3, tileW, tileH)));
+        written.push(sheet);
+    }
+    return written;
+}
+
+const USAGE =
+    "usage: scenic_art.ts sheets <out folder> | variants <out folder> [--style a|b|c] | check [--game thps3] [--spots <json>]";
 
 function main(): number {
     const { values, positionals } = parseCli(USAGE, {
-        options: { game: { type: "string", default: "thps3" }, spots: { type: "string" } },
+        options: {
+            game: { type: "string", default: "thps3" },
+            spots: { type: "string" },
+            style: { type: "string", default: "a" },
+        },
         allowPositionals: true,
     });
+    if (positionals[0] === "variants" && positionals[1]) {
+        fs.mkdirSync(positionals[1], { recursive: true });
+        for (const file of variantSheets(
+            ["thps2", "thps3", "thps4", "thug1", "thug2", "thaw", "thp8"],
+            positionals[1],
+            values.style as Style,
+        ))
+            print(file);
+        return 0;
+    }
     const spots = readSpots(values.spots ?? spotsFile(values.game));
     if (positionals[0] === "sheets" && positionals[1]) {
         fs.mkdirSync(positionals[1], { recursive: true });
