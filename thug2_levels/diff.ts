@@ -16,13 +16,13 @@
 // network games). Values that differ only by float rounding (THUGPRO's compiler) aren't differences (TOLERANCE).
 
 import { crc32 } from "node:zlib";
+import { encode, type Json, type LevelEdits } from "thug2-level-converter-core/compat/hand_edits.ts";
 import { nodeArray } from "thug2-level-converter-core/compat/thugpro_nodes.ts";
 import * as qb from "thug2-level-converter-core/level_port/qb.ts";
 import { Name, type QbValue, Struct, Vector } from "thug2-level-converter-core/level_port/qb.ts";
 import * as thug2Col from "thug2-level-converter-core/level_port/thug2_col.ts";
 import * as thug2Scene from "thug2-level-converter-core/level_port/thug2_scene.ts";
 import { Float } from "thug2-level-converter-core/lib/py.ts";
-import { encode, type Json, type LevelEdits } from "thug2-thug1-level-converter/thug1_levels/hand_edits.ts";
 import {
     type LevelFiles,
     nameKey,
@@ -64,7 +64,7 @@ export interface Entry {
     applicable: boolean; // whether thugpro_apply.ts can apply it
     description: string;
     nodes?: string[]; // the nodes / objects it concerns (all of them)
-    edits?: LevelEdits; // node / collision edits (thug2-thug1-level-converter/thug1_levels/hand_edits.ts's form)
+    edits?: LevelEdits; // node / collision edits (thug2-level-converter-core/compat/hand_edits.ts's form)
     scripts?: ScriptRef[]; // THUGPRO's scripts it needs (by reference)
     replace_scripts?: ScriptRef[]; // scripts of THUG2's level THUGPRO's file replaces (by reference)
     geometry?: GeometryRef[];

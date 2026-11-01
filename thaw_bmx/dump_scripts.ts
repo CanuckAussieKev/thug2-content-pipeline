@@ -17,8 +17,8 @@ import type { Tok } from "thug2-level-converter-core/level_port/script_port.ts";
 import { helpFromHeader } from "thug2-level-converter-core/lib/cli.ts";
 import { resolveInstall } from "thug2-level-converter-core/lib/install.ts";
 import { decodeLatin1, isMain, print, runMain } from "thug2-level-converter-core/lib/py.ts";
-import * as thaw from "thug2-level-converter-core/thaw/thaw.ts";
-import { scriptToks } from "thug2-level-converter-core/thaw/thaw_scripts.ts";
+import * as thaw from "thug2-thaw-level-converter/thaw/thaw.ts";
+import { scriptToks } from "thug2-thaw-level-converter/thaw/thaw_scripts.ts";
 
 const SIMPLE: Readonly<Record<number, string>> = {
     3: "{",

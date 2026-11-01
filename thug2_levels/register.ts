@@ -3,7 +3,7 @@
 // --extract-thugpro`, never by hand except each entry's `enabled`). A difference found by diff.ts becomes part of one
 // entry: entries group the differences of one level by what they are (kind) and what they touch (what), each with its
 // class (parity / visible / single_player / cosmetic / none), a description, the nodes / objects concerned and the
-// data to apply it (`edits` in thug2-thug1-level-converter/thug1_levels/hand_edits.ts's form, THUGPRO's scripts by reference). Every entry is
+// data to apply it (`edits` in thug2-level-converter-core/compat/hand_edits.ts's form, THUGPRO's scripts by reference). Every entry is
 // off (`enabled` false) until the user switches it on; re-extracting keeps each entry's `enabled` (matched by level,
 // kind, what and nodes).
 

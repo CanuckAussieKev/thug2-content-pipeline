@@ -12,7 +12,7 @@ import { checksum } from "thug2-level-converter-core/level_port/qb.ts";
 import { parseCli } from "thug2-level-converter-core/lib/cli.ts";
 import { findCaseless, findInstall } from "thug2-level-converter-core/lib/install.ts";
 import { isMain, print, runMain } from "thug2-level-converter-core/lib/py.ts";
-import { entryData, openPak, unpack } from "thug2-level-converter-core/thp8/thp8.ts";
+import { entryData, openPak, unpack } from "thug2-thp8-level-converter/thp8/thp8.ts";
 import { Pkr } from "thug2-thps2-level-converter/thps2_levels/pkr.ts";
 import { field, structureBlocks } from "./frontend_levels.ts";
 import {

@@ -6,7 +6,7 @@
 //                              bytes kept: qb_write.replaceGlobalArray) and the trigger scripts THUGPRO's file changed;
 //   levels\<L>\<L>_scripts.qb  THUGPRO's scripts the entries need (by reference: read from the THUGPRO install, checked
 //                              by CRC-32) and the level's setup wrapper (THUGPRO's host options' state after loading);
-//   levels\<L>\<L>.col.xbx     the collision with the entries' face / object edits (thug2-thug1-level-converter/thug1_levels/hand_edits.ts's
+//   levels\<L>\<L>.col.xbx     the collision with the entries' face / object edits (thug2-level-converter-core/compat/hand_edits.ts's
 //                              applyColEdits) and THUGPRO's added objects (by reference);
 //   levels\<L>\<L>.scn.xbx     THUGPRO's added sectors (by reference) - only when an entry adds geometry;
 //   scripts\game\Levels.qb     (the overlay's, and Anteara Mod's copy) Level_<L>'s setup_script, when an entry
@@ -22,6 +22,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { crc32 } from "node:zlib";
+import { applyColEdits, applyNodeEdits, type LevelEdits } from "thug2-level-converter-core/compat/hand_edits.ts";
 import { nodeArray } from "thug2-level-converter-core/compat/thugpro_nodes.ts";
 import * as qb from "thug2-level-converter-core/level_port/qb.ts";
 import { Name, type QbValue, Struct } from "thug2-level-converter-core/level_port/qb.ts";
@@ -37,7 +38,6 @@ import { parseCli } from "thug2-level-converter-core/lib/cli.ts";
 import { NEVER_WRITTEN, WORK } from "thug2-level-converter-core/lib/decomp.ts";
 import { findCaseless, resolveInstall } from "thug2-level-converter-core/lib/install.ts";
 import { isMain, print, pyJoin, runMain } from "thug2-level-converter-core/lib/py.ts";
-import { applyColEdits, applyNodeEdits, type LevelEdits } from "thug2-thug1-level-converter/thug1_levels/hand_edits.ts";
 import { type Entry, mergeEdits, type ScriptRef } from "./diff.ts";
 import { loadRegister, type Register } from "./register.ts";
 import { Archives, DEFAULT_GAME, DEFAULT_THUGPRO, LEVELS } from "./sources.ts";

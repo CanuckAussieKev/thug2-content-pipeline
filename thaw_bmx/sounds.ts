@@ -10,7 +10,7 @@
 import * as fs from "node:fs";
 import * as qb from "thug2-level-converter-core/level_port/qb.ts";
 import { Name, type QbValue, Struct } from "thug2-level-converter-core/level_port/qb.ts";
-import * as thaw from "thug2-level-converter-core/thaw/thaw.ts";
+import * as thaw from "thug2-thaw-level-converter/thaw/thaw.ts";
 
 export const ADDRESSES_FILE = "scripts\\game\\sounds\\global_sfx_dat_wpc.qb";
 export const ADDRESSES = "global_sfx_addresses_wpc";

@@ -15,14 +15,14 @@ this one depends on all of them (package.json, pinned to commits):
 
 | Repository | |
 |---|---|
-| [thug2-level-converter-core](https://github.com/CanuckAussieKev/thug2-level-converter-core) | THUG2's formats, the shared level port code, the THUGPRO compatibility register, THAW's and Project 8's formats |
+| [thug2-level-converter-core](https://github.com/CanuckAussieKev/thug2-level-converter-core) | THUG2's formats, the shared level port code, the THUGPRO compatibility register |
 | [thug2-thps2-level-converter](https://github.com/CanuckAussieKev/thug2-thps2-level-converter) | Tony Hawk's Pro Skater 2 |
 | [thug2-thps3-level-converter](https://github.com/CanuckAussieKev/thug2-thps3-level-converter) | Tony Hawk's Pro Skater 3 |
 | [thug2-thps4-level-converter](https://github.com/CanuckAussieKev/thug2-thps4-level-converter) | Tony Hawk's Pro Skater 4 |
 | [thug2-thug1-level-converter](https://github.com/CanuckAussieKev/thug2-thug1-level-converter) | Tony Hawk's Underground (and the THUG1 campaign survey) |
-| [thug2-thaw-level-converter](https://github.com/CanuckAussieKev/thug2-thaw-level-converter) | Tony Hawk's American Wasteland |
-| [thug2-thp8-level-converter](https://github.com/CanuckAussieKev/thug2-thp8-level-converter) | Tony Hawk's Project 8 (and its save tool) |
-| [thug2-thpg-level-converter](https://github.com/CanuckAussieKev/thug2-thpg-level-converter) | Tony Hawk's Proving Ground |
+| [thug2-thaw-level-converter](https://github.com/CanuckAussieKev/thug2-thaw-level-converter) | Tony Hawk's American Wasteland (and THAW's formats: Project 8's and the THAW BMX tools use them) |
+| [thug2-thp8-level-converter](https://github.com/CanuckAussieKev/thug2-thp8-level-converter) | Tony Hawk's Project 8 (and its save tool) - on THAW's formats |
+| [thug2-thpg-level-converter](https://github.com/CanuckAussieKev/thug2-thpg-level-converter) | Tony Hawk's Proving Ground - on Project 8's engine |
 
 Part of the THUG2 decompilation, [github.com/CanuckAussieKev/thug2-decomp](https://github.com/CanuckAussieKev/thug2-decomp),
 where it is the submodule `tools/pipeline` (and an npm workspace: the decomp's `npm install` installs the
@@ -32,7 +32,8 @@ converters). Run everything from that repository's root with Node 24, e.g.
     node tools/pipeline/menu_level/make_menu_level.ts --game C:\Games\THUG2 --hd-ui 4
 
 `run.ts` runs a converter's (or the core's) tool by its path in that repository - `thps3_levels/collfix.ts`,
-`level_port/zfight.ts`, `thp8_save/thp8_save.ts` - with the rest of the command line as its own. Each folder and each
+`level_port/zfight.ts`, `thp8_save/thp8_save.ts`: one of the `commands` in its package.json (`node
+tools/pipeline/run.ts` lists them) - with the rest of the command line as its own. Each folder and each
 converter has its own README.
 
 - `menu_level/` - the data overlay `<game>\thug2-decomp-data`: every converted game's levels, Levels.qb and the level
@@ -64,10 +65,22 @@ decomp's `tools/game`.
 
 ## Dependencies
 
-Each dependency is pinned to a commit (`github:CanuckAussieKev/<repository>#<commit>`). The converters depend on
-thug2-level-converter-core too: every package.json - this one, each converter's and the decomp's - must pin the same
-core commit, so npm installs one copy (`deps.test.ts` checks it). Node strips no types under `node_modules`, so npm
-builds each dependency's `.js` when it installs it (the core's README, "Using it"); TypeScript reads their `.ts`.
+Each dependency is pinned to a tagged commit by https (`git+https://git@github.com/CanuckAussieKev/<repository>.git#<commit>`:
+no SSH key needed, `npm ci` from the committed package-lock.json). The converters depend on each other only along
+their games' engines - specific to general, thug2-level-converter-core at the bottom, no cycles:
+
+    thug2-thpg-level-converter -> thug2-thp8-level-converter -> thug2-thaw-level-converter -> core
+    thug2-thps2- / -thps3- / -thps4- / -thug1-level-converter -> core
+
+(Proving Ground's converter also uses THAW's directly, Project 8's core.) This repository uses some of their public
+modules too (each repository's package.json `exports`, listed in its README): THPS2's archive and Project 8's for the
+loading pictures, THUG1's driving scripts for Anteara Mod, THAW's formats and converter steps for the THAW BMX tools.
+`deps.test.ts` checks on what npm installed that only those edges exist, that every package.json - this one, each
+converter's and the decomp's - pins the same commit of each repository (npm installs one copy), and that every import
+names an export of a declared dependency. Node strips no types under `node_modules`, so npm builds each dependency's
+`.js` when it installs it (the core's README, "Using it"); TypeScript reads their `.ts`.
+
+GitHub Actions runs `npm ci`, typecheck, lint and test on every push (`.github/workflows/ci.yml`).
 
 Nothing from the games is in this repository: every converter reads your own installed copies and writes into your
 game folder. `fonts/` holds the new front end's typefaces (Anton, IBM Plex Mono / Sans) under the SIL Open Font License

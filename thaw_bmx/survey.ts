@@ -34,7 +34,7 @@ import { helpFromHeader } from "thug2-level-converter-core/lib/cli.ts";
 import { GAME_EXE_NAMES, THAW_REFERENCE_EXE } from "thug2-level-converter-core/lib/decomp.ts";
 import { resolveInstall } from "thug2-level-converter-core/lib/install.ts";
 import { decodeLatin1, isMain, print, runMain } from "thug2-level-converter-core/lib/py.ts";
-import * as thaw from "thug2-level-converter-core/thaw/thaw.ts";
+import * as thaw from "thug2-thaw-level-converter/thaw/thaw.ts";
 
 const BMX = /bike|bmx/i;
 const hex8 = (n: number): string => n.toString(16).padStart(8, "0");

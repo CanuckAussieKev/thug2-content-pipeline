@@ -46,13 +46,13 @@ import { checksum } from "thug2-level-converter-core/level_port/qb.ts";
 import { Thug2 } from "thug2-level-converter-core/level_port/script_port.ts";
 import * as tex from "thug2-level-converter-core/level_port/tex.ts";
 import * as thug2Scene from "thug2-level-converter-core/level_port/thug2_scene.ts";
+import type { Quat, Vec } from "thug2-level-converter-core/level_port/thug2_skeleton.ts";
+import * as skel from "thug2-level-converter-core/level_port/thug2_skeleton.ts";
 import { helpFromHeader } from "thug2-level-converter-core/lib/cli.ts";
 import { findPath, resolveInstall } from "thug2-level-converter-core/lib/install.ts";
 import { isMain, print, runMain } from "thug2-level-converter-core/lib/py.ts";
-import * as thaw from "thug2-level-converter-core/thaw/thaw.ts";
+import * as thaw from "thug2-thaw-level-converter/thaw/thaw.ts";
 import { toThug2Material } from "thug2-thaw-level-converter/thaw_levels/thaw_levels.ts";
-import type { Quat, Vec } from "thug2-thps3-level-converter/thps3_levels/thps3_skin.ts";
-import * as skel from "thug2-thps3-level-converter/thps3_levels/thps3_skin.ts";
 import * as bikeScripts from "./bike_scripts.ts";
 import * as check from "./check.ts";
 import * as meter from "./meter.ts";
@@ -127,7 +127,7 @@ export function readThawSkeleton(d: Buffer, name = "ske"): Bone[] {
     });
 }
 
-// THUG2's .ske.xbx from bones with checksums (thps3_skin.writeSkeleton takes names): u32 2, u32 0, u32 count, the ids, the
+// THUG2's .ske.xbx from bones with checksums (thug2_skeleton.writeSkeleton takes names): u32 2, u32 0, u32 count, the ids, the
 // parents', the mirrors', then per bone the conjugate of the rest quaternion and the translation (w 1).
 export function writeSkeleton(bones: readonly Bone[]): Buffer {
     const b = Buffer.alloc(12 + 12 * bones.length + 32 * bones.length);

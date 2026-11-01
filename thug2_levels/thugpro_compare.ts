@@ -114,7 +114,7 @@ export function buildRegister(all: readonly Compared[], old: Register | null): R
             "players touch, graffiti objects), visible (seen differently, nothing to stand on: gaps, vehicles, loose " +
             "objects), single_player, cosmetic, none. `scripts` / `replace_scripts` / `geometry`: THUGPRO's own items BY " +
             "REFERENCE (archive entry and CRC-32; read from the THUGPRO install when applied, never stored here). " +
-            "`edits`: thug2-thug1-level-converter/thug1_levels/hand_edits.ts's form (names, {float}, {vector}, {string}).",
+            "`edits`: thug2-level-converter-core/compat/hand_edits.ts's form (names, {float}, {vector}, {string}).",
         _register: REGISTER_ID,
         _source:
             "THUGPRO's installed data\\pre (thugpro_qb.prx's Levels.qb: per level its node array qb=, level_qb=, " +

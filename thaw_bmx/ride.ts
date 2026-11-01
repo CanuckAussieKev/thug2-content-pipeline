@@ -26,7 +26,7 @@ import type { QbValue } from "thug2-level-converter-core/level_port/qb.ts";
 import * as qb from "thug2-level-converter-core/level_port/qb.ts";
 import { Name, Struct } from "thug2-level-converter-core/level_port/qb.ts";
 import type { UnitLookup } from "thug2-level-converter-core/lib/edits.ts";
-import * as thaw from "thug2-level-converter-core/thaw/thaw.ts";
+import * as thaw from "thug2-thaw-level-converter/thaw/thaw.ts";
 import { BIKE, bikeScripts, SOUNDS } from "./bike_scripts.ts";
 
 export const PHYSICS = "thaw_bicycle_physics";

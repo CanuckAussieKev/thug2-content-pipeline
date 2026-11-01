@@ -22,7 +22,7 @@
 // reads the table is written out in full.
 //
 // Quaternion keys are the file's stored form: (x, y, z) / 16384 of the conjugate, w recovered and negative when the
-// sign bit is set (thug2-thps3-level-converter/thps3_levels/thps3_skin.ts).
+// sign bit is set (thug2-level-converter-core/level_port/thug2_skeleton.ts).
 
 import { FormatError } from "thug2-level-converter-core/level_port/binio.ts";
 
