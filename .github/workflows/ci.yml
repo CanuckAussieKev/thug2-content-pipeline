@@ -1,11 +1,16 @@
-# Typecheck, lint and test on every push (the tests that need a game install or the decomp skip without them).
+# Typecheck, lint and test on every push, on Windows, Linux and macOS (the tests that need a game install or the decomp
+# skip without them).
 name: CI
 on:
   push:
   pull_request:
 jobs:
   check:
-    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
