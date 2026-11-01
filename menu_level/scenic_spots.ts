@@ -32,13 +32,13 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { materialSeeThrough } from "../game/pick_census.ts";
+import { isName, nodeArray, position } from "../compat/thugpro_nodes.ts";
 import { Struct } from "../level_port/qb.ts";
 import * as thug2Col from "../level_port/thug2_col.ts";
 import * as thug2Scene from "../level_port/thug2_scene.ts";
+import { materialSeeThrough } from "../level_port/thug2_scene.ts";
 import { parseCli } from "../lib/cli.ts";
 import { isMain, print, runMain } from "../lib/py.ts";
-import { isName, nodeArray, position } from "../thaw_levels/thugpro_compare.ts";
 
 export type V3 = [number, number, number];
 

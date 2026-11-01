@@ -22,6 +22,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { crc32 } from "node:zlib";
+import { nodeArray } from "../compat/thugpro_nodes.ts";
 import * as qb from "../level_port/qb.ts";
 import { Name, type QbValue, Struct } from "../level_port/qb.ts";
 import { putScripts, replaceGlobalArray, scriptSpans, setStructEntries } from "../level_port/qb_write.ts";
@@ -31,7 +32,6 @@ import { parseCli } from "../lib/cli.ts";
 import { NEVER_WRITTEN, WORK } from "../lib/decomp.ts";
 import { findCaseless, resolveInstall } from "../lib/install.ts";
 import { isMain, print, pyJoin, runMain } from "../lib/py.ts";
-import { nodeArray } from "../thaw_levels/thugpro_compare.ts";
 import { applyColEdits, applyNodeEdits, type LevelEdits } from "../thug1_levels/hand_edits.ts";
 import { type Entry, mergeEdits, type ScriptRef } from "./diff.ts";
 import { loadRegister, type Register } from "./register.ts";

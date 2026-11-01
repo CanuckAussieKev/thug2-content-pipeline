@@ -12,12 +12,12 @@
 import { parseCli } from "../lib/cli.ts";
 import { findCaseless } from "../lib/install.ts";
 import { print } from "../lib/py.ts";
-import * as dxt from "./dxt.ts";
-import * as mats from "./materials.ts";
-import { levelParts, templateNames } from "./render_audit.ts";
-import * as thp8 from "./thp8.ts";
-import { allSpecs, baseTexture, compressedFolder, findSpec, textureAlpha } from "./thp8_levels.ts";
-import * as xenos from "./xenos.ts";
+import * as dxt from "../thp8/dxt.ts";
+import * as mats from "../thp8/materials.ts";
+import { levelParts, templateNames } from "../thp8/render_audit.ts";
+import * as thp8 from "../thp8/thp8.ts";
+import { allSpecs, baseTexture, compressedFolder, findSpec, textureAlpha } from "../thp8/thp8_levels.ts";
+import * as xenos from "../thp8/xenos.ts";
 
 type Kind = "blend" | "add" | "test" | "nature" | "solid" | "unknown";
 

@@ -7,8 +7,8 @@
 // it N times (nearest pixel) so texel detail stays visible. The pictures must be the same size.
 
 import * as fs from "node:fs";
-import { decodePng, encodePng, type Image } from "../game/frame_diff.ts";
 import { helpFromHeader } from "../lib/cli.ts";
+import { decodePng, encodePng, type Image } from "../lib/frame_diff.ts";
 import { isMain, print, pyExit, runMain } from "../lib/py.ts";
 
 const GAP = 8;

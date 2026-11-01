@@ -5,10 +5,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { checksum } from "../level_port/qb.ts";
-import * as geom from "../thp8_levels/geom.ts";
-import * as mats from "../thp8_levels/materials.ts";
-import { layerRepeat } from "../thp8_levels/thp8_levels.ts";
-import type * as xenos from "../thp8_levels/xenos.ts";
+import * as geom from "../thp8/geom.ts";
+import * as mats from "../thp8/materials.ts";
+import { layerRepeat } from "../thp8/thp8_levels.ts";
+import type * as xenos from "../thp8/xenos.ts";
 import * as layers from "./layers.ts";
 import * as light from "./light.ts";
 import * as scene from "./scene.ts";

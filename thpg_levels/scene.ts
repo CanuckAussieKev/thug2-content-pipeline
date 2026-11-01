@@ -31,7 +31,7 @@
 //   one after the other from 20 (a kind-3 field as its first two halves), so geom.readVertices reads them in order.
 
 import { FormatError } from "../level_port/binio.ts";
-import * as geom from "../thp8_levels/geom.ts";
+import * as geom from "../thp8/geom.ts";
 
 export const VERSION = 0x0410;
 export const SECTOR_SIZE = 0x60; // (THP8's 0x50: +0 0, +4 the node's name, +8 flags, then -1, -1)

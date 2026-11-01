@@ -27,21 +27,25 @@ import * as fs from "node:fs";
 import * as common from "../level_port/common.ts";
 import * as geometry from "../level_port/geometry.ts";
 import * as hdTextures from "../level_port/hd_textures.ts";
+import { mipDown } from "../level_port/mips.ts";
 import * as nodes from "../level_port/nodes.ts";
 import * as portedLevels from "../level_port/ported_levels.ts";
 import * as qb from "../level_port/qb.ts";
 import * as rampCollisionFix from "../level_port/ramp_collision.ts";
 import type * as tex from "../level_port/tex.ts";
 import * as thug2Col from "../level_port/thug2_col.ts";
+import { type Blend, makeMaterial, THUG2_TERRAIN_TYPES } from "../level_port/thug2_material.ts";
 import * as thug2Scene from "../level_port/thug2_scene.ts";
+import { trisToStrip } from "../level_port/tri_strip.ts";
 import { parseCli } from "../lib/cli.ts";
 import { resolveInstall } from "../lib/install.ts";
 import { isMain, print, pyExit, pyJoin, runMain } from "../lib/py.ts";
-import { mipDown } from "../thps3_levels/thps3_levels.ts";
 import * as gapTable from "./gap_table.ts";
 import { Pkr } from "./pkr.ts";
 import * as thps2 from "./thps2.ts";
 import { LevelLogic, type Logic } from "./thps2_scripts.ts";
+
+export { type Blend, makeMaterial, THUG2_TERRAIN_TYPES, trisToStrip }; // (level_port since the split)
 
 export const STAGING = "thug2-decomp-thps2";
 
@@ -271,46 +275,7 @@ export function faceColors(face: thps2.PsxFace, rgbs: readonly (readonly number[
 
 // --- terrains ------------------------------------------------------------------------------------------------------
 
-// THUG2's terrain numbers: a collision face's terrain byte is an index into scripts\game\terrain.qb's Terrain_Types
-// (its first entries, in its order).
-export const THUG2_TERRAIN_TYPES = [
-    "DEFAULT",
-    "CONCSMOOTH",
-    "CONCROUGH",
-    "METALSMOOTH",
-    "METALROUGH",
-    "METALCORRUGATED",
-    "METALGRATING",
-    "METALTIN",
-    "WOOD",
-    "WOODMASONITE",
-    "WOODPLYWOOD",
-    "WOODFLIMSY",
-    "WOODSHINGLE",
-    "WOODPIER",
-    "BRICK",
-    "TILE",
-    "ASPHALT",
-    "ROCK",
-    "GRAVEL",
-    "SIDEWALK",
-    "GRASS",
-    "GRASSDRIED",
-    "DIRT",
-    "DIRTPACKED",
-    "WATER",
-    "ICE",
-    "SNOW",
-    "SAND",
-    "PLEXIGLASS",
-    "FIBERGLASS",
-    "CARPET",
-    "CONVEYOR",
-    "CHAINLINK",
-    "METALFUTURE",
-    "GENERIC1",
-    "GENERIC2",
-] as const;
+// (THUG2's terrain table: level_port/thug2_material.ts)
 
 // THPS2's terrain numbers (a collision surface's bits 9-12) by the names its trigger symbol file gives them (T_CONCRETE
 // = 0 ... T_SIDEWALK = 15 - data/symbols.tdf in ALL.PKR), as THUG2's terrains: the nearest of the same material.
@@ -516,79 +481,16 @@ export function makeTexture(checksum: number, t: thps2.PsxTexture, bmp: Bmp | nu
 // levels (mode 1: 431 faces, their vertex colours dark - lum ~30 against ~80: light beams and glows added onto what's
 // behind; modes 2 / 3 never). The PC's textures have no semi-transparency bit on any texel (the PlayStation's
 // per-texel switch), so the whole face blends.
-export type Blend = "opaque" | "half" | "add";
 
 export function faceBlend(face: thps2.PsxFace): Blend {
     if (!(face.flags & thps2.FACE_SEMI_TRANSPARENT)) return "opaque";
     return ((face.flags >> 8) & 3) === 1 ? "add" : "half";
 }
 
-// `wrap`: the texture repeats (some face reaches past it); else clamped (cut-outs and signs: nothing bleeds in from
-// the far side at their edges).
-export function makeMaterial(
-    checksum: number,
-    texture: number,
-    blending: Blend | boolean,
-    wrap = false,
-): thug2Scene.Material {
-    const blend: Blend = blending === true ? "half" : blending === false ? "opaque" : blending;
-    const semi = blend !== "opaque";
-    let flags = thug2Scene.PASS_SMOOTH;
-    if (texture) flags |= thug2Scene.PASS_TEXTURED;
-    // (half: THUG2's blend by the vertex alpha - SEMI_ALPHA; add: THUG2's add, the vertex alpha full)
-    flags |= semi ? thug2Scene.PASS_TRANSPARENT : thug2Scene.PASS_IGNORE_VERTEX_ALPHA;
-    return {
-        checksum,
-        nameChecksum: checksum,
-        alphaCutoff: 1,
-        sorted: 0,
-        drawOrder: semi ? 1500.0 : 0.0,
-        singleSided: 0,
-        noBackfaceCulling: 0,
-        zBias: 0,
-        grassify: 0,
-        specularPower: 0.0,
-        passes: [
-            {
-                texture,
-                flags,
-                blendMode: blend === "add" ? 1 : semi ? 5 : 0,
-                fixedAlpha: 0,
-                uAddress: wrap ? 0 : 1,
-                vAddress: wrap ? 0 : 1,
-                envmapTiling: [3.0, 3.0],
-                filtering: 0x10004,
-                mip: [1, 4, -8.0, -8.0],
-                hasColor: 0,
-                color: [0.5, 0.5, 0.5],
-            },
-        ],
-    };
-}
-
 // --- scene and collision -------------------------------------------------------------------------------------------
 
 export const SECTOR_FLAGS = (0x80002000 | thug2Scene.SEC_TEXCOORDS | thug2Scene.SEC_COLORS) >>> 0; // (as THPS3's)
 export const SEMI_ALPHA = 64; // a half, in THUG2's 128 = full
-
-export function trisToStrip(tris: readonly (readonly number[])[]): number[] {
-    // A triangle list as one strip, the triangles joined by degenerate ones (each starts at an even index, so its
-    // turning order is kept) - as tools/pipeline/thps3_levels' trisToStrip. The join is last, last, a, a (a once more when the
-    // triangle would start at an odd index): every triangle between two real ones has a corner twice. (Until
-    // 2026-10-22 a was pushed once when the parity allowed it, which left (last, a, b) a real triangle: drawn over the
-    // next face's first triangle with the previous face's material - z-fighting the user saw, ~1 join in 2.)
-    const s: number[] = [];
-    for (const [a, b, c] of tris as [number, number, number][]) {
-        if (s.length) {
-            s.push(s[s.length - 1]!, a, a);
-            if ((s.length - 1) % 2) s.push(a);
-            s.push(b, c);
-        } else {
-            s.push(a, b, c);
-        }
-    }
-    return s;
-}
 
 // --hd-textures: the optional AI upscaling pass (tools/pipeline/level_port/hd_textures.ts) and its running totals.
 export interface HdPass {

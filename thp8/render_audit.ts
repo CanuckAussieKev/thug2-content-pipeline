@@ -36,7 +36,7 @@ import * as zfight from "../level_port/zfight.ts";
 import { parseCli } from "../lib/cli.ts";
 import { findCaseless, resolveInstall } from "../lib/install.ts";
 import { isMain, print, pyExit, runMain } from "../lib/py.ts";
-import * as thaw from "../thaw_levels/thaw.ts";
+import * as thaw from "../thaw/thaw.ts";
 import * as dxt from "./dxt.ts";
 import * as geom from "./geom.ts";
 import * as mats from "./materials.ts";

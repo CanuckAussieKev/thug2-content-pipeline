@@ -20,13 +20,25 @@
 import * as fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
+import {
+    CTF_NAMES,
+    isCrown,
+    isMpRestart,
+    maxDiff,
+    nameOf,
+    nodeArray,
+    position,
+    sameSequence,
+    sequence,
+    TOLERANCE,
+} from "../compat/thugpro_nodes.ts";
 import * as colCheck from "../level_port/col_check.ts";
 import * as prx from "../level_port/prx.ts";
 import * as qb from "../level_port/qb.ts";
 import { Name, type QbValue, Struct, Vector } from "../level_port/qb.ts";
 import * as thug2Col from "../level_port/thug2_col.ts";
 import { helpFromHeader } from "../lib/cli.ts";
-import { resolveInstall } from "../lib/install.ts";
+import { findPath, resolveInstall } from "../lib/install.ts";
 import {
     Float,
     formatFixed,
@@ -40,19 +52,6 @@ import {
     runMain,
     writeTextPy,
 } from "../lib/py.ts";
-import { findPath } from "../thaw_levels/thaw_levels.ts";
-import {
-    CTF_NAMES,
-    isCrown,
-    isMpRestart,
-    maxDiff,
-    nameOf,
-    nodeArray,
-    position,
-    sameSequence,
-    sequence,
-    TOLERANCE,
-} from "../thaw_levels/thugpro_compare.ts";
 import { LEVELS, levelName, loadName, type NetNodes, type Placement, STAGING } from "./thps4_levels.ts";
 import { extractEdits, type LevelEdits, SECTIONS, type SectionName } from "./thugpro_edits.ts";
 import * as thugproNew from "./thugpro_new.ts";

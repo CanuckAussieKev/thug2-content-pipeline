@@ -41,8 +41,8 @@ import {
 } from "../lib/edits.ts";
 import { resolveInstall } from "../lib/install.ts";
 import { isMain, print, runMain } from "../lib/py.ts";
-import * as thaw from "../thaw_levels/thaw.ts";
-import { plain, scriptToks } from "../thaw_levels/thaw_scripts.ts";
+import * as thaw from "../thaw/thaw.ts";
+import { plain, scriptToks } from "../thaw/thaw_scripts.ts";
 import { renderBody } from "./dump_scripts.ts";
 import { renderScript } from "./thaw_ns.ts";
 

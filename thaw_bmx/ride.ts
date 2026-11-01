@@ -26,7 +26,7 @@ import type { QbValue } from "../level_port/qb.ts";
 import * as qb from "../level_port/qb.ts";
 import { Name, Struct } from "../level_port/qb.ts";
 import type { UnitLookup } from "../lib/edits.ts";
-import * as thaw from "../thaw_levels/thaw.ts";
+import * as thaw from "../thaw/thaw.ts";
 import { BIKE, bikeScripts, SOUNDS } from "./bike_scripts.ts";
 
 export const PHYSICS = "thaw_bicycle_physics";

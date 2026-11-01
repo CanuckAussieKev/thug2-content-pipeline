@@ -31,15 +31,14 @@
 import { createHash } from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { nodeArray } from "../compat/thugpro_nodes.ts";
 import * as prx from "../level_port/prx.ts";
 import * as qb from "../level_port/qb.ts";
 import { checksum, Name, type QbValue, Struct, Vector } from "../level_port/qb.ts";
 import { plainTokens, u32 } from "../level_port/script_port.ts";
-import { resolveInstall } from "../lib/install.ts";
+import { findPath, resolveInstall } from "../lib/install.ts";
 import { Float, hex8, pyJoin } from "../lib/py.ts";
 import { pack } from "../lib/struct.ts";
-import { findPath } from "../thaw_levels/thaw_levels.ts";
-import { nodeArray } from "../thaw_levels/thugpro_compare.ts";
 
 export const DEFAULT_THUGPRO = pyJoin(process.env.LOCALAPPDATA ?? "", "THUG Pro");
 

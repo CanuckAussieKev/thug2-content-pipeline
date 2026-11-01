@@ -5,8 +5,8 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { checksum, Name, type QbValue, Struct } from "../level_port/qb.ts";
-import * as thaw from "../thaw_levels/thaw.ts";
-import * as thp8 from "../thp8_levels/thp8.ts";
+import * as thaw from "../thaw/thaw.ts";
+import * as thp8 from "../thp8/thp8.ts";
 import type { NameTables } from "./save.ts";
 
 export interface GameData {

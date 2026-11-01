@@ -32,7 +32,7 @@ import * as thug2Col from "../level_port/thug2_col.ts";
 import * as thug2Scene from "../level_port/thug2_scene.ts";
 import { resolveInstall } from "../lib/install.ts";
 import { pyExit, pyRound } from "../lib/py.ts";
-import * as thaw from "./thaw.ts";
+import * as thaw from "../thaw/thaw.ts";
 import {
     COMPAT,
     FACE_KEEP,

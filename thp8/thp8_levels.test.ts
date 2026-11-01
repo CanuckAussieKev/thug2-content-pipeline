@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { checksum, Local, Name, type QbValue, Struct, Vector } from "../level_port/qb.ts";
 import { zfightGates } from "../level_port/zfight_gate.ts";
-import * as thaw from "../thaw_levels/thaw.ts";
+import * as thaw from "../thaw/thaw.ts";
 import * as dxt from "./dxt.ts";
 import * as geom from "./geom.ts";
 import * as havok from "./havok.ts";

@@ -31,8 +31,8 @@
 //           select (PAK\levelselect.pak.xen: level_select_ui_<x>'s images=[...]) has a picture per area instead:
 //           Xbox 360 images, DXT5, tiled (xenos.ts).
 
-import { decodePng, encodePng } from "../game/frame_diff.ts";
 import * as dxt from "../level_port/dxt.ts";
+import { decodePng, encodePng } from "../lib/frame_diff.ts";
 
 export const SCREEN_W = 640;
 export const SCREEN_H = 448;

@@ -25,16 +25,15 @@
 import * as fs from "node:fs";
 import { parseArgs } from "node:util";
 import * as compat from "../compat/compat.ts";
+import { maxDiff, nameOf, nodeArray, position } from "../compat/thugpro_nodes.ts";
 import * as colCheck from "../level_port/col_check.ts";
 import * as prx from "../level_port/prx.ts";
 import * as qb from "../level_port/qb.ts";
 import { Name, type QbValue, Struct, Vector } from "../level_port/qb.ts";
 import * as thug2Col from "../level_port/thug2_col.ts";
 import * as thug2Scene from "../level_port/thug2_scene.ts";
-import { resolveInstall } from "../lib/install.ts";
+import { findPath, resolveInstall } from "../lib/install.ts";
 import { hex8, isMain, print, pyExit, pyJoin, runMain } from "../lib/py.ts";
-import { findPath } from "../thaw_levels/thaw_levels.ts";
-import { maxDiff, nameOf, nodeArray, position } from "../thaw_levels/thugpro_compare.ts";
 import { findFolder, LEVELS, levelFiles, STAGING, scriptNames } from "./thps3_levels.ts";
 import { isSpawn, sameFace, USUAL_CLASSES } from "./thugpro_compare.ts";
 import * as thugproNew from "./thugpro_new.ts";

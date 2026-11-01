@@ -12,7 +12,7 @@ import { checksum } from "../level_port/qb.ts";
 import { parseCli } from "../lib/cli.ts";
 import { findCaseless, findInstall } from "../lib/install.ts";
 import { isMain, print, runMain } from "../lib/py.ts";
-import { entryData, openPak, unpack } from "../thp8_levels/thp8.ts";
+import { entryData, openPak, unpack } from "../thp8/thp8.ts";
 import { Pkr } from "../thps2_levels/pkr.ts";
 import { field, structureBlocks } from "./frontend_levels.ts";
 import {

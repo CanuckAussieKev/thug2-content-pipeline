@@ -18,11 +18,11 @@
 // water, billboards.
 
 import { checksum } from "../level_port/qb.ts";
-import * as dxt from "../thp8_levels/dxt.ts";
-import * as geom from "../thp8_levels/geom.ts";
-import * as mats from "../thp8_levels/materials.ts";
-import * as thp8 from "../thp8_levels/thp8.ts";
-import * as xenos from "../thp8_levels/xenos.ts";
+import * as dxt from "../thp8/dxt.ts";
+import * as geom from "../thp8/geom.ts";
+import * as mats from "../thp8/materials.ts";
+import * as thp8 from "../thp8/thp8.ts";
+import * as xenos from "../thp8/xenos.ts";
 import { keepFields, setParams } from "./scene.ts";
 
 export interface TemplateInfo {

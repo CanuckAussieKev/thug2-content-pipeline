@@ -18,6 +18,7 @@
 import * as fs from "node:fs";
 import { crc32 } from "node:zlib";
 import type * as compat from "../compat/compat.ts";
+import { nameOf, nodeArray } from "../compat/thugpro_nodes.ts";
 import * as geometry from "../level_port/geometry.ts";
 import * as prx from "../level_port/prx.ts";
 import * as qb from "../level_port/qb.ts";
@@ -26,9 +27,8 @@ import type * as tex from "../level_port/tex.ts";
 import * as texFile from "../level_port/tex.ts";
 import * as thug2Col from "../level_port/thug2_col.ts";
 import * as thug2Scene from "../level_port/thug2_scene.ts";
+import { findPath } from "../lib/install.ts";
 import { hex8, pyJoin } from "../lib/py.ts";
-import { findPath } from "../thaw_levels/thaw_levels.ts";
-import { nameOf, nodeArray } from "../thaw_levels/thugpro_compare.ts";
 
 export const DEFAULT_THUGPRO = pyJoin(process.env.LOCALAPPDATA ?? "", "THUG Pro");
 export const REGISTER_ID = "TPN-THPS3";

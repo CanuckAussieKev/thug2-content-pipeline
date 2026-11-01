@@ -546,3 +546,15 @@ export function writeScene(scene: Scene): Buffer {
     w.raw(scene.tail ?? Buffer.alloc(0));
     return w.getvalue();
 }
+
+// The level editor's see-through test (moved from game/pick_census.ts with the converters' split: the scenic art
+// uses it too) (level_editor_scenery.cpp's GeomSeeThrough): every mesh's material drawn with the
+// transparent pass (flag 0x40) or one whose first pass adds, subtracts, modulates or brightens (blend modes 1-4, 7-10:
+// light added to or taken from what's behind - never a solid surface; 0 diffuse, 5 blend and 6 fixblend can be).
+export function materialSeeThrough(material: Material | undefined, rule: "flag" | "blend"): boolean {
+    const pass = material?.passes[0];
+    if (!pass) return false;
+    if (pass.flags & 0x40) return true;
+    const mode = pass.blendMode & 0xffffff;
+    return rule === "blend" && mode !== 0 && mode !== 5 && mode !== 6;
+}

@@ -11,11 +11,11 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { parseArgs } from "node:util";
+import { migrateText } from "../level_port/layouts.ts";
 import * as qb from "../level_port/qb.ts";
 import { helpFromHeader } from "../lib/cli.ts";
+import { findPath } from "../lib/install.ts";
 import { hex8, isMain, print, pyExit, pyJoin, readTextPy, runMain } from "../lib/py.ts";
-import { migrateText } from "../thaw_levels/migrate_layouts.ts";
-import { findPath } from "../thaw_levels/thaw_levels.ts";
 import { LEVELS, levelName } from "./thps4_levels.ts";
 
 const FOLDER = "thug2-decomp-layouts";

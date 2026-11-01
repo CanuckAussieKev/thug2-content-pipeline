@@ -6,7 +6,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { test } from "node:test";
-import type { Image } from "../game/frame_diff.ts";
+import type { Image } from "../lib/frame_diff.ts";
 import { writeImg } from "../menu_level/level_select_icons.ts";
 import * as ui from "./ui.ts";
 

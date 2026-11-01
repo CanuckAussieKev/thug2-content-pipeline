@@ -10,7 +10,7 @@ import { test } from "node:test";
 import { checksum, Name, type QbValue, Struct, Vector } from "../level_port/qb.ts";
 import { DECOMP } from "../lib/decomp.ts";
 import { findInstall } from "../lib/install.ts";
-import * as thaw from "../thaw_levels/thaw.ts";
+import * as thaw from "../thaw/thaw.ts";
 import {
     bailBikeComponents,
     bikeGlobals,

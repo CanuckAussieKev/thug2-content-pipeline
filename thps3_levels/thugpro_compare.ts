@@ -19,6 +19,19 @@
 
 import * as fs from "node:fs";
 import { parseArgs } from "node:util";
+import {
+    CTF_NAMES,
+    isCrown,
+    isMpRestart,
+    isName,
+    maxDiff,
+    nameOf,
+    nodeArray,
+    position,
+    sameSequence,
+    sequence,
+    TOLERANCE,
+} from "../compat/thugpro_nodes.ts";
 import * as colCheck from "../level_port/col_check.ts";
 import * as portedLevels from "../level_port/ported_levels.ts";
 import * as prx from "../level_port/prx.ts";
@@ -27,7 +40,7 @@ import { Name, type QbValue, Struct, Vector } from "../level_port/qb.ts";
 import * as scriptPort from "../level_port/script_port.ts";
 import * as thug2Col from "../level_port/thug2_col.ts";
 import * as thug2Scene from "../level_port/thug2_scene.ts";
-import { resolveInstall } from "../lib/install.ts";
+import { findPath, resolveInstall } from "../lib/install.ts";
 import {
     Float,
     formatFixed,
@@ -41,20 +54,6 @@ import {
     runMain,
     writeTextPy,
 } from "../lib/py.ts";
-import { findPath } from "../thaw_levels/thaw_levels.ts";
-import {
-    CTF_NAMES,
-    isCrown,
-    isMpRestart,
-    isName,
-    maxDiff,
-    nameOf,
-    nodeArray,
-    position,
-    sameSequence,
-    sequence,
-    TOLERANCE,
-} from "../thaw_levels/thugpro_compare.ts";
 import * as startStateMod from "./start_state.ts";
 import * as thps3 from "./thps3.ts";
 import { findFolder, flagTeams, LEVELS, levelFiles, STAGING, scriptNames } from "./thps3_levels.ts";

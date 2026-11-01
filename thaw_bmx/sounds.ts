@@ -10,7 +10,7 @@
 import * as fs from "node:fs";
 import * as qb from "../level_port/qb.ts";
 import { Name, type QbValue, Struct } from "../level_port/qb.ts";
-import * as thaw from "../thaw_levels/thaw.ts";
+import * as thaw from "../thaw/thaw.ts";
 
 export const ADDRESSES_FILE = "scripts\\game\\sounds\\global_sfx_dat_wpc.qb";
 export const ADDRESSES = "global_sfx_addresses_wpc";

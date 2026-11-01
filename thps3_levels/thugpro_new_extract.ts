@@ -18,6 +18,7 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { nameOf, nodeArray } from "../compat/thugpro_nodes.ts";
 import * as prx from "../level_port/prx.ts";
 import * as qb from "../level_port/qb.ts";
 import { Name, type QbValue, Struct } from "../level_port/qb.ts";
@@ -25,10 +26,8 @@ import type * as scriptPort from "../level_port/script_port.ts";
 import * as texFile from "../level_port/tex.ts";
 import * as thug2Col from "../level_port/thug2_col.ts";
 import * as thug2Scene from "../level_port/thug2_scene.ts";
-import { resolveInstall } from "../lib/install.ts";
+import { findPath, resolveInstall } from "../lib/install.ts";
 import { hex8, pyJoin } from "../lib/py.ts";
-import { findPath } from "../thaw_levels/thaw_levels.ts";
-import { nameOf, nodeArray } from "../thaw_levels/thugpro_compare.ts";
 import * as thps3 from "./thps3.ts";
 import {
     ANIMAL_BIRD,

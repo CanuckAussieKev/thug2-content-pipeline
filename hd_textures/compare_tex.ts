@@ -12,10 +12,10 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { encodePng, type Image } from "../game/frame_diff.ts";
 import { alphaKind, topLevel } from "../level_port/hd_textures.ts";
 import * as tex from "../level_port/tex.ts";
 import { helpFromHeader } from "../lib/cli.ts";
+import { encodePng, type Image } from "../lib/frame_diff.ts";
 import { hex8, isMain, print, pyExit, runMain } from "../lib/py.ts";
 
 // BGRA over a checkerboard, as RGB, resampled (nearest) to w x h

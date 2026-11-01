@@ -17,8 +17,8 @@ import type { Tok } from "../level_port/script_port.ts";
 import { helpFromHeader } from "../lib/cli.ts";
 import { resolveInstall } from "../lib/install.ts";
 import { decodeLatin1, isMain, print, runMain } from "../lib/py.ts";
-import * as thaw from "../thaw_levels/thaw.ts";
-import { scriptToks } from "../thaw_levels/thaw_scripts.ts";
+import * as thaw from "../thaw/thaw.ts";
+import { scriptToks } from "../thaw/thaw_scripts.ts";
 
 const SIMPLE: Readonly<Record<number, string>> = {
     3: "{",

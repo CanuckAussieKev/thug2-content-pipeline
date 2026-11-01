@@ -4,9 +4,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type * as thug2Col from "../level_port/thug2_col.ts";
+import * as edges from "../thp8/edges.ts";
+import type * as havok from "../thp8/havok.ts";
 import { audit } from "./edge_audit.ts";
-import * as edges from "./edges.ts";
-import type * as havok from "./havok.ts";
 
 // A flat ground strip: `cells` squares of one metre along x from x0, z 0..1, at height y.
 const strip = (x0: number, cells: number, y: number, material = 0): havok.HkBody => ({

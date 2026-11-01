@@ -32,7 +32,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import * as zlib from "node:zlib";
-import { decodePng, encodePng, type Image } from "../game/frame_diff.ts";
+import { decodePng, encodePng, type Image } from "../lib/frame_diff.ts";
 import { REPO } from "./common.ts";
 import * as dxt from "./dxt.ts";
 import type { TexFile, Texture } from "./tex.ts";

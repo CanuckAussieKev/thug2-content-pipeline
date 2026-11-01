@@ -22,7 +22,7 @@ import * as thug2Scene from "../level_port/thug2_scene.ts";
 import { helpFromHeader } from "../lib/cli.ts";
 import { resolveInstall } from "../lib/install.ts";
 import { hex8, isMain, print, pyExit, pyJoin, pyJsonDumps, runMain, writeTextPy } from "../lib/py.ts";
-import * as thaw from "./thaw.ts";
+import * as thaw from "../thaw/thaw.ts";
 import {
     COMPAT,
     FACE_KEEP,

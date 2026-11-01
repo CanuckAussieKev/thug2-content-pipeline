@@ -21,15 +21,14 @@
 
 import * as fs from "node:fs";
 import { parseArgs } from "node:util";
+import { maxDiff, nodeArray, position } from "../compat/thugpro_nodes.ts";
 import * as prx from "../level_port/prx.ts";
 import * as qb from "../level_port/qb.ts";
 import { Name, type QbValue, Struct, Vector } from "../level_port/qb.ts";
 import * as thug2Col from "../level_port/thug2_col.ts";
 import { helpFromHeader } from "../lib/cli.ts";
-import { resolveInstall } from "../lib/install.ts";
+import { findPath, resolveInstall } from "../lib/install.ts";
 import { hex8, isMain, print, pyExit, pyJoin, pyJsonDumps, runMain, writeTextPy } from "../lib/py.ts";
-import { findPath } from "../thaw_levels/thaw_levels.ts";
-import { maxDiff, nodeArray, position } from "../thaw_levels/thugpro_compare.ts";
 import { COMPAT, editsOf, LEVELS, levelName, loadName, STAGING } from "./thps4_levels.ts";
 import { type Check, checkDuplicates, checkEdits } from "./thugpro_edits.ts";
 import { checkNew } from "./thugpro_new.ts";

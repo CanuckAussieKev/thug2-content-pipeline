@@ -56,6 +56,27 @@ export function findCaseless(folder: string, ...parts: string[]): string | null 
     return p;
 }
 
+const isDir = (p: string): boolean => {
+    try {
+        return fs.statSync(p).isDirectory();
+    } catch {
+        return false;
+    }
+};
+
+// A path under `folder`, each part matched without regard to case; null when it isn't there. (thaw_levels.ts's, moved
+// here with the converters' split: the THPS3 / THPS4 / THUG1 THUGPRO tools and the THAW BMX tools use it too.)
+export function findPath(folder: string, ...parts: string[]): string | null {
+    let p = folder;
+    for (const part of parts) {
+        if (!isDir(p)) return null;
+        const match = fs.readdirSync(p).find((e) => e.toLowerCase() === part.toLowerCase());
+        if (match === undefined) return null;
+        p = pyJoin(p, match);
+    }
+    return p;
+}
+
 function trimSeparators(dir: string): string {
     const trimmed = dir.replace(/[\\/]+$/, "");
     // ("C:\" stays: "C:" alone is the drive's current folder)

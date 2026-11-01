@@ -4,7 +4,7 @@
 // and goal points up. Everything is derived from THP8's own data (game_data.ts).
 
 import { checksum, Name, type QbValue, Struct } from "../level_port/qb.ts";
-import * as thaw from "../thaw_levels/thaw.ts";
+import * as thaw from "../thaw/thaw.ts";
 import type { GameData } from "./game_data.ts";
 import { type Component, type SaveFile, type SaveStruct, T_FLOAT, T_NAME, type Value } from "./save.ts";
 

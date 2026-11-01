@@ -11,9 +11,9 @@ import * as fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { crc32 } from "node:zlib";
 import * as compat from "../compat/compat.ts";
+import { nodeArray } from "../compat/thugpro_nodes.ts";
 import * as qb from "../level_port/qb.ts";
 import { Struct } from "../level_port/qb.ts";
-import { nodeArray } from "../thaw_levels/thugpro_compare.ts";
 import {
     type ColChange,
     type Context,

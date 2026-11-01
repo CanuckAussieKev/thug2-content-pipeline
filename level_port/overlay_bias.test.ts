@@ -1,8 +1,7 @@
-// NOT ORIGINAL - tests of overlay_bias.ts (z bias for layers lying on other surfaces) and of THPS3's mip chains.
+// NOT ORIGINAL - tests of overlay_bias.ts (z bias for layers lying on other surfaces).
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { convertTextures } from "../thps3_levels/thps3_levels.ts";
 import { biasOverlays } from "./overlay_bias.ts";
 import * as thug2Scene from "./thug2_scene.ts";
 
@@ -148,22 +147,6 @@ test("left alone: alternative geometry covering each other alike, same-looking c
     kept.materials[1]!.zBias = 3;
     assert.equal(biasOverlays(kept), 0);
     assert.deepEqual(zBiases(kept), [0, 3]);
-});
-
-test("THPS3's textures get mip levels down to a shorter side of 4, each 2 x 2 averaged", () => {
-    const texel = (v: number) => Buffer.from([v, v, v, 255]);
-    const level0 = Buffer.concat(Array.from({ length: 128 * 64 }, (_, i) => texel(i % 2 ? 200 : 100)));
-    const [t] = convertTextures([{ name: "grate", width: 128, height: 64, levels: [level0] }] as never).textures;
-    assert.deepEqual(
-        t!.levels.map((l) => l.length / 4),
-        [128 * 64, 64 * 32, 32 * 16, 16 * 8, 8 * 4],
-    );
-    assert.deepEqual([...t!.levels[1]!.subarray(0, 4)], [150, 150, 150, 255]);
-    const small = Buffer.concat(Array.from({ length: 16 * 4 }, () => texel(9)));
-    assert.equal(
-        convertTextures([{ name: "edge", width: 16, height: 4, levels: [small] }] as never).textures[0]!.levels.length,
-        1,
-    );
 });
 
 test("lookAlikes (THP8): same-looking copies and surfaces covering each other alike get a bias too, one over the other", () => {

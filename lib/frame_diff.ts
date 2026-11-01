@@ -15,7 +15,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as zlib from "node:zlib";
-import { helpFromHeader } from "../lib/cli.ts";
+import { helpFromHeader } from "./cli.ts";
 
 export interface Image {
     width: number;

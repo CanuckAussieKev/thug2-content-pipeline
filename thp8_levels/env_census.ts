@@ -11,11 +11,11 @@
 import { parseCli } from "../lib/cli.ts";
 import { findCaseless } from "../lib/install.ts";
 import { isMain, print } from "../lib/py.ts";
-import * as geom from "./geom.ts";
-import * as mats from "./materials.ts";
-import { levelParts, templateNames } from "./render_audit.ts";
-import * as thp8 from "./thp8.ts";
-import { allSpecs, compressedFolder, findSpec } from "./thp8_levels.ts";
+import * as geom from "../thp8/geom.ts";
+import * as mats from "../thp8/materials.ts";
+import { levelParts, templateNames } from "../thp8/render_audit.ts";
+import * as thp8 from "../thp8/thp8.ts";
+import { allSpecs, compressedFolder, findSpec } from "../thp8/thp8_levels.ts";
 
 export interface EnvRow {
     candidates: number; // materials of a reflective template with a cube map in their list

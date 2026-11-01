@@ -7,8 +7,8 @@ import { checksum, Name, Struct, Vector } from "../level_port/qb.ts";
 import { zfightGates } from "../level_port/zfight_gate.ts";
 import { formatG, pySplit, pySplitlines, pyTitle } from "../lib/py.ts";
 import { pack } from "../lib/struct.ts";
-import { migrateText, quarterTurn } from "./migrate_layouts.ts";
-import { inlineStruct, statements, tokens } from "./thaw.ts";
+import { inlineStruct, statements, tokens } from "../thaw/thaw.ts";
+import { RAIL_SCRIPTS, scriptToks } from "../thaw/thaw_scripts.ts";
 import {
     applyNodeFlags,
     applySpawns,
@@ -21,7 +21,6 @@ import {
     sixteenths,
     zoneNodeFlags,
 } from "./thaw_levels.ts";
-import { RAIL_SCRIPTS, scriptToks } from "./thaw_scripts.ts";
 
 test("formatG is Python's %g / %.9g: exact value, halves to even", () => {
     const values = [100.0625, -0.0, 0.0, 12660.4375, -61514.9375, 1e-5, 0.0001, 123456789.0, 1234567.0, 999999.5];
@@ -41,18 +40,6 @@ test("pySplit, pyTitle, pySplitlines(keepends) are Python's", () => {
     assert.equal(pyTitle("EAST LOS ANGELES"), "East Los Angeles");
     assert.equal(pyTitle("it's x2b"), "It'S X2B");
     assert.deepEqual(pySplitlines("a\r\nb\x0bc\n\nd", true), ["a\r\n", "b\x0b", "c\n", "\n", "d"]);
-});
-
-test("migrateText moves every record by the frames' difference", () => {
-    const text =
-        "scene 41AFB2FF  # thaw_ma\nsector 1 1 10 20 30 x\nobject 3 1.5 2 3#c\r\n\n  # only\ncopy A B -1 -2 -3";
-    assert.deepEqual(migrateText(text, 0x41afb2ff, 0x12345678, [0.5, -1.0, 2.25], "z_ma"), [
-        "scene 12345678  # z_ma\nsector 1 1 8.25 20 32.75 x\nobject 3 2 1 5.25  #c\n\n  # only\ncopy A B -0.5 -3 -0.75",
-        3,
-    ]);
-    assert.throws(() => migrateText("scene 00000001\n", 2, 3, [0, 0, 0]));
-    assert.deepEqual(quarterTurn([1, 2, 3], 1), [3, 2, -1]);
-    assert.deepEqual(quarterTurn([1, 2, 3], 6), [-1, 2, -3]);
 });
 
 test("frames: whole sixteenths, BSP splits moved, level names", () => {

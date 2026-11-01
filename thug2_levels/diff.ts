@@ -16,12 +16,12 @@
 // network games). Values that differ only by float rounding (THUGPRO's compiler) aren't differences (TOLERANCE).
 
 import { crc32 } from "node:zlib";
+import { nodeArray } from "../compat/thugpro_nodes.ts";
 import * as qb from "../level_port/qb.ts";
 import { Name, type QbValue, Struct, Vector } from "../level_port/qb.ts";
 import * as thug2Col from "../level_port/thug2_col.ts";
 import * as thug2Scene from "../level_port/thug2_scene.ts";
 import { Float } from "../lib/py.ts";
-import { nodeArray } from "../thaw_levels/thugpro_compare.ts";
 import { encode, type Json, type LevelEdits } from "../thug1_levels/hand_edits.ts";
 import {
     type LevelFiles,

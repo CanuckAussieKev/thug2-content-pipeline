@@ -18,10 +18,10 @@ import * as common from "../level_port/common.ts";
 import { parseCli } from "../lib/cli.ts";
 import { findCaseless, resolveInstall } from "../lib/install.ts";
 import { isMain, print, pyExit, runMain } from "../lib/py.ts";
-import * as renderAudit from "../thp8_levels/render_audit.ts";
-import * as thp8 from "../thp8_levels/thp8.ts";
-import * as T from "../thp8_levels/thp8_levels.ts";
-import * as xenos from "../thp8_levels/xenos.ts";
+import * as renderAudit from "../thp8/render_audit.ts";
+import * as thp8 from "../thp8/thp8.ts";
+import * as T from "../thp8/thp8_levels.ts";
+import * as xenos from "../thp8/xenos.ts";
 import * as layers from "./layers.ts";
 import * as light from "./light.ts";
 import "./scene.ts"; // (registers the 0x0410 scene reader with geom.ts)

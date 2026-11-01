@@ -27,6 +27,18 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
+import {
+    CTF_NAMES,
+    isCrown,
+    isMpRestart,
+    maxDiff,
+    nameOf,
+    nodeArray,
+    position,
+    sameSequence,
+    sequence,
+    TOLERANCE,
+} from "../compat/thugpro_nodes.ts";
 import * as colCheck from "../level_port/col_check.ts";
 import * as prx from "../level_port/prx.ts";
 import * as qb from "../level_port/qb.ts";
@@ -47,18 +59,6 @@ import {
     runMain,
     writeTextPy,
 } from "../lib/py.ts";
-import {
-    CTF_NAMES,
-    isCrown,
-    isMpRestart,
-    maxDiff,
-    nameOf,
-    nodeArray,
-    position,
-    sameSequence,
-    sequence,
-    TOLERANCE,
-} from "../thaw_levels/thugpro_compare.ts";
 import { checkEdits, editCounts, SECTIONS, type SectionCheck } from "./hand_edits.ts";
 import { BY_CODE, COMPAT, LEVELS, levelNames, levelStructs, prePath, STAGING, setCompat } from "./thug1_levels.ts";
 import {

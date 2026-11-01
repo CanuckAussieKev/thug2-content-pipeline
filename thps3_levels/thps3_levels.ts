@@ -20,6 +20,7 @@ import { FormatError } from "../level_port/binio.ts";
 import * as common from "../level_port/common.ts";
 import * as geometry from "../level_port/geometry.ts";
 import * as hdTextures from "../level_port/hd_textures.ts";
+import { mipDown } from "../level_port/mips.ts";
 import * as movers from "../level_port/movers.ts";
 import * as nodes from "../level_port/nodes.ts";
 import * as overlayBias from "../level_port/overlay_bias.ts";
@@ -33,6 +34,7 @@ import * as scriptPort from "../level_port/script_port.ts";
 import type * as tex from "../level_port/tex.ts";
 import type * as thug2Col from "../level_port/thug2_col.ts";
 import * as thug2Scene from "../level_port/thug2_scene.ts";
+import { trisToStrip } from "../level_port/tri_strip.ts";
 import { resolveInstall } from "../lib/install.ts";
 import {
     compareStr,
@@ -59,6 +61,8 @@ import * as thps3 from "./thps3.ts";
 import { Thps3Peds } from "./thps3_peds.ts";
 import { ROTATION_REWRITES } from "./thps3_rotation.ts";
 import * as thugproNew from "./thugpro_new.ts";
+
+export { mipDown, trisToStrip }; // (level_port since the split)
 
 export const STAGING = "thug2-decomp-thps3";
 
@@ -317,32 +321,6 @@ export function toThug2Material(
     };
 }
 
-export function mipDown(level: Buffer, w: number, h: number): Buffer {
-    // The next mip level of a 32-bit texture: each 2 x 2 block averaged (a 1-wide side halves the other only).
-    const nw = Math.max(1, Math.floor(w / 2));
-    const nh = Math.max(1, Math.floor(h / 2));
-    const sx = w > 1 ? 2 : 1;
-    const sy = h > 1 ? 2 : 1;
-    const out = Buffer.alloc(nw * nh * 4);
-    const row = w * 4;
-    for (let y = 0; y < nh; y++) {
-        const r0 = y * sy * row;
-        const r1 = r0 + (sy === 2 ? row : 0);
-        let o = y * nw * 4;
-        for (let x = 0; x < nw; x++) {
-            const c0 = r0 + x * sx * 4;
-            const c1 = c0 + (sx === 2 ? 4 : 0);
-            const d0 = r1 + x * sx * 4;
-            const d1 = d0 + (sx === 2 ? 4 : 0);
-            for (let k = 0; k < 4; k++) {
-                out[o + k] = (level[c0 + k]! + level[c1 + k]! + level[d0 + k]! + level[d1 + k]! + 2) >> 2;
-            }
-            o += 4;
-        }
-    }
-    return out;
-}
-
 export function convertTextures(tdx: readonly thps3.TdxTexture[], mips = true): tex.TexFile {
     // THPS3's 32-bit textures (BGRA, as Direct3D's A8R8G8B8) in THUG2's dictionary, checksum = the name's; mip levels
     // made down to the level whose shorter side is 4, as THUG2's own (THPS3's have one level: without them distant
@@ -378,24 +356,6 @@ export function convertTextures(tdx: readonly thps3.TdxTexture[], mips = true): 
 }
 
 // --- scene and collision -------------------------------------------------------------------------------------------
-
-export function trisToStrip(tris: readonly (readonly number[])[]): number[] {
-    // A triangle list as one strip, the triangles joined by degenerate ones (each starts at an even index, so its
-    // winding is kept): last, last, a, a (a once more for the parity) - every triangle between two real ones has a
-    // corner twice. (Until 2026-10-22 a was pushed once when the parity allowed it, which left (last, a, b) a real
-    // triangle drawn with the wrong material - found by the THPS2 port's z-fighting, tools/pipeline/thps2_levels.)
-    const s: number[] = [];
-    for (const [a, b, c] of tris as [number, number, number][]) {
-        if (s.length) {
-            s.push(s[s.length - 1]!, a, a);
-            if ((s.length - 1) % 2) s.push(a);
-            s.push(b, c);
-        } else {
-            s.push(a, b, c);
-        }
-    }
-    return s;
-}
 
 export const SECTOR_FLAGS = (0x80002000 | thug2Scene.SEC_TEXCOORDS | thug2Scene.SEC_COLORS) >>> 0; // (as tools/pipeline/thps4_levels' sectors)
 
