@@ -1114,15 +1114,30 @@ async function main(): Promise<number> {
             }
             manifest.levels.push(entry);
         }
-        const sectionList = levelSelect.sections({
-            thps4: byGame.get("thug2-decomp-thps4"),
-            thug1: byGame.get("thug2-decomp-thug1"),
-            thps3: byGame.get("thug2-decomp-thps3"),
-            thps2: byGame.get("thug2-decomp-thps2"),
-            thaw: byGame.get("thug2-decomp-thaw"),
-            thp8: byGame.get("thug2-decomp-thp8"),
-            thpg: byGame.get("thug2-decomp-thpg"),
-        });
+        // (another converter's staging folder - not one of this project's: a section of its own, titled by its
+        // levels.json's `title`)
+        const known = new Set<string>(portedLevels.STAGINGS);
+        const others = [...byGame]
+            .filter(([staging]) => !known.has(staging))
+            .map(([staging, manifest]) =>
+                levelSelect.otherGame(
+                    staging,
+                    manifest,
+                    portedLevels.readManifest(pyJoin(game, staging, portedLevels.MANIFEST))?.title,
+                ),
+            );
+        const sectionList = levelSelect.sections(
+            {
+                thps4: byGame.get("thug2-decomp-thps4"),
+                thug1: byGame.get("thug2-decomp-thug1"),
+                thps3: byGame.get("thug2-decomp-thps3"),
+                thps2: byGame.get("thug2-decomp-thps2"),
+                thaw: byGame.get("thug2-decomp-thaw"),
+                thp8: byGame.get("thug2-decomp-thp8"),
+                thpg: byGame.get("thug2-decomp-thpg"),
+            },
+            others,
+        );
         // Levels with no place get a map of themselves in place of the globe (a level not converted keeps the globe).
         const maps = levelMap.attachMaps(game, sectionList, print);
         const mapNames = levelMap.mapTextures(sectionList);

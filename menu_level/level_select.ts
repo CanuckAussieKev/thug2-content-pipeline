@@ -565,6 +565,29 @@ export const MISC_TITLE = "MISCELLANEOUS";
 // A section: [id, title, array name, levels we add to it or null].
 export type Section = [string, string, string, Level[] | null];
 
+// Another converter's levels (a staging folder this project doesn't know): its section's id (a script name part), its
+// title, its levels.json, and the game prefix its signs' texts may start with ("THPS1 ").
+export interface OtherGame {
+    key: string;
+    title: string;
+    prefix: string;
+    manifest: Manifest;
+}
+
+// The OtherGame of a staging folder: thug2-decomp-<id> -> key <id> (lower case, letters / digits / _), its
+// levels.json's `title` or "<ID> LEVELS", and its entries' `game` as the prefix.
+export function otherGame(staging: string, manifest: Manifest, title?: unknown): OtherGame {
+    const id = staging.replace(/^thug2-decomp-/i, "");
+    const key = `x_${id.toLowerCase().replace(/[^a-z0-9_]/g, "_")}`;
+    const game = manifest.levels.find((e) => typeof e.game === "string")?.game;
+    return {
+        key,
+        title: typeof title === "string" && title.trim() ? title.trim().toUpperCase() : `${id.toUpperCase()} LEVELS`,
+        prefix: typeof game === "string" ? game : id.toUpperCase(),
+        manifest,
+    };
+}
+
 // The sections in Up / Down order: newest game first. THUG2's array is the game's own; the others are new arrays of
 // our levels.
 export function sections(
@@ -577,6 +600,7 @@ export function sections(
         thp8?: Manifest | undefined;
         thpg?: Manifest | undefined;
     } = {},
+    extra: readonly OtherGame[] = [],
 ): Section[] {
     const out: Section[] = [["thug2", "TONY HAWK'S UNDERGROUND 2", "level_select_menu_level_info", null]];
     if (games.thug1) {
@@ -634,6 +658,15 @@ export function sections(
             "TONY HAWK'S PROVING GROUND",
             "level_select_menu_thpg_level_info",
             manifestLevels(games.thpg, THPG_LEVELS, "THPG"),
+        ]);
+    }
+    // Converters this project doesn't know (ported_levels.stagingFolders): a plain section each, from its levels.json.
+    for (const other of extra) {
+        out.push([
+            other.key,
+            other.title,
+            `level_select_menu_${other.key}_level_info`,
+            manifestLevels(other.manifest, new Map(), other.prefix),
         ]);
     }
     // The skate shops, tutorials and test levels of all the games go to one last section instead.

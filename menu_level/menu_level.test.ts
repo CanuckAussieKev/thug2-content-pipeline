@@ -10,6 +10,7 @@ import { nsString } from "./career_complete.ts";
 import {
     type Level,
     mapPosition,
+    otherGame,
     sections,
     signEntry,
     THAW_LEVELS,
@@ -158,5 +159,34 @@ test("the skate shops, tutorials and test levels are in a last MISCELLANEOUS sec
     assert.deepEqual(
         sections({}).map((s) => s[0]),
         ["thug2", "misc"],
+    );
+});
+
+test("another converter's levels get a section of their own, after this project's games, titled by its levels.json", () => {
+    const manifest = {
+        levels: [
+            {
+                folder: "Ware",
+                level: "thps1_ware",
+                display: "THPS1 Warehouse",
+                name: "ware",
+                game: "THPS1",
+                level_num: 900,
+            },
+        ],
+    } as unknown as Manifest;
+    const other = otherGame("thug2-decomp-thps1", manifest, "Tony Hawk's Pro Skater");
+    assert.deepEqual([other.key, other.title, other.prefix], ["x_thps1", "TONY HAWK'S PRO SKATER", "THPS1"]);
+    assert.equal(otherGame("thug2-decomp-my-game", manifest).title, "MY-GAME LEVELS");
+    assert.equal(otherGame("thug2-decomp-my-game", manifest).key, "x_my_game");
+    const list = sections({}, [other]);
+    assert.deepEqual(
+        list.map((s) => s[0]),
+        ["thug2", "x_thps1", "misc"],
+    );
+    assert.equal(list[1]![2], "level_select_menu_x_thps1_level_info");
+    assert.deepEqual(
+        list[1]![3]!.map((lv) => [lv.text, lv.levelNum, lv.load]),
+        [["Warehouse", 900, "Load_thps1_ware"]],
     );
 });
