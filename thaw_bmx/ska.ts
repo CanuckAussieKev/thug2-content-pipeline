@@ -182,7 +182,13 @@ export function readSka(data: Buffer, layout: Layout, tables: KeyTables, name = 
     if (p !== start + qSize + tSize) throw new FormatError(`${name}: translation bytes don't add up`);
     const tail = Buffer.from(data.subarray(p));
     if (tail.some((x) => x !== 0)) throw new FormatError(`${name}: ${tail.length} bytes after the keys`);
-    const ska: Ska = { flags, duration, rotations, translations, tail: Buffer.alloc(0) };
+    const ska: Ska = {
+        flags,
+        duration,
+        rotations,
+        translations,
+        tail: Buffer.alloc(0),
+    };
     if (partial !== undefined) ska.partial = partial;
     return ska;
 }

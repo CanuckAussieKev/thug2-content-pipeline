@@ -9,9 +9,8 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { checksum } from "thug2-level-converter-core/level_port/qb.ts";
-import { parseCli } from "thug2-level-converter-core/lib/cli.ts";
+import { isMain, parseCli, print, runMain } from "thug2-level-converter-core/lib/cli.ts";
 import { findCaseless, findInstall } from "thug2-level-converter-core/lib/install.ts";
-import { isMain, print, runMain } from "thug2-level-converter-core/lib/py.ts";
 import { entryData, openPak, unpack } from "thug2-thp8-level-converter/thp8/thp8.ts";
 import { Pkr } from "thug2-thps2-level-converter/thps2_levels/pkr.ts";
 import { field, structureBlocks } from "./frontend_levels.ts";
@@ -164,7 +163,10 @@ export const ART: Readonly<Record<Game, Readonly<Record<string, ArtSource>>>> = 
             source: "bmp:s2bgd11",
             why: "ALL.PKR data\\s2bgd11.bmp: ASCENDING TO ... SKATE HEAVEN",
         },
-        load_thps2_chopperdrop: { source: "bmp:s2bgd12", why: "ALL.PKR data\\s2bgd12.bmp: CHOPPER DROP" },
+        load_thps2_chopperdrop: {
+            source: "bmp:s2bgd12",
+            why: "ALL.PKR data\\s2bgd12.bmp: CHOPPER DROP",
+        },
     },
     thp8: {
         load_thp8_net_beavervalley: p8("adventure", "whole_world"),

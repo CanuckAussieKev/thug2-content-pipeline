@@ -43,18 +43,17 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { type LevelEntry, loadOf, type Manifest } from "thug2-level-converter-core/level_port/ported_levels.ts";
+import { exitWith } from "thug2-level-converter-core/lib/cli.ts";
 import {
-    compareStr,
+    floatText,
+    floorMod,
     formatFixed,
-    pyExit,
-    pyFloatRepr,
-    pyMod,
-    pyRound,
-    pySplitlines,
-    pySum,
+    roundTo,
     sortedNumbers,
-} from "thug2-level-converter-core/lib/py.ts";
+    sumOf,
+} from "thug2-level-converter-core/lib/numbers.ts";
 import { search } from "thug2-level-converter-core/lib/re.ts";
+import { compareStr, splitLines } from "thug2-level-converter-core/lib/text.ts";
 import * as compat from "thug2-thugpro-compat/profile.ts";
 import { reEscape } from "./career_complete.ts";
 import * as levelSelectIcons from "./level_select_icons.ts";
@@ -124,17 +123,17 @@ export function starPositions(locations: readonly (readonly [number, number] | n
         }
         if (!moved) break;
     }
-    return pos.map((p) => (p ? [pyRound(p[0], 1), pyRound(p[1], 1)] : null));
+    return pos.map((p) => (p ? [roundTo(p[0], 1), roundTo(p[1], 1)] : null));
 }
 
 const sq = (x: number): number => x * x;
 
 function fit(pairs: readonly (readonly [number, number])[]): [number, number] {
     const n = pairs.length;
-    const sx = pySum(pairs.map((p) => p[0]));
-    const sy = pySum(pairs.map((p) => p[1]));
-    const sxx = pySum(pairs.map((p) => sq(p[0])));
-    const sxy = pySum(pairs.map((p) => p[0] * p[1]));
+    const sx = sumOf(pairs.map((p) => p[0]));
+    const sy = sumOf(pairs.map((p) => p[1]));
+    const sxx = sumOf(pairs.map((p) => sq(p[0])));
+    const sxy = sumOf(pairs.map((p) => p[0] * p[1]));
     const a = (n * sxy - sx * sy) / (n * sxx - sx * sx);
     return [a, (sy - a * sx) / n];
 }
@@ -159,7 +158,7 @@ export function mapPosition(longitude: number, latitude: number): [number, numbe
     }
     const x = gx + cx / total;
     const y = gy + cy / total;
-    return [pyRound(pyMod(x, MAP_WIDTH), 1), pyRound(Math.min(Math.max(y, 4.0), 252.0), 1)];
+    return [roundTo(floorMod(x, MAP_WIDTH), 1), roundTo(Math.min(Math.max(y, 4.0), 252.0), 1)];
 }
 
 // --- the sections ------------------------------------------------------------------------------------------------
@@ -231,15 +230,60 @@ export const THPS4_LEVELS: ReadonlyMap<string, TableEntry> = new Map<string, Tab
             location: [-118.285, 34.022],
         },
     ],
-    ["SF2", { text: "SAN FRANCISCO", icon: "bridge", place: "San Francisco", location: [-122.418, 37.775] }],
+    [
+        "SF2",
+        {
+            text: "SAN FRANCISCO",
+            icon: "bridge",
+            place: "San Francisco",
+            location: [-122.418, 37.775],
+        },
+    ],
     [
         "Alc",
-        { text: "ALCATRAZ", icon: "lighthouse", place: "Alcatraz Island, San Francisco", location: [-122.423, 37.827] },
+        {
+            text: "ALCATRAZ",
+            icon: "lighthouse",
+            place: "Alcatraz Island, San Francisco",
+            location: [-122.423, 37.827],
+        },
     ],
-    ["Kon", { text: "KONA", icon: "snake", place: "Kona Skatepark, Jacksonville, Florida", location: [-81.66, 30.33] }],
-    ["Jnk", { text: "SHIPYARD", icon: "anchor", place: "Baltimore harbour (inferred)", location: [-76.61, 39.27] }],
-    ["Lon", { text: "LONDON", icon: "bigben", place: "London", location: [-0.128, 51.507] }],
-    ["Zoo", { text: "ZOO", icon: "elephant", place: "San Diego Zoo", location: [-117.149, 32.735] }],
+    [
+        "Kon",
+        {
+            text: "KONA",
+            icon: "snake",
+            place: "Kona Skatepark, Jacksonville, Florida",
+            location: [-81.66, 30.33],
+        },
+    ],
+    [
+        "Jnk",
+        {
+            text: "SHIPYARD",
+            icon: "anchor",
+            place: "Baltimore harbour (inferred)",
+            location: [-76.61, 39.27],
+        },
+    ],
+    [
+        "Lon",
+        {
+            text: "LONDON",
+            icon: "bigben",
+            place: "London",
+            location: [-0.128, 51.507],
+        },
+    ],
+    [
+        "Zoo",
+        {
+            text: "ZOO",
+            icon: "elephant",
+            place: "San Diego Zoo",
+            location: [-117.149, 32.735],
+        },
+    ],
     [
         "Cnv",
         {
@@ -249,10 +293,24 @@ export const THPS4_LEVELS: ReadonlyMap<string, TableEntry> = new Map<string, Tab
             location: [-91.5, 30.0],
         },
     ],
-    ["Hof", { text: "CHICAGO", icon: "skyline", place: "Chicago", location: [-87.63, 41.88] }],
+    [
+        "Hof",
+        {
+            text: "CHICAGO",
+            icon: "skyline",
+            place: "Chicago",
+            location: [-87.63, 41.88],
+        },
+    ],
     [
         "SkateShop",
-        { text: "SKATE SHOP", icon: "tshirt", place: "THPS4's skate shop (no place)", location: null, misc: "THPS4" },
+        {
+            text: "SKATE SHOP",
+            icon: "tshirt",
+            place: "THPS4's skate shop (no place)",
+            location: null,
+            misc: "THPS4",
+        },
     ],
     [
         "Motox",
@@ -274,7 +332,15 @@ export const THPS4_LEVELS: ReadonlyMap<string, TableEntry> = new Map<string, Tab
 //   - The THPS1 / THPS2 classics: the Warehouse (Woodland Hills, California - THPS1's), Burnside (under the Burnside
 //     Bridge, Portland, Oregon), Roswell (New Mexico).
 export const THPS3_LEVELS: ReadonlyMap<string, TableEntry> = new Map<string, TableEntry>([
-    ["Foun", { text: "FOUNDRY", icon: "ladle", place: "a foundry (no place named)", location: null }],
+    [
+        "Foun",
+        {
+            text: "FOUNDRY",
+            icon: "ladle",
+            place: "a foundry (no place named)",
+            location: null,
+        },
+    ],
     [
         "Can",
         {
@@ -284,14 +350,78 @@ export const THPS3_LEVELS: ReadonlyMap<string, TableEntry> = new Map<string, Tab
             location: [-121.0, 50.5],
         },
     ],
-    ["Rio", { text: "RIO", icon: "redeemer", place: "Rio de Janeiro", location: [-43.17, -22.91] }],
-    ["Sub", { text: "SUBURBIA", icon: "house", place: "an American suburb (no place named)", location: null }],
-    ["Ap", { text: "AIRPORT", icon: "tower", place: "an airport (no place named)", location: null }],
-    ["SI", { text: "SKATER ISLAND", icon: "trophy", place: "Skater Island (no place named)", location: null }],
-    ["LA", { text: "LOS ANGELES", icon: "freeway", place: "Los Angeles", location: [-118.24, 34.05] }],
-    ["Tok", { text: "TOKYO", icon: "tokyotower", place: "Tokyo", location: [139.7, 35.7] }],
-    ["Shp", { text: "CRUISE SHIP", icon: "ship", place: "a cruise ship at sea (no place)", location: null }],
-    ["Ware", { text: "WAREHOUSE", icon: "crate", place: "Woodland Hills, California", location: [-118.61, 34.17] }],
+    [
+        "Rio",
+        {
+            text: "RIO",
+            icon: "redeemer",
+            place: "Rio de Janeiro",
+            location: [-43.17, -22.91],
+        },
+    ],
+    [
+        "Sub",
+        {
+            text: "SUBURBIA",
+            icon: "house",
+            place: "an American suburb (no place named)",
+            location: null,
+        },
+    ],
+    [
+        "Ap",
+        {
+            text: "AIRPORT",
+            icon: "tower",
+            place: "an airport (no place named)",
+            location: null,
+        },
+    ],
+    [
+        "SI",
+        {
+            text: "SKATER ISLAND",
+            icon: "trophy",
+            place: "Skater Island (no place named)",
+            location: null,
+        },
+    ],
+    [
+        "LA",
+        {
+            text: "LOS ANGELES",
+            icon: "freeway",
+            place: "Los Angeles",
+            location: [-118.24, 34.05],
+        },
+    ],
+    [
+        "Tok",
+        {
+            text: "TOKYO",
+            icon: "tokyotower",
+            place: "Tokyo",
+            location: [139.7, 35.7],
+        },
+    ],
+    [
+        "Shp",
+        {
+            text: "CRUISE SHIP",
+            icon: "ship",
+            place: "a cruise ship at sea (no place)",
+            location: null,
+        },
+    ],
+    [
+        "Ware",
+        {
+            text: "WAREHOUSE",
+            icon: "crate",
+            place: "Woodland Hills, California",
+            location: [-118.61, 34.17],
+        },
+    ],
     [
         "Burn",
         {
@@ -301,14 +431,34 @@ export const THPS3_LEVELS: ReadonlyMap<string, TableEntry> = new Map<string, Tab
             location: [-122.66, 45.52],
         },
     ],
-    ["Ros", { text: "ROSWELL", icon: "ufo", place: "Roswell, New Mexico", location: [-104.52, 33.39] }],
+    [
+        "Ros",
+        {
+            text: "ROSWELL",
+            icon: "ufo",
+            place: "Roswell, New Mexico",
+            location: [-104.52, 33.39],
+        },
+    ],
     [
         "Tut",
-        { text: "TUTORIALS", icon: "whistle", place: "THPS3's tutorials (no place)", location: null, misc: "THPS3" },
+        {
+            text: "TUTORIALS",
+            icon: "whistle",
+            place: "THPS3's tutorials (no place)",
+            location: null,
+            misc: "THPS3",
+        },
     ],
     [
         "SkateShop",
-        { text: "SKATE SHOP", icon: "shop", place: "THPS3's skate shop (no place)", location: null, misc: "THPS3" },
+        {
+            text: "SKATE SHOP",
+            icon: "shop",
+            place: "THPS3's skate shop (no place)",
+            location: null,
+            misc: "THPS3",
+        },
     ],
 ]);
 
@@ -320,19 +470,69 @@ export const THPS3_LEVELS: ReadonlyMap<string, TableEntry> = new Map<string, Tab
 // (Los Angeles); Skatestreet (Ventura, California); Philadelphia; the Bullring (Mexico - no city named: Mexico City);
 // Chopper Drop (Hawaii); Skate Heaven (no place).
 export const THPS2_LEVELS: ReadonlyMap<string, TableEntry> = new Map<string, TableEntry>([
-    ["skhan", { text: "HANGAR", icon: "windsock", place: "Mullet Falls, Montana", location: [-110.36, 46.88] }],
-    ["sksl2", { text: "SCHOOL II", icon: "pencil", place: "Southern California", location: [-117.92, 33.84] }],
-    ["skmar", { text: "MARSEILLE", icon: "sailboat", place: "Marseille, France", location: [5.37, 43.3] }],
-    ["skny", { text: "NY CITY", icon: "empire", place: "New York", location: [-74.0, 40.71] }],
+    [
+        "skhan",
+        {
+            text: "HANGAR",
+            icon: "windsock",
+            place: "Mullet Falls, Montana",
+            location: [-110.36, 46.88],
+        },
+    ],
+    [
+        "sksl2",
+        {
+            text: "SCHOOL II",
+            icon: "pencil",
+            place: "Southern California",
+            location: [-117.92, 33.84],
+        },
+    ],
+    [
+        "skmar",
+        {
+            text: "MARSEILLE",
+            icon: "sailboat",
+            place: "Marseille, France",
+            location: [5.37, 43.3],
+        },
+    ],
+    [
+        "skny",
+        {
+            text: "NY CITY",
+            icon: "empire",
+            place: "New York",
+            location: [-74.0, 40.71],
+        },
+    ],
     [
         "skven",
-        { text: "VENICE BEACH", icon: "rollerskate", place: "Venice Beach, Los Angeles", location: [-118.47, 33.99] },
+        {
+            text: "VENICE BEACH",
+            icon: "rollerskate",
+            place: "Venice Beach, Los Angeles",
+            location: [-118.47, 33.99],
+        },
     ],
     [
         "skss",
-        { text: "SKATESTREET", icon: "helmet", place: "Skatestreet, Ventura, California", location: [-119.23, 34.28] },
+        {
+            text: "SKATESTREET",
+            icon: "helmet",
+            place: "Skatestreet, Ventura, California",
+            location: [-119.23, 34.28],
+        },
     ],
-    ["skph", { text: "PHILADELPHIA", icon: "pretzel", place: "Philadelphia", location: [-75.17, 39.95] }],
+    [
+        "skph",
+        {
+            text: "PHILADELPHIA",
+            icon: "pretzel",
+            place: "Philadelphia",
+            location: [-75.17, 39.95],
+        },
+    ],
     [
         "skbul",
         {
@@ -342,8 +542,24 @@ export const THPS2_LEVELS: ReadonlyMap<string, TableEntry> = new Map<string, Tab
             location: [-99.13, 19.43],
         },
     ],
-    ["skb1", { text: "CHOPPER DROP", icon: "volcano", place: "Hawaii", location: [-157.86, 21.31] }],
-    ["skhvn", { text: "SKATE HEAVEN", icon: "halo", place: "Skate Heaven (no place)", location: null }],
+    [
+        "skb1",
+        {
+            text: "CHOPPER DROP",
+            icon: "volcano",
+            place: "Hawaii",
+            location: [-157.86, 21.31],
+        },
+    ],
+    [
+        "skhvn",
+        {
+            text: "SKATE HEAVEN",
+            icon: "halo",
+            place: "Skate Heaven (no place)",
+            location: null,
+        },
+    ],
 ]);
 
 // THUG1's levels (its conversion's manifest, <game>\thug2-decomp-thug1\levels.json, by folder): signs only - the
@@ -373,24 +589,141 @@ export const THUG1_LEVELS: ReadonlyMap<string, TableEntry> = new Map<string, Tab
 // story's areas are all Los Angeles - each at its own neighbourhood (Hollywood, Beverly Hills, Downtown, East LA,
 // Santa Monica); Vans Park, the Skate Ranch, the Casino and the Oil Rig name none in LA: around the city.
 export const THAW_LEVELS: ReadonlyMap<string, TableEntry> = new Map<string, TableEntry>([
-    ["Z_CH", { text: "CHICAGO", icon: "train", place: "Chicago", location: [-87.65, 41.85] }],
-    ["Z_MA", { text: "THE MALL", icon: "cart", place: "a shopping mall (no place named)", location: null }],
-    ["Z_DN", { text: "MINNEAPOLIS", icon: "stonearch", place: "Minneapolis, Minnesota", location: [-93.27, 44.98] }],
-    ["Z_JA", { text: "KYOTO", icon: "torii", place: "Kyoto, Japan", location: [135.77, 35.01] }],
-    ["Z_SZ", { text: "SANTA CRUZ", icon: "surfboard", place: "Santa Cruz, California", location: [-122.03, 36.97] }],
-    ["Z_SV2", { text: "THE RUINS", icon: "column", place: "ruins (no place named)", location: null }],
-    ["Z_SV", { text: "VANS PARK", icon: "shoe", place: "Los Angeles", location: [-118.1, 33.95] }],
-    ["Z_HO", { text: "HOLLYWOOD", icon: "clapper", place: "Hollywood, Los Angeles", location: [-118.33, 34.1] }],
+    [
+        "Z_CH",
+        {
+            text: "CHICAGO",
+            icon: "train",
+            place: "Chicago",
+            location: [-87.65, 41.85],
+        },
+    ],
+    [
+        "Z_MA",
+        {
+            text: "THE MALL",
+            icon: "cart",
+            place: "a shopping mall (no place named)",
+            location: null,
+        },
+    ],
+    [
+        "Z_DN",
+        {
+            text: "MINNEAPOLIS",
+            icon: "stonearch",
+            place: "Minneapolis, Minnesota",
+            location: [-93.27, 44.98],
+        },
+    ],
+    [
+        "Z_JA",
+        {
+            text: "KYOTO",
+            icon: "torii",
+            place: "Kyoto, Japan",
+            location: [135.77, 35.01],
+        },
+    ],
+    [
+        "Z_SZ",
+        {
+            text: "SANTA CRUZ",
+            icon: "surfboard",
+            place: "Santa Cruz, California",
+            location: [-122.03, 36.97],
+        },
+    ],
+    [
+        "Z_SV2",
+        {
+            text: "THE RUINS",
+            icon: "column",
+            place: "ruins (no place named)",
+            location: null,
+        },
+    ],
+    [
+        "Z_SV",
+        {
+            text: "VANS PARK",
+            icon: "shoe",
+            place: "Los Angeles",
+            location: [-118.1, 33.95],
+        },
+    ],
+    [
+        "Z_HO",
+        {
+            text: "HOLLYWOOD",
+            icon: "clapper",
+            place: "Hollywood, Los Angeles",
+            location: [-118.33, 34.1],
+        },
+    ],
     [
         "Z_BH",
-        { text: "BEVERLY HILLS", icon: "mansion", place: "Beverly Hills, Los Angeles", location: [-118.4, 34.07] },
+        {
+            text: "BEVERLY HILLS",
+            icon: "mansion",
+            place: "Beverly Hills, Los Angeles",
+            location: [-118.4, 34.07],
+        },
     ],
-    ["Z_DT", { text: "DOWNTOWN", icon: "cityhall", place: "Downtown Los Angeles", location: [-118.25, 34.05] }],
-    ["Z_EL", { text: "EAST L.A.", icon: "lowrider", place: "East Los Angeles", location: [-118.17, 34.02] }],
-    ["Z_SM", { text: "SANTA MONICA", icon: "ferris", place: "Santa Monica, Los Angeles", location: [-118.49, 34.01] }],
-    ["Z_SR", { text: "SKATE RANCH", icon: "horseshoe", place: "Los Angeles", location: [-118.55, 34.2] }],
-    ["Z_LV", { text: "CASINO", icon: "dice", place: "Los Angeles", location: [-118.2, 34.15] }],
-    ["Z_OI", { text: "OIL RIG", icon: "rig", place: "off Los Angeles", location: [-118.6, 33.85] }],
+    [
+        "Z_DT",
+        {
+            text: "DOWNTOWN",
+            icon: "cityhall",
+            place: "Downtown Los Angeles",
+            location: [-118.25, 34.05],
+        },
+    ],
+    [
+        "Z_EL",
+        {
+            text: "EAST L.A.",
+            icon: "lowrider",
+            place: "East Los Angeles",
+            location: [-118.17, 34.02],
+        },
+    ],
+    [
+        "Z_SM",
+        {
+            text: "SANTA MONICA",
+            icon: "ferris",
+            place: "Santa Monica, Los Angeles",
+            location: [-118.49, 34.01],
+        },
+    ],
+    [
+        "Z_SR",
+        {
+            text: "SKATE RANCH",
+            icon: "horseshoe",
+            place: "Los Angeles",
+            location: [-118.55, 34.2],
+        },
+    ],
+    [
+        "Z_LV",
+        {
+            text: "CASINO",
+            icon: "dice",
+            place: "Los Angeles",
+            location: [-118.2, 34.15],
+        },
+    ],
+    [
+        "Z_OI",
+        {
+            text: "OIL RIG",
+            icon: "rig",
+            place: "off Los Angeles",
+            location: [-118.6, 33.85],
+        },
+    ],
 ]);
 
 // Places a manifest's location text may name (the first found, longest names first), as [longitude, latitude].
@@ -460,11 +793,16 @@ export function manifestLevels(manifest: Manifest, table: ReadonlyMap<string, Ta
             ...(entry.folder !== undefined ? { folder: entry.folder } : {}),
             ...(entry.staging !== undefined ? { staging: entry.staging } : {}),
             ...(misc
-                ? { miscKey: `${prefix}:${entry.folder}`, ...(GAME_TAGGED.has(prefix) ? { gameTag: prefix } : {}) }
+                ? {
+                      miscKey: `${prefix}:${entry.folder}`,
+                      ...(GAME_TAGGED.has(prefix) ? { gameTag: prefix } : {}),
+                  }
                 : {}),
             // (flags the converter set on its manifest entry: thug2-thp8-level-converter/thp8_levels' IsBigLevel)
             ...(Array.isArray(entry.flags)
-                ? { flags: entry.flags.filter((f): f is string => typeof f === "string") }
+                ? {
+                      flags: entry.flags.filter((f): f is string => typeof f === "string"),
+                  }
                 : {}),
         };
     });
@@ -490,13 +828,34 @@ export const THP8_LEVELS: ReadonlyMap<string, TableEntry> = new Map<string, Tabl
     ["net_skatecentral", { icon: "compass", place: THP8_CITY, location: null }],
     [
         "z_training",
-        { text: "TRAINING", icon: "target", place: "THP8's training area (no place)", location: null, misc: "P8" },
+        {
+            text: "TRAINING",
+            icon: "target",
+            place: "THP8's training area (no place)",
+            location: null,
+            misc: "P8",
+        },
     ],
     [
         "z_skateshop",
-        { text: "SKATE SHOP", icon: "skatetool", place: "THP8's skate shop (no place)", location: null, misc: "P8" },
+        {
+            text: "SKATE SHOP",
+            icon: "skatetool",
+            place: "THP8's skate shop (no place)",
+            location: null,
+            misc: "P8",
+        },
     ],
-    ["z_bedroom", { text: "BEDROOM", icon: "bed", place: "THP8's bedroom (no place)", location: null, misc: "P8" }],
+    [
+        "z_bedroom",
+        {
+            text: "BEDROOM",
+            icon: "bed",
+            place: "THP8's bedroom (no place)",
+            location: null,
+            misc: "P8",
+        },
+    ],
 ]);
 
 // Tony Hawk's Proving Ground's levels (thug2-thpg-level-converter/thpg_levels' manifest, by folder): its network levels in its own
@@ -505,15 +864,58 @@ export const THP8_LEVELS: ReadonlyMap<string, TableEntry> = new Map<string, Tabl
 export const THPG_LEVELS: ReadonlyMap<string, TableEntry> = new Map<string, TableEntry>([
     [
         "net_wholeworld",
-        { text: "WORLD", icon: "foldedmap", place: "THPG's Philadelphia, Washington DC and Baltimore", location: null },
+        {
+            text: "WORLD",
+            icon: "foldedmap",
+            place: "THPG's Philadelphia, Washington DC and Baltimore",
+            location: null,
+        },
     ],
-    ["net_dc", { text: "WASHINGTON DC", icon: "obelisk", place: "Washington DC", location: [-77.04, 38.89] }],
-    ["net_baltimore", { text: "BALTIMORE", icon: "crab", place: "Baltimore", location: [-76.61, 39.27] }],
-    ["net_philly", { text: "PHILADELPHIA", icon: "libertybell", place: "Philadelphia", location: [-75.17, 39.95] }],
-    ["net_crib", { text: "SKATE LOUNGE", icon: "sofa", place: "THPG's skate lounge (no place)", location: null }],
+    [
+        "net_dc",
+        {
+            text: "WASHINGTON DC",
+            icon: "obelisk",
+            place: "Washington DC",
+            location: [-77.04, 38.89],
+        },
+    ],
+    [
+        "net_baltimore",
+        {
+            text: "BALTIMORE",
+            icon: "crab",
+            place: "Baltimore",
+            location: [-76.61, 39.27],
+        },
+    ],
+    [
+        "net_philly",
+        {
+            text: "PHILADELPHIA",
+            icon: "libertybell",
+            place: "Philadelphia",
+            location: [-75.17, 39.95],
+        },
+    ],
+    [
+        "net_crib",
+        {
+            text: "SKATE LOUNGE",
+            icon: "sofa",
+            place: "THPG's skate lounge (no place)",
+            location: null,
+        },
+    ],
     [
         "z_bedroom",
-        { text: "BEDROOM", icon: "alarmclock", place: "THPG's bedroom (no place)", location: null, misc: "PG" },
+        {
+            text: "BEDROOM",
+            icon: "alarmclock",
+            place: "THPG's bedroom (no place)",
+            location: null,
+            misc: "PG",
+        },
     ],
 ]);
 
@@ -690,12 +1092,12 @@ export function sections(
     }
     const stray = misc.filter((lv) => !MISC_ORDER.includes(lv.miscKey!));
     if (stray.length)
-        pyExit(`level select: misc levels not in MISC_ORDER: ${stray.map((lv) => lv.miscKey).join(", ")}`);
+        exitWith(`level select: misc levels not in MISC_ORDER: ${stray.map((lv) => lv.miscKey).join(", ")}`);
     const ordered = MISC_ORDER.flatMap((key) => misc.filter((lv) => lv.miscKey === key));
     const numbers = new Set<number>();
     for (const lv of ordered) {
         if (numbers.has(lv.levelNum))
-            pyExit(`level select: MISCELLANEOUS has level_num ${lv.levelNum} twice (${lv.text})`);
+            exitWith(`level select: MISCELLANEOUS has level_num ${lv.levelNum} twice (${lv.text})`);
         numbers.add(lv.levelNum);
     }
     // (a game section left with no level is dropped; THUG2's own always stays)
@@ -733,7 +1135,7 @@ export const SIGN_LABEL_POS: readonly [number, number] = [34.0, 64.0];
 export const SIGN_LABEL_SCALE = 0.45;
 
 function indent(block: string, spaces = 4): string {
-    return pySplitlines(block)
+    return splitLines(block)
         .map((line) => `${" ".repeat(spaces)}${line}\n`)
         .join("");
 }
@@ -751,7 +1153,7 @@ export function replaceFirst(text: string, old: string, replacement: string): st
 
 function replaceOnce(text: string, old: string, replacement: string, what: string): string {
     const n = countOf(text, old);
-    if (n !== 1) pyExit(`gamemenu_levelselect.qb: ${what} found ${n} times`);
+    if (n !== 1) exitWith(`gamemenu_levelselect.qb: ${what} found ${n} times`);
     return replaceFirst(text, old, replacement);
 }
 
@@ -778,7 +1180,10 @@ export function signEntry(lv: Level): string {
 // network games (its IsBigLevel / IsTallLevel), from thaw_levels.json "net_position_scale" - their level select entries
 // get the same flags, which the DLL reads (src/game/net/thugpro_compat.h).
 export function thawPositionScaleFlags(manifest: Manifest, levels: Level[], profile = compat.load("thugpro")): Level[] {
-    const scale = profile.section("thaw_levels", "net_position_scale") as { big?: string[]; tall?: string[] };
+    const scale = profile.section("thaw_levels", "net_position_scale") as {
+        big?: string[];
+        tall?: string[];
+    };
     const flagsByLoad = new Map<string, string[]>();
     for (const entry of manifest.levels) {
         const flags = [
@@ -797,12 +1202,12 @@ export function editLevelSelect(text: string, sectionList: readonly Section[]): 
     // THUG2's added entries (SKATE SHOP, TEST LEVEL) leave its array for the MISCELLANEOUS section's.
     for (const name of THUG2_EXTRA.keys()) {
         const entry = search(new RegExp(`\\n *\\{text="${name}" [^\\n]*\\} *(?=\\n)`), text);
-        if (!entry) pyExit(`gamemenu_levelselect.qb: the ${name} entry not found`);
+        if (!entry) exitWith(`gamemenu_levelselect.qb: the ${name} entry not found`);
         text = replaceFirst(text, entry.str(0), "");
     }
     // TRAINING out of its one-item column (see the top).
     const training = search(/\{text="TRAINING" level_num=LevelNum_TR [^\n]* new_vmenu\}/, text);
-    if (!training) pyExit("gamemenu_levelselect.qb: TRAINING's entry not as expected");
+    if (!training) exitWith("gamemenu_levelselect.qb: TRAINING's entry not as expected");
     text = replaceFirst(text, training.str(0), replaceFirst(training.str(0), " new_vmenu}", "}"));
 
     // The sections' arrays (after THUG2's) and the scripts.
@@ -1118,7 +1523,7 @@ export function editLevelSelect(text: string, sectionList: readonly Section[]): 
         if (scriptStart < 0) throw new Error("substring not found");
         ok = text.slice(scriptStart, loop.start()).includes("level_select_valid_choice");
     }
-    if (!loop || !ok) pyExit("gamemenu_levelselect.qb: level_select_valid_choice's dot loop not as expected");
+    if (!loop || !ok) exitWith("gamemenu_levelselect.qb: level_select_valid_choice's dot loop not as expected");
     text = replaceFirst(
         text,
         loop.str(0),
@@ -1170,7 +1575,7 @@ export function editSprites(text: string, sectionList: readonly Section[]): stri
         .sort(compareStr)
         .map((name) => `        "LevelSelectSprites/${name}" \n`)
         .join("");
-    if (countOf(text, last) !== 1) pyExit("sprites.qb: the level select's texture list not as expected");
+    if (countOf(text, last) !== 1) exitWith("sprites.qb: the level select's texture list not as expected");
     return replaceFirst(text, last, last + names);
 }
 
@@ -1194,9 +1599,9 @@ export function describe(sectionList: readonly Section[]): string {
             let star = "no star (spins)";
             if (lv.location) {
                 const [x, y] = lv.star ?? mapPosition(lv.location[0], lv.location[1]);
-                star = `star at (${pyFloatRepr(x)}, ${pyFloatRepr(y)})`;
+                star = `star at (${floatText(x)}, ${floatText(y)})`;
             } else if (lv.map) {
-                star = `map ${lv.map.texture}, star at (${pyFloatRepr(lv.map.x)}, ${pyFloatRepr(lv.map.y)})`;
+                star = `map ${lv.map.texture}, star at (${floatText(lv.map.x)}, ${floatText(lv.map.y)})`;
             }
             lines.push(`    ${lv.text.padEnd(16)} sign ${lv.icon.padEnd(12)} ${star} - ${lv.place}`);
         }

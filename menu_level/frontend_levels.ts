@@ -139,7 +139,11 @@ export function structureBlocks(levelsText: string): { start: number; end: numbe
             }
         }
         if (end < 0) break;
-        out.push({ start: m.index, end: end + 1, body: levelsText.slice(m.index, end + 1) });
+        out.push({
+            start: m.index,
+            end: end + 1,
+            body: levelsText.slice(m.index, end + 1),
+        });
         head.lastIndex = end + 1;
     }
     return out;
@@ -171,7 +175,10 @@ export function frontendSections(
     for (const [id, title, arrayName] of sectionList) {
         const entries = arrayEntries(selectText, arrayName);
         if (!entries) throw new Error(`level select: ${arrayName} (section ${id}) not found`);
-        const style = SECTION_STYLE.get(id) ?? { tab: id.toUpperCase(), colour: "#C9CBD0" };
+        const style = SECTION_STYLE.get(id) ?? {
+            tab: id.toUpperCase(),
+            colour: "#C9CBD0",
+        };
         let generic = 0;
         const levels: FrontendLevel[] = [];
         for (const entry of entries) {

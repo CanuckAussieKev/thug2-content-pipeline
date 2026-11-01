@@ -29,7 +29,9 @@ function names(...texts: string[]): Map<number, string> {
     return new Map(texts.map((t) => [checksum(t), t]));
 }
 
-function globals(entries: Record<string, QbValue>): { get(name: string): QbValue | undefined } {
+function globals(entries: Record<string, QbValue>): {
+    get(name: string): QbValue | undefined;
+} {
     return { get: (name: string) => entries[name] };
 }
 
@@ -157,16 +159,23 @@ test("rideScripts (phase 4): no vehicle - THAW's own bike scripts; the toggle, g
     assert.equal((text.match(/\{/g) ?? []).length, (text.match(/\}/g) ?? []).length);
 });
 
-// (the game's script names: the decomp's src/game/skater - skipped when this repository is on its own)
+// A file of the decomp's src/ by its name, wherever the source tree keeps it (its folders get reorganised).
+function decompSource(name: string): string {
+    const found = fs
+        .readdirSync(path.join(DECOMP!, "src"), { recursive: true, encoding: "utf8" })
+        .filter((rel) => path.basename(rel) === name);
+    if (found.length !== 1) throw new Error(`${name}: ${found.length} files of that name under the decomp's src/`);
+    return fs.readFileSync(path.join(DECOMP!, "src", found[0]!), "utf8");
+}
+
+// (the game's script names: the decomp's THAW BMX sources - skipped when this repository is on its own)
 test("rideScripts: every script the game runs is there; THAW's under THAW's names", {
-    skip: (!DECOMP && "needs the decomp checkout (src/game/skater)") || NO_THAW,
+    skip: (!DECOMP && "needs the decomp checkout (its THAW BMX sources)") || NO_THAW,
 }, () => {
     const text = rideScripts();
     const scripts = scriptNames(text);
-    // (src/game/skater/thaw_bmx_physics.cpp's and thaw_bmx.cpp's script names)
-    const cpp = ["thaw_bmx_physics.cpp", "thaw_bmx.cpp"]
-        .map((f) => fs.readFileSync(path.join(DECOMP!, "src", "game", "skater", f), "utf8"))
-        .join("\n");
+    // (thaw_bmx_physics.cpp's and thaw_bmx.cpp's script names)
+    const cpp = ["thaw_bmx_physics.cpp", "thaw_bmx.cpp"].map(decompSource).join("\n");
     const run = [...cpp.matchAll(/constexpr const char\* k\w+Script = "(\w+)";/g)].map((m) => m[1]!);
     assert.ok(run.includes("bike_enter_manual") && run.includes("thaw_bmx_after_reset"), run.join(" "));
     for (const name of run.filter((n) => !n.startsWith("animload_") && n !== "thaw_bmx_load_skeleton"))
@@ -399,7 +408,9 @@ test("bikeGlobals: THAW's trick lists as THAW has them - BikePress on the right 
     assert.equal(localStrings("Name = 'Double Peg Grind' x = \"don't\""), 'Name = %"Double Peg Grind" x = "don\'t"');
 });
 
-test("rideScripts: THAW's stick buttons and its d-pad camera on the bike", { skip: NO_THAW }, () => {
+test("rideScripts: THAW's stick buttons and its d-pad camera on the bike", {
+    skip: NO_THAW,
+}, () => {
     const text = rideScripts();
     const code = (name: string): string => {
         const m = new RegExp(`\\nscript ${name}(?: [^{\\n]*)? \\{\\n([\\s\\S]*?)\\n\\}\\n`).exec(text);

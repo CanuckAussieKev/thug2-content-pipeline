@@ -40,8 +40,18 @@ test("art_picks.json: every level of the sections is named once, with its game",
 });
 
 test("parsePicks rejects bad data", () => {
-    assert.throws(() => parsePicks({ version: 1, levels: { a: { game: "x", name: "A", pick: -1 } } }));
-    assert.throws(() => parsePicks({ version: 1, levels: { a: { game: "x", name: "A", pick: 0, strengths: [0] } } }));
+    assert.throws(() =>
+        parsePicks({
+            version: 1,
+            levels: { a: { game: "x", name: "A", pick: -1 } },
+        }),
+    );
+    assert.throws(() =>
+        parsePicks({
+            version: 1,
+            levels: { a: { game: "x", name: "A", pick: 0, strengths: [0] } },
+        }),
+    );
 });
 
 test("the placeholder: deterministic, opaque, dark, with the yellow rule and no scenic content", () => {
@@ -61,8 +71,16 @@ test("the placeholder: deterministic, opaque, dark, with the yellow rule and no 
 });
 
 test("blendPictures: 0 is the base, 1 the top, halfway between", () => {
-    const base = { width: 2, height: 1, bgra: Buffer.from([0, 0, 0, 255, 100, 100, 100, 255]) };
-    const top = { width: 2, height: 1, bgra: Buffer.from([200, 100, 50, 255, 200, 200, 200, 255]) };
+    const base = {
+        width: 2,
+        height: 1,
+        bgra: Buffer.from([0, 0, 0, 255, 100, 100, 100, 255]),
+    };
+    const top = {
+        width: 2,
+        height: 1,
+        bgra: Buffer.from([200, 100, 50, 255, 200, 200, 200, 255]),
+    };
     assert.ok(blendPictures(base, top, 0).bgra.equals(base.bgra));
     assert.ok(blendPictures(base, top, 1).bgra.equals(top.bgra));
     assert.deepEqual([...blendPictures(base, top, 0.5).bgra], [100, 50, 25, 255, 150, 150, 150, 255]);

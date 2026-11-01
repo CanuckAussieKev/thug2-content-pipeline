@@ -280,7 +280,12 @@ test("loadRows: the LoadAnim lines under their SetReferenceChecksum", () => {
 });
 
 test("animKey: an anim pak's key is the descChecksum plus the reference skeleton's", () => {
-    const row = { script: "s", reference: "thps7_human", path: "anims\\THPS7_Veh_BMX\\BMX_idle.ska", desc: "bmx_idle" };
+    const row = {
+        script: "s",
+        reference: "thps7_human",
+        path: "anims\\THPS7_Veh_BMX\\BMX_idle.ska",
+        desc: "bmx_idle",
+    };
     // (THAW's bmx_anims: BMX_idle's file has the key 0x7BB39520)
     assert.equal(animKey(row), 0x7bb39520);
     assert.equal(animKey(row), (checksum("bmx_idle") + checksum("thps7_human")) >>> 0);

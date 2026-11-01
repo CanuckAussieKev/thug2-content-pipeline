@@ -21,7 +21,11 @@ export function installFiles(game: string, overlay: string): string[] {
     for (const folder of ["models", "anims", "skeletons", "sounds", "images"]) {
         const from = path.join(staging, folder);
         if (!fs.existsSync(from)) continue;
-        fs.cpSync(from, path.join(overlay, folder), { recursive: true, preserveTimestamps: true, force: true });
+        fs.cpSync(from, path.join(overlay, folder), {
+            recursive: true,
+            preserveTimestamps: true,
+            force: true,
+        });
         done.push(folder);
     }
     fs.copyFileSync(path.join(staging, MANIFEST), path.join(overlay, MANIFEST));

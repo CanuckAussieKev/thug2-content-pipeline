@@ -32,10 +32,9 @@ import {
 } from "thug2-level-converter-core/level_port/qb_write.ts";
 import * as thug2Col from "thug2-level-converter-core/level_port/thug2_col.ts";
 import * as thug2Scene from "thug2-level-converter-core/level_port/thug2_scene.ts";
-import { parseCli } from "thug2-level-converter-core/lib/cli.ts";
+import { isMain, parseCli, print, runMain } from "thug2-level-converter-core/lib/cli.ts";
 import { NEVER_WRITTEN, WORK } from "thug2-level-converter-core/lib/decomp.ts";
 import { findCaseless, resolveInstall } from "thug2-level-converter-core/lib/install.ts";
-import { isMain, print, runMain } from "thug2-level-converter-core/lib/py.ts";
 import { applyColEdits, applyNodeEdits, type LevelEdits } from "thug2-thugpro-compat/hand_edits.ts";
 import { nodeArray } from "thug2-thugpro-compat/thugpro_nodes.ts";
 import { type Entry, mergeEdits, type ScriptRef } from "./diff.ts";
@@ -233,7 +232,10 @@ export function applyLevel(
                     ? undefined
                     : thug2Col.readCol(tpCol, "THUGPRO col").objects.find((x) => x.checksum === k);
             if (o === undefined) throw new Error(`THUGPRO's ${L} collision has no ${g.name}`);
-            col = { ...col, objects: [...col.objects.filter((x) => x.checksum !== k), o] };
+            col = {
+                ...col,
+                objects: [...col.objects.filter((x) => x.checksum !== k), o],
+            };
             const tpScn = thugpro.file(`levels\\${L}\\${L}.scn.xbx`);
             if (tpScn !== null) {
                 const theirs = thug2Scene.readScene(tpScn, "THUGPRO scn");

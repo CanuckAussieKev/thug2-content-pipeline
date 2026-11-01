@@ -5,7 +5,7 @@
 
 import * as qb from "thug2-level-converter-core/level_port/qb.ts";
 import type { Tok } from "thug2-level-converter-core/level_port/script_port.ts";
-import { decodeLatin1 } from "thug2-level-converter-core/lib/py.ts";
+import { decodeLatin1 } from "thug2-level-converter-core/lib/text.ts";
 
 // A float32 as its shortest decimal form that reads back the same (20.0, 0.4, 1.5).
 export function shortFloat(f: number): string {

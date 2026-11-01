@@ -15,8 +15,7 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { parseCli } from "thug2-level-converter-core/lib/cli.ts";
-import { isMain, print, runMain } from "thug2-level-converter-core/lib/py.ts";
+import { isMain, parseCli, print, runMain } from "thug2-level-converter-core/lib/cli.ts";
 import { field, structureBlocks } from "./frontend_levels.ts";
 import { nativeImg, type Picture, readImg, resize, toPng } from "./loading_art.ts";
 
@@ -70,7 +69,13 @@ export function buildSelectScreens(
     levelsText: string,
     art: ReadonlyMap<string, string>,
 ): SelectScreens {
-    const built: SelectScreens = { images: new Map(), screens: new Map(), pictures: new Map(), missing: [], lines: [] };
+    const built: SelectScreens = {
+        images: new Map(),
+        screens: new Map(),
+        pictures: new Map(),
+        missing: [],
+        lines: [],
+    };
     const originals = originalScreens(levelsText, art.keys());
     for (const [load, image] of [...art].sort(([a], [b]) => (a < b ? -1 : 1))) {
         const original = originals.get(load.toLowerCase());

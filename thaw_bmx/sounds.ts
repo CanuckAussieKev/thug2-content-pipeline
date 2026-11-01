@@ -159,7 +159,12 @@ function chunk(id: string, data: Buffer): Buffer {
 }
 
 // What PCWave::Load reads of a .snd: its fmt's rate and decoded size, whether it loops, the ADPCM bytes.
-export function readSnd(d: Buffer): { rate: number; decodedBytes: number; looping: boolean; data: Buffer } {
+export function readSnd(d: Buffer): {
+    rate: number;
+    decodedBytes: number;
+    looping: boolean;
+    data: Buffer;
+} {
     if (d.toString("latin1", 0, 4) !== "RIFF" || d.toString("latin1", 8, 12) !== "WAVE")
         throw new Error("not a RIFF WAVE");
     let at = 12;

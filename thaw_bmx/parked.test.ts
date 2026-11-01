@@ -41,7 +41,13 @@ test("a node's place: moved by the level's shift, Angles y in degrees", () => {
 
 test("the home bikes' global", () => {
     const text = homeBikesText([
-        { zone: "Z_HO", level: "z_ho", node: "Z_HO_TRG_Ped_BikeGuy", pos: [-1617.66, 96.37, -0.0001], heading: -9.47 },
+        {
+            zone: "Z_HO",
+            level: "z_ho",
+            node: "Z_HO_TRG_Ped_BikeGuy",
+            pos: [-1617.66, 96.37, -0.0001],
+            heading: -9.47,
+        },
     ]);
     assert.match(
         text,

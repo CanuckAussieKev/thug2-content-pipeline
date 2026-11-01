@@ -292,7 +292,13 @@ export function hdMapFiles(
 ): Map<string, Buffer> {
     const out = new Map<string, Buffer>();
     const blank = Buffer.alloc(0);
-    const original = { tw: PLAN_SIZE, th: PLAN_SIZE, iw: PLAN_SIZE, ih: PLAN_SIZE, bgra: blank };
+    const original = {
+        tw: PLAN_SIZE,
+        th: PLAN_SIZE,
+        iw: PLAN_SIZE,
+        ih: PLAN_SIZE,
+        bgra: blank,
+    };
     for (const name of used)
         out.set(
             path.join("images", "LevelSelectSprites", `${name}.img.xbx`),

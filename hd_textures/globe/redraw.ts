@@ -10,9 +10,8 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { parseCli } from "thug2-level-converter-core/lib/cli.ts";
+import { isMain, parseCli, print, runMain } from "thug2-level-converter-core/lib/cli.ts";
 import { encodePng } from "thug2-level-converter-core/lib/frame_diff.ts";
-import { isMain, print, runMain } from "thug2-level-converter-core/lib/py.ts";
 import { loadProjection } from "./fit.ts";
 import { loadLakes, loadLand, type Polygon } from "./geo.ts";
 import { distanceTo, fillMask, type PixelPolygon, ringAreaXY, simplifyRing, smoothRing, type XY } from "./raster.ts";

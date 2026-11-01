@@ -10,7 +10,8 @@
 // src/game/script/qb.cpp and parse.cpp (ParseArguments, ParseStructure).
 
 import * as zlib from "node:zlib";
-import { encodeLatin1, Float } from "thug2-level-converter-core/lib/py.ts";
+import { Float } from "thug2-level-converter-core/lib/numbers.ts";
+import { encodeLatin1 } from "thug2-level-converter-core/lib/text.ts";
 
 export function checksum(name: string): number {
     return (zlib.crc32(encodeLatin1(name.toLowerCase())) ^ 0xffffffff) >>> 0;
@@ -154,7 +155,13 @@ export function parseValue(d: Buffer, i: number, args: Params | null): [WalkValu
     }
     if (t === 0x16) return [{ kind: "name", value: u32(d, i + 1) }, i + 5];
     if (t === 0x1e)
-        return [{ kind: "vector", xyz: [d.readFloatLE(i + 1), d.readFloatLE(i + 5), d.readFloatLE(i + 9)] }, i + 13];
+        return [
+            {
+                kind: "vector",
+                xyz: [d.readFloatLE(i + 1), d.readFloatLE(i + 5), d.readFloatLE(i + 9)],
+            },
+            i + 13,
+        ];
     if (t === 0x1f) return [new Unknown(), i + 9];
     if (t === 0x2d && at(d, i + 1) === 0x16) {
         const name = u32(d, i + 2);

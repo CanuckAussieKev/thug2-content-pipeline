@@ -137,7 +137,13 @@ export function openInstalls(game: string, thugpro: string): Installs {
     const tpLevels = t.read("qb\\game\\Levels.qb");
     if (gameLevels === null) throw new Error(`${pre}: no scripts\\game\\Levels.qb`);
     if (tpLevels === null) throw new Error(`${tpPre}: no qb\\game\\Levels.qb`);
-    return { game: g, thugpro: t, gameLevels, tpLevels, tpDynamic: t.read("qb\\thugpro\\thugpro_dynamic.qb") };
+    return {
+        game: g,
+        thugpro: t,
+        gameLevels,
+        tpLevels,
+        tpDynamic: t.read("qb\\thugpro\\thugpro_dynamic.qb"),
+    };
 }
 
 function levelStruct(levels: Buffer, code: string, side: string): Struct {
@@ -226,7 +232,12 @@ export function scriptsOf(files: Iterable<[string, string, Buffer]>): Map<number
             continue;
         }
         for (const [name, [a, b]] of spans) {
-            if (!out.has(name)) out.set(name, { name, bytes: data.subarray(a, b), from: `${archive}: ${entry}` });
+            if (!out.has(name))
+                out.set(name, {
+                    name,
+                    bytes: data.subarray(a, b),
+                    from: `${archive}: ${entry}`,
+                });
         }
     }
     return out;

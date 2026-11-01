@@ -37,9 +37,8 @@ import * as hd from "thug2-level-converter-core/level_port/hd_textures.ts";
 import { entries } from "thug2-level-converter-core/level_port/prx.ts";
 import type { TexFile, Texture } from "thug2-level-converter-core/level_port/tex.ts";
 import { readTex, unswizzleOrder, writeTex } from "thug2-level-converter-core/level_port/tex.ts";
-import { parseCli } from "thug2-level-converter-core/lib/cli.ts";
+import { isMain, parseCli, print, runMain } from "thug2-level-converter-core/lib/cli.ts";
 import { resolveInstall } from "thug2-level-converter-core/lib/install.ts";
-import { isMain, print, runMain } from "thug2-level-converter-core/lib/py.ts";
 import { redrawnTiles } from "./globe/redraw.ts";
 
 export const HD_IMG_MARKER = 0x48440000; // "HD" in the high half; the low byte the scale (src/game/gfx/hd_ui.h)

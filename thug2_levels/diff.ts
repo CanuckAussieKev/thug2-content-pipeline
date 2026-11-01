@@ -20,7 +20,7 @@ import * as qb from "thug2-level-converter-core/level_port/qb.ts";
 import { Name, type QbValue, Struct, Vector } from "thug2-level-converter-core/level_port/qb.ts";
 import * as thug2Col from "thug2-level-converter-core/level_port/thug2_col.ts";
 import * as thug2Scene from "thug2-level-converter-core/level_port/thug2_scene.ts";
-import { Float } from "thug2-level-converter-core/lib/py.ts";
+import { Float } from "thug2-level-converter-core/lib/numbers.ts";
 import { encode, type Json, type LevelEdits } from "thug2-thugpro-compat/hand_edits.ts";
 import { nodeArray } from "thug2-thugpro-compat/thugpro_nodes.ts";
 import {
@@ -68,7 +68,10 @@ export interface Entry {
     scripts?: ScriptRef[]; // THUGPRO's scripts it needs (by reference)
     replace_scripts?: ScriptRef[]; // scripts of THUG2's level THUGPRO's file replaces (by reference)
     geometry?: GeometryRef[];
-    level_setup?: { setup_script?: string; options?: { script: string; params: string[] }[] };
+    level_setup?: {
+        setup_script?: string;
+        options?: { script: string; params: string[] }[];
+    };
     note?: string;
 }
 
@@ -270,7 +273,10 @@ export function nodeChanges(ours: readonly QbValue[], theirs: readonly QbValue[]
                 what,
                 klass: klassOf(what),
                 detail: "not in THUGPRO's array",
-                edit: { created_at_start: { off: [name] }, net_presence: { absent: [name] } },
+                edit: {
+                    created_at_start: { off: [name] },
+                    net_presence: { absent: [name] },
+                },
             });
             continue;
         }
@@ -306,7 +312,9 @@ export function nodeChanges(ours: readonly QbValue[], theirs: readonly QbValue[]
                     what: w,
                     klass: lower(flag) === "trickobject" ? "parity" : klassOf(w) === "parity" ? "parity" : "cosmetic",
                     detail: `${flag} ${on ? "added" : "taken off"}`,
-                    edit: { node_values: { [name]: { [`${on ? "+" : "-"}${flag}`]: true } } },
+                    edit: {
+                        node_values: { [name]: { [`${on ? "+" : "-"}${flag}`]: true } },
+                    },
                 });
             }
         }
@@ -362,7 +370,11 @@ export function nodeChanges(ours: readonly QbValue[], theirs: readonly QbValue[]
                 what: w,
                 klass,
                 detail: `${keyText}: ${show(va)} -> ${show(vb)}`,
-                edit: { node_values: { [name]: { [keyText]: vb === undefined ? null : encode(vb, nm) } } },
+                edit: {
+                    node_values: {
+                        [name]: { [keyText]: vb === undefined ? null : encode(vb, nm) },
+                    },
+                },
             });
         }
     }
@@ -454,7 +466,13 @@ export function colChanges(
                 detail: `${o.faces.length} faces`,
                 count: o.faces.length,
                 ...(o.faces.length
-                    ? { edit: { collision_removed: { [name]: { faces: o.faces.length, remove: "all" as const } } } }
+                    ? {
+                          edit: {
+                              collision_removed: {
+                                  [name]: { faces: o.faces.length, remove: "all" as const },
+                              },
+                          },
+                      }
                     : {}),
             });
             continue;
@@ -570,7 +588,12 @@ export function colChanges(
             });
         }
         if (added > 0)
-            out.push({ object: name, kind: "faces_added", detail: `${added} faces THUG2 hasn't`, count: added });
+            out.push({
+                object: name,
+                kind: "faces_added",
+                detail: `${added} faces THUG2 hasn't`,
+                count: added,
+            });
     }
     for (const t of theirs.objects) {
         if (ourKeys.has(t.checksum)) continue;
@@ -680,9 +703,20 @@ export interface LevelReport {
     collision: { ours: number; theirs: number; changes: ColChange[] } | null;
     scene: (ScnChanges & { ours: number; theirs: number }) | null;
     levelChanges: LevelChange[];
-    options: { desc: string; flag: string; script: string; flags: string[]; dflt: "on" | "off" }[];
+    options: {
+        desc: string;
+        flag: string;
+        script: string;
+        flags: string[];
+        dflt: "on" | "off";
+    }[];
     structure: { key: string; ours: string; theirs: string }[];
-    scripts: { name: string; how: "changed" | "added" | "removed"; kill: boolean; gap: boolean }[];
+    scripts: {
+        name: string;
+        how: "changed" | "added" | "removed";
+        kill: boolean;
+        gap: boolean;
+    }[];
     ctx: Context;
     tpScripts: Map<number, ScriptItem>; // THUGPRO's level's own scripts (its extras and replaced level scripts)
 }
@@ -694,7 +728,11 @@ const LOADER_KEYS = new Set(
 
 export function compareLevel(
     files: LevelFiles,
-    globals: { thug2: Map<number, ScriptItem>; thugpro: Map<number, ScriptItem>; names: Map<number, string> },
+    globals: {
+        thug2: Map<number, ScriptItem>;
+        thugpro: Map<number, ScriptItem>;
+        names: Map<number, string>;
+    },
 ): LevelReport {
     const L = files.code;
     const names = new Map(globals.names);
@@ -746,7 +784,11 @@ export function compareLevel(
         report.sources.nodes = files.tp.nodesFrom ?? "";
         const [ours] = nodeArray(files.nodes, `${L}.qb`);
         const [theirs] = nodeArray(files.tp.nodes, files.tp.nodesFrom ?? "");
-        report.nodes = { ours: ours.length, theirs: theirs.length, changes: nodeChanges(ours, theirs, ctx) };
+        report.nodes = {
+            ours: ours.length,
+            theirs: theirs.length,
+            changes: nodeChanges(ours, theirs, ctx),
+        };
     }
     if (files.tp.col !== null) {
         report.sources.collision = files.tp.colFrom ?? "";
@@ -761,7 +803,11 @@ export function compareLevel(
         report.sources.scene = files.tp.scnFrom ?? "";
         const a = thug2Scene.readScene(files.scn, `${L}.scn`);
         const b = thug2Scene.readScene(files.tp.scn, files.tp.scnFrom ?? "");
-        report.scene = { ...scnChanges(a, b), ours: a.sectors.length, theirs: b.sectors.length };
+        report.scene = {
+            ...scnChanges(a, b),
+            ours: a.sectors.length,
+            theirs: b.sectors.length,
+        };
     }
     // LevelChanges / option items from the level's extra files and thugpro_dynamic.qb
     const changeKey = `${stringOf(files.tp.struct, "level") ?? L}_LevelChanges`;
@@ -839,7 +885,11 @@ export function compareLevel(
             b.replace(/-?\d+\.\d+/g, (x) => Number(x).toFixed(2))
         )
             continue;
-        report.structure.push({ key: keys.get(`name:${k}`)![0], ours: a || "(none)", theirs: b || "(none)" });
+        report.structure.push({
+            key: keys.get(`name:${k}`)![0],
+            ours: a || "(none)",
+            theirs: b || "(none)",
+        });
     }
     // the level's script files THUGPRO replaces (its node array's .qb, its scripts .qb): their scripts against THUG2's
     const pairs: [Buffer | null, Buffer | null, string | null][] = [
@@ -860,7 +910,12 @@ export function compareLevel(
         }
         for (const k of mine.keys()) {
             if (!theirs.has(k))
-                report.scripts.push({ name: nameText(k, names), how: "removed", kill: false, gap: false });
+                report.scripts.push({
+                    name: nameText(k, names),
+                    how: "removed",
+                    kill: false,
+                    gap: false,
+                });
         }
     }
     return report;
@@ -885,7 +940,11 @@ export function scriptClosure(
         if (out.has(s) || ctx.thug2Scripts.has(s)) continue;
         const item = tpScripts.get(s) ?? ctx.scripts.get(s);
         if (item === undefined) continue;
-        out.set(s, { name: nameText(s, ctx.names), from: item.from, crc: crc32(item.bytes) >>> 0 });
+        out.set(s, {
+            name: nameText(s, ctx.names),
+            from: item.from,
+            crc: crc32(item.bytes) >>> 0,
+        });
         for (const u of usedNames(item.bytes)) stack.push(u);
     }
     return [...out.values()].sort((a, b) => a.name.localeCompare(b.name));
@@ -906,7 +965,10 @@ export function mergeEdits(list: readonly LevelEdits[]): LevelEdits {
         if (e.net_presence) {
             const absent = joined(out.net_presence?.absent, e.net_presence.absent);
             const present = joined(out.net_presence?.present, e.net_presence.present);
-            out.net_presence = { ...(absent ? { absent } : {}), ...(present ? { present } : {}) };
+            out.net_presence = {
+                ...(absent ? { absent } : {}),
+                ...(present ? { present } : {}),
+            };
         }
         if (e.created_at_start) {
             const on = joined(out.created_at_start?.on, e.created_at_start.on);
@@ -923,7 +985,11 @@ export function mergeEdits(list: readonly LevelEdits[]): LevelEdits {
             const links = e.rails.links || out.rails?.links ? { ...out.rails?.links, ...e.rails.links } : undefined;
             const reused =
                 e.rails.reused || out.rails?.reused ? { ...out.rails?.reused, ...e.rails.reused } : undefined;
-            out.rails = { ...(added ? { added } : {}), ...(links ? { links } : {}), ...(reused ? { reused } : {}) };
+            out.rails = {
+                ...(added ? { added } : {}),
+                ...(links ? { links } : {}),
+                ...(reused ? { reused } : {}),
+            };
         }
         if (e.face_values) {
             const faces = { ...out.face_values };
@@ -943,8 +1009,16 @@ export function mergeEdits(list: readonly LevelEdits[]): LevelEdits {
             }
             out.face_values = faces;
         }
-        if (e.collision_removed) out.collision_removed = { ...out.collision_removed, ...e.collision_removed };
-        if (e.collision_reshaped) out.collision_reshaped = { ...out.collision_reshaped, ...e.collision_reshaped };
+        if (e.collision_removed)
+            out.collision_removed = {
+                ...out.collision_removed,
+                ...e.collision_removed,
+            };
+        if (e.collision_reshaped)
+            out.collision_reshaped = {
+                ...out.collision_reshaped,
+                ...e.collision_reshaped,
+            };
     }
     return out;
 }

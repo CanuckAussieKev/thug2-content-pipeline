@@ -11,8 +11,7 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { parseCli } from "thug2-level-converter-core/lib/cli.ts";
-import { isMain, print, runMain } from "thug2-level-converter-core/lib/py.ts";
+import { isMain, parseCli, print, runMain } from "thug2-level-converter-core/lib/cli.ts";
 import { encodeImg } from "../hd_textures/ui.ts";
 import { nativeImg, type Picture, readPng, resize, toPng } from "./loading_art.ts";
 import * as scenicArt from "./scenic_art.ts";
@@ -32,7 +31,15 @@ export interface ArtPick {
 
 export interface PicksFile {
     version: 1;
-    levels: Record<string, { game: string; name: string; pick: number | "placeholder"; strengths?: number[] }>;
+    levels: Record<
+        string,
+        {
+            game: string;
+            name: string;
+            pick: number | "placeholder";
+            strengths?: number[];
+        }
+    >;
 }
 
 export function parsePicks(file: PicksFile): Map<string, ArtPick> {
@@ -67,7 +74,12 @@ export function placeholderPicture(w = ART_W, h = ART_H): Picture {
     const k = w / ART_W;
     const bgra = Buffer.alloc(w * h * 4);
     const inset = 26;
-    const rule = { x0: ART_W - inset - 56, x1: ART_W - inset, y: ART_H - inset, thick: 3 };
+    const rule = {
+        x0: ART_W - inset - 56,
+        x1: ART_W - inset,
+        y: ART_H - inset,
+        thick: 3,
+    };
     for (let py = 0; py < h; py++) {
         const y = (py + 0.5) / k;
         for (let px = 0; px < w; px++) {
@@ -105,11 +117,27 @@ export function placeholderPicture(w = ART_W, h = ART_H): Picture {
 }
 
 // Its image files: the native 640 x 360 and the HD (x4) one, as scenic_art.levelArt writes a level's.
-export function placeholderArt(): { nativeFile: Buffer; hdFile: Buffer; hd: Picture; native: Picture } {
+export function placeholderArt(): {
+    nativeFile: Buffer;
+    hdFile: Buffer;
+    hd: Picture;
+    native: Picture;
+} {
     const hd = placeholderPicture(ART_W * HD_SCALE, ART_H * HD_SCALE);
     const native = resize(hd, ART_W, ART_H);
-    const original = { tw: ART_W, th: ART_H, iw: ART_W, ih: ART_H, bgra: Buffer.alloc(0) };
-    return { hd, native, nativeFile: nativeImg(native), hdFile: encodeImg(original, hd.bgra, HD_SCALE, true) };
+    const original = {
+        tw: ART_W,
+        th: ART_H,
+        iw: ART_W,
+        ih: ART_H,
+        bgra: Buffer.alloc(0),
+    };
+    return {
+        hd,
+        native,
+        nativeFile: nativeImg(native),
+        hdFile: encodeImg(original, hd.bgra, HD_SCALE, true),
+    };
 }
 
 // --- contact sheets ----------------------------------------------------------------------------------------------------
@@ -179,7 +207,10 @@ export function pickSheets(out: string): string[] {
 const USAGE = "usage: art_picks.ts sheet <out folder> (the placeholder only) | sheets <out folder>";
 
 function main(): number {
-    const { positionals } = parseCli(USAGE, { options: {}, allowPositionals: true });
+    const { positionals } = parseCli(USAGE, {
+        options: {},
+        allowPositionals: true,
+    });
     if (positionals[0] === "sheet" && positionals[1]) {
         fs.mkdirSync(positionals[1], { recursive: true });
         const file = path.join(positionals[1], "placeholder_hd.png");

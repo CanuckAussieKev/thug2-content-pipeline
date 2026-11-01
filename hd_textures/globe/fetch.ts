@@ -9,7 +9,7 @@ import { createHash } from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { REPO } from "thug2-level-converter-core/level_port/common.ts";
-import { isMain, print, pyExit, runMain } from "thug2-level-converter-core/lib/py.ts";
+import { exitWith, isMain, print, runMain } from "thug2-level-converter-core/lib/cli.ts";
 
 export const BASE_URL = "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/";
 export const NE_DIR = path.join(REPO, "out", "natural_earth");
@@ -32,16 +32,16 @@ export async function main(argv: readonly string[] = process.argv.slice(2)): Pro
         const file = path.join(NE_DIR, name);
         if (fs.existsSync(file) && !force) {
             if (createHash("sha256").update(fs.readFileSync(file)).digest("hex") !== sha)
-                pyExit(`${file}: SHA-256 differs from the recorded one (use --force to download again)`);
+                exitWith(`${file}: SHA-256 differs from the recorded one (use --force to download again)`);
             print(`already there: ${name}`);
             continue;
         }
         print(`downloading ${BASE_URL}${name}`);
         const response = await fetch(BASE_URL + name);
-        if (!response.ok) pyExit(`download failed: HTTP ${response.status}`);
+        if (!response.ok) exitWith(`download failed: HTTP ${response.status}`);
         const data = Buffer.from(await response.arrayBuffer());
         const hash = createHash("sha256").update(data).digest("hex");
-        if (hash !== sha) pyExit(`${name}: SHA-256 mismatch: got ${hash}, expected ${sha} - not written`);
+        if (hash !== sha) exitWith(`${name}: SHA-256 mismatch: got ${hash}, expected ${sha} - not written`);
         fs.writeFileSync(file, data);
     }
     return 0;

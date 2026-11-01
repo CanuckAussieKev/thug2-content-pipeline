@@ -48,8 +48,9 @@
 // make_menu_level.ts calls optionsMenu() with the front end's GAME OPTIONS scripts (levels\mainmenu\
 // mainmenu_options.qb) and writes the result into the overlay.
 
-import { formatFixed, pyStrRepr } from "thug2-level-converter-core/lib/py.ts";
+import { formatFixed } from "thug2-level-converter-core/lib/numbers.ts";
 import { findall, finditer, search } from "thug2-level-converter-core/lib/re.ts";
+import { quotedText } from "thug2-level-converter-core/lib/text.ts";
 import * as qbWalk from "./qb_walk.ts";
 
 // The stats' maximum (the stats menu's "/10"; profile stats are clamped to 0..10 - 0x00585FD0).
@@ -306,7 +307,7 @@ export function classicAndGaps(
     const classicLevels: LevelStructure[] = [];
     for (const load of findall(/\blevel=(\w+)/, classicList)) {
         const s = byLoad.get(load.toLowerCase());
-        if (s === undefined) throw new Error(`KeyError: ${pyStrRepr(load.toLowerCase())}`);
+        if (s === undefined) throw new Error(`KeyError: ${quotedText(load.toLowerCase())}`);
         if (!classicLevels.includes(s)) classicLevels.push(s);
     }
     const gapListText = globalStructArray(levelsQb, "levels_with_gaps");
@@ -347,7 +348,7 @@ export function classicAndGaps(
         }
         if (gapLevels.includes(level)) {
             const file = files.get(level.qb.toLowerCase());
-            if (file === undefined) throw new Error(`KeyError: ${pyStrRepr(level.qb.toLowerCase())}`);
+            if (file === undefined) throw new Error(`KeyError: ${quotedText(level.qb.toLowerCase())}`);
             const nodes = qbWalk.globalValue(file, qbWalk.checksum(`${level.prefix}_NodeArray`));
             gaps.set(level.number, qbWalk.gapList(levelSymbols, Array.isArray(nodes) && nodes.length ? nodes : []));
         }
@@ -686,7 +687,13 @@ export function applyScript(data: CareerData): string {
     const stats = data.stats.map((name) => `${name}=${STAT_MAX}`).join(" ");
     let classicTotal = 0;
     for (const names of data.classic.values()) classicTotal += names.length;
-    return scriptsText({ story, levels, finalChapter: data.finalChapter, stats, classicTotal });
+    return scriptsText({
+        story,
+        levels,
+        finalChapter: data.finalChapter,
+        stats,
+        classicTotal,
+    });
 }
 
 // A string as NeverScript reads it between double quotes ('\' written '\\'); the game compares gap names byte for
@@ -694,7 +701,7 @@ export function applyScript(data: CareerData): string {
 export function nsString(text: string): string {
     for (const c of text) {
         const code = c.codePointAt(0)!;
-        if (code > 126 || code < 32 || c === '"') throw new Error(`gap name ${pyStrRepr(text)}: not plain ASCII`);
+        if (code > 126 || code < 32 || c === '"') throw new Error(`gap name ${quotedText(text)}: not plain ASCII`);
     }
     return text.replaceAll("\\", "\\\\");
 }

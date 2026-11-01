@@ -26,8 +26,7 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { parseCli } from "thug2-level-converter-core/lib/cli.ts";
-import { isMain, print, runMain } from "thug2-level-converter-core/lib/py.ts";
+import { isMain, parseCli, print, runMain } from "thug2-level-converter-core/lib/cli.ts";
 import { encodeImg } from "../hd_textures/ui.ts";
 import type { ArtPick } from "./art_picks.ts";
 import { nativeImg, type Picture, readPng, resize, toPng } from "./loading_art.ts";
@@ -529,8 +528,19 @@ export function levelArt(
     const styled = applyStyle(raw, style, colour);
     const hd = strength >= 1 ? styled : blendPictures(raw, styled, strength);
     const native = resize(hd, ART_W, ART_H);
-    const original = { tw: ART_W, th: ART_H, iw: ART_W, ih: ART_H, bgra: Buffer.alloc(0) };
-    return { hd, native, nativeFile: nativeImg(native), hdFile: encodeImg(original, hd.bgra, HD_SCALE, true) };
+    const original = {
+        tw: ART_W,
+        th: ART_H,
+        iw: ART_W,
+        ih: ART_H,
+        bgra: Buffer.alloc(0),
+    };
+    return {
+        hd,
+        native,
+        nativeFile: nativeImg(native),
+        hdFile: encodeImg(original, hd.bgra, HD_SCALE, true),
+    };
 }
 
 // `top` over `base` by `amount` (0-1), channel by channel on the stored values (same size, opaque): the filter-strength
@@ -882,7 +892,10 @@ export function variantSheets(games: readonly string[], out: string, style: Styl
                 if (n === 0 && first) {
                     first = false;
                     compare.push(
-                        { picture: resize(small, tileW, tileH), label: `${game} ${level} RAW` },
+                        {
+                            picture: resize(small, tileW, tileH),
+                            label: `${game} ${level} RAW`,
+                        },
                         {
                             picture: resize(applyStyle(small, STYLES_PREVIOUS[style], colour), tileW, tileH),
                             label: "BEFORE",
@@ -897,7 +910,11 @@ export function variantSheets(games: readonly string[], out: string, style: Styl
             // (a level with fewer than four pictures leaves its row short: pad so the rows stay whole)
             for (let pad = ids.length; pad < VARIANT_COUNT; pad++)
                 tiles.push({
-                    picture: { width: tileW, height: tileH, bgra: Buffer.alloc(tileW * tileH * 4, 0x0a) },
+                    picture: {
+                        width: tileW,
+                        height: tileH,
+                        bgra: Buffer.alloc(tileW * tileH * 4, 0x0a),
+                    },
                     label: "",
                 });
         }

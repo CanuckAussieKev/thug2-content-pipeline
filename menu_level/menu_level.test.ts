@@ -36,8 +36,20 @@ const compatNone = compat.load("none");
 test("THUGPRO's big level (TP-R6) is flagged in its level select entry", () => {
     const manifest = {
         levels: [
-            { folder: "Z_MA", level: "z_ma", display: "THAW The Mall", name: "z_ma", level_num: 1 },
-            { folder: "Z_CH", level: "skatepark", display: "THAW Chicago", name: "skatepark", level_num: 2 },
+            {
+                folder: "Z_MA",
+                level: "z_ma",
+                display: "THAW The Mall",
+                name: "z_ma",
+                level_num: 1,
+            },
+            {
+                folder: "Z_CH",
+                level: "skatepark",
+                display: "THAW Chicago",
+                name: "skatepark",
+                level_num: 2,
+            },
         ],
     } as unknown as Manifest;
     const level = (load: string): Level => ({

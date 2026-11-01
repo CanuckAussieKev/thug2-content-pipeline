@@ -36,8 +36,7 @@ import { Struct } from "thug2-level-converter-core/level_port/qb.ts";
 import * as thug2Col from "thug2-level-converter-core/level_port/thug2_col.ts";
 import * as thug2Scene from "thug2-level-converter-core/level_port/thug2_scene.ts";
 import { materialSeeThrough } from "thug2-level-converter-core/level_port/thug2_scene.ts";
-import { parseCli } from "thug2-level-converter-core/lib/cli.ts";
-import { isMain, print, runMain } from "thug2-level-converter-core/lib/py.ts";
+import { isMain, parseCli, print, runMain } from "thug2-level-converter-core/lib/cli.ts";
 import { isName, nodeArray, position } from "thug2-thugpro-compat/thugpro_nodes.ts";
 
 export type V3 = [number, number, number];
@@ -103,7 +102,14 @@ export function orientTris(raw: readonly { a: V3; b: V3; c: V3; n: V3; area: num
     const s = up >= 0 ? 1 : -1;
     return raw.map((t) => {
         const n: V3 = [t.n[0] * s, t.n[1] * s, t.n[2] * s];
-        return { a: t.a, b: t.b, c: t.c, n, area: t.area, w: faceWeight(n[1], t.vert ?? false) };
+        return {
+            a: t.a,
+            b: t.b,
+            c: t.c,
+            n,
+            area: t.area,
+            w: faceWeight(n[1], t.vert ?? false),
+        };
     });
 }
 
@@ -165,8 +171,18 @@ export class Scene {
     drawn: Scene | null = null;
 
     // The nearest hit in the collision or (when present) the drawn scene: which one, for the occlusion tests.
-    castBoth(o: V3, d: V3, far = 1e9): { col: { t: number; tri: Tri } | null; drawn: { t: number; tri: Tri } | null } {
-        return { col: this.cast(o, d, far), drawn: this.drawn ? this.drawn.cast(o, d, far) : null };
+    castBoth(
+        o: V3,
+        d: V3,
+        far = 1e9,
+    ): {
+        col: { t: number; tri: Tri } | null;
+        drawn: { t: number; tri: Tri } | null;
+    } {
+        return {
+            col: this.cast(o, d, far),
+            drawn: this.drawn ? this.drawn.cast(o, d, far) : null,
+        };
     }
 
     // The play area from the level's nodes: their x / z between the 3rd and 97th percentiles, widened by a tenth on
@@ -531,7 +547,12 @@ export function candidates(scene: Scene, count = 6, targetCount = 6): Candidate[
                     const pose = { pos, heading, pitch };
                     const score = scorePose(scene, pose, target, size, 32, 18);
                     const down = scene.cast(pos, [0, -1, 0], 1e6);
-                    all.push({ pose, target, score, ground: down ? Math.round(pos[1] - down.t) : null });
+                    all.push({
+                        pose,
+                        target,
+                        score,
+                        ground: down ? Math.round(pos[1] - down.t) : null,
+                    });
                 }
             }
     }
@@ -614,7 +635,14 @@ export function trisFromScene(scn: thug2Scene.Scene): Tri[] {
                 const l = len(n);
                 if (!(l > 1e-6)) continue;
                 if (big && l < 300 && Math.max(len(sub(pb, pa)), len(sub(pc, pb)), len(sub(pa, pc))) < 60) continue;
-                out.push({ a: pa, b: pb, c: pc, n: [n[0] / l, n[1] / l, n[2] / l], w: 0, area: l / 2 });
+                out.push({
+                    a: pa,
+                    b: pb,
+                    c: pc,
+                    n: [n[0] / l, n[1] / l, n[2] / l],
+                    w: 0,
+                    area: l / 2,
+                });
             }
         }
     }
@@ -668,7 +696,11 @@ const USAGE = "usage: scenic_spots.ts <staging folder> <level>... [--count N] [-
 
 function main(): number {
     const { values, positionals } = parseCli(USAGE, {
-        options: { count: { type: "string", default: "6" }, out: { type: "string" }, game: { type: "string" } },
+        options: {
+            count: { type: "string", default: "6" },
+            out: { type: "string" },
+            game: { type: "string" },
+        },
         allowPositionals: true,
     });
     if (positionals.length < 2) {

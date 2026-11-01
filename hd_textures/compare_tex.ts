@@ -14,9 +14,9 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { alphaKind, topLevel } from "thug2-level-converter-core/level_port/hd_textures.ts";
 import * as tex from "thug2-level-converter-core/level_port/tex.ts";
-import { helpFromHeader } from "thug2-level-converter-core/lib/cli.ts";
+import { exitWith, helpFromHeader, isMain, print, runMain } from "thug2-level-converter-core/lib/cli.ts";
 import { encodePng, type Image } from "thug2-level-converter-core/lib/frame_diff.ts";
-import { hex8, isMain, print, pyExit, runMain } from "thug2-level-converter-core/lib/py.ts";
+import { hex8 } from "thug2-level-converter-core/lib/text.ts";
 
 // BGRA over a checkerboard, as RGB, resampled (nearest) to w x h
 function flatten(bgra: Uint8Array, sw: number, sh: number, w: number, h: number): Uint8Array {
@@ -80,7 +80,7 @@ export function main(argv: readonly string[] = process.argv.slice(2)): number {
         else positional.push(arg);
     }
     if (positional.length !== 3 || !(count > 0) || !(min > 0))
-        pyExit(
+        exitWith(
             "usage: compare_tex.ts <original.tex.xbx> <upscaled.tex.xbx> <out folder> [--count N] [--min N] [--per-kind N] [--height N]",
         );
     const [origFile, hdFile, outDir] = positional as [string, string, string];

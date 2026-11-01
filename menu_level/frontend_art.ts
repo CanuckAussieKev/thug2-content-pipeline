@@ -14,8 +14,7 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { parseCli } from "thug2-level-converter-core/lib/cli.ts";
-import { isMain, print, runMain } from "thug2-level-converter-core/lib/py.ts";
+import { isMain, parseCli, print, runMain } from "thug2-level-converter-core/lib/cli.ts";
 import { cropFraction, nativeImg, type Picture, readImg, resize, SCREEN_H, SCREEN_W, toPng } from "./loading_art.ts";
 import { ART, type ArtSource, findInstalls, GAMES, type Game, GameArt } from "./loading_art_games.ts";
 
@@ -35,28 +34,47 @@ const WHOLE: FrontVariant["crop"] = [0, 0, 1];
 
 // THPS3: the three photos in the film strip are the picture, the level's name is under the strip: the middle photo.
 const STRIP = "the film strip's middle photo (the level's name is under the strip)";
-const strip = (x = 0.42, y = 0.21, s = 0.38): FrontVariant => ({ crop: [x, y, s], why: STRIP });
+const strip = (x = 0.42, y = 0.21, s = 0.38): FrontVariant => ({
+    crop: [x, y, s],
+    why: STRIP,
+});
 
 // THPS4: three pinned photos with the name and LOADING... over their lower edge (Chicago and Motox: a "Featured in
 // Pro BMX 2" banner at the top as well).
 const PHOTOS = "the pinned photos (the name and LOADING... are over their lower edge)";
-const photos = (x = 0.3, y = 0.06, s = 0.56): FrontVariant => ({ crop: [x, y, s], why: PHOTOS });
+const photos = (x = 0.3, y = 0.06, s = 0.56): FrontVariant => ({
+    crop: [x, y, s],
+    why: PHOTOS,
+});
 
 // THUG1: the level's name in the bar at the top, the LOADING logo at the bottom, and the level's picture between.
 const BETWEEN = "the part between the name bar at the top and the LOADING logo at the bottom";
-const between = (x: number, y = 0.15, s = 0.62): FrontVariant => ({ crop: [x, y, s], why: BETWEEN });
+const between = (x: number, y = 0.15, s = 0.62): FrontVariant => ({
+    crop: [x, y, s],
+    why: BETWEEN,
+});
 
 // THAW: the film strip's middle photo (the name is on the strip).
 const THAW_STRIP = "the film strip's middle photo (the level's name is on the strip)";
-const thawStrip = (): FrontVariant => ({ crop: [0.41, 0.235, 0.36], why: THAW_STRIP });
+const thawStrip = (): FrontVariant => ({
+    crop: [0.41, 0.235, 0.36],
+    why: THAW_STRIP,
+});
 
 // THP8: the card's photo alone (the torn edge, "LOADING" and THP8's logo behind it are left out).
 const PHOTO = "the level select card's photo alone (no torn edge, THP8's logo or LOADING)";
-const photo = (name: string): FrontVariant => ({ crop: WHOLE, source: `photo:${name}`, why: PHOTO });
+const photo = (name: string): FrontVariant => ({
+    crop: WHOLE,
+    source: `photo:${name}`,
+    why: PHOTO,
+});
 
 // THPS2's "Loading..." picture (the game mode's, not the level's): the collage below the word.
 const LOADING_COLLAGE = "load_fre.bmp below the word Loading...";
-const collage = (): FrontVariant => ({ crop: [0.35, 0.22, 0.6], why: LOADING_COLLAGE });
+const collage = (): FrontVariant => ({
+    crop: [0.35, 0.22, 0.6],
+    why: LOADING_COLLAGE,
+});
 
 export const FRONT: Readonly<Record<Game, Readonly<Record<string, FrontVariant>>>> = {
     thps3: {
@@ -72,7 +90,10 @@ export const FRONT: Readonly<Record<Game, Readonly<Record<string, FrontVariant>>
         load_ware: strip(),
         load_burn: strip(),
         load_ros: strip(),
-        load_thps3_tut: { crop: [0.55, 0, 0.45], why: "the top right (TUTORIALS is at the left)" },
+        load_thps3_tut: {
+            crop: [0.55, 0, 0.45],
+            why: "the top right (TUTORIALS is at the left)",
+        },
     },
     thps4: {
         load_sch: photos(),
@@ -85,7 +106,10 @@ export const FRONT: Readonly<Record<Game, Readonly<Record<string, FrontVariant>>
         load_cnv: photos(),
         load_hof: photos(0.3, 0.21, 0.44),
         load_motox: photos(0.3, 0.21, 0.44),
-        load_practice: { crop: [0, 0, 0.38], why: "the top left corner (THPS4's logo is in the middle)" },
+        load_practice: {
+            crop: [0, 0, 0.38],
+            why: "the top left corner (THPS4's logo is in the middle)",
+        },
     },
     thug1: {
         load_nj: between(0),
@@ -94,7 +118,10 @@ export const FRONT: Readonly<Record<Game, Readonly<Record<string, FrontVariant>>
         load_sd: between(0),
         load_hi: between(0),
         load_vc: between(0),
-        load_sj: { crop: [0, 0.2, 0.3], why: "the lights at the left (the Slam City Jam logo is to the right)" },
+        load_sj: {
+            crop: [0, 0.2, 0.3],
+            why: "the lights at the left (the Slam City Jam logo is to the right)",
+        },
         load_ru: between(0),
         load_hh: { crop: [0.1, 0.36, 0.42], why: "the band under the lit letters" },
         load_vn: { crop: [0.2, 0.14, 0.6], why: LOGO_THPS2 },
@@ -123,22 +150,47 @@ export const FRONT: Readonly<Record<Game, Readonly<Record<string, FrontVariant>>
         load_z_dn: thawStrip(),
         load_kyoto: thawStrip(),
         load_sz: thawStrip(),
-        load_z_sv2: { crop: [0.41, 0.235, 0.36], source: "wpc:loadscrn_ruins_classic", why: THAW_STRIP },
-        load_vans: { crop: [0.38, 0, 0.58], why: "the right part (the VANS logo is at the bottom left)" },
+        load_z_sv2: {
+            crop: [0.41, 0.235, 0.36],
+            source: "wpc:loadscrn_ruins_classic",
+            why: THAW_STRIP,
+        },
+        load_vans: {
+            crop: [0.38, 0, 0.58],
+            why: "the right part (the VANS logo is at the bottom left)",
+        },
         load_z_ho: {
             crop: [0.12, 0, 0.4],
             why: "the cartoon's top left (the skaters and the sun; HOLLYWOOD and the words are lower)",
         },
-        load_z_bh: { crop: [0.15, 0.03, 0.4], why: "the poster's top (the title is lower)" },
-        load_z_dt: { crop: [0.2, 0.52, 0.45], why: "the poster's lower part (the title is above)" },
-        load_z_el: { crop: [0.3, 0.55, 0.45], why: "the poster's lower part (the title is above)" },
-        load_z_sm: { crop: [0.55, 0.05, 0.36], why: "the poster's top right (the title is at the left)" },
+        load_z_bh: {
+            crop: [0.15, 0.03, 0.4],
+            why: "the poster's top (the title is lower)",
+        },
+        load_z_dt: {
+            crop: [0.2, 0.52, 0.45],
+            why: "the poster's lower part (the title is above)",
+        },
+        load_z_el: {
+            crop: [0.3, 0.55, 0.45],
+            why: "the poster's lower part (the title is above)",
+        },
+        load_z_sm: {
+            crop: [0.55, 0.05, 0.36],
+            why: "the poster's top right (the title is at the left)",
+        },
         load_z_sr: {
             crop: [0, 0.35, 0.25],
             why: "the chain link fence at the left (the sign with the title is to the right)",
         },
-        load_z_lv: { crop: [0.25, 0.03, 0.36], why: "the poster's top (the title is lower)" },
-        load_z_oi: { crop: [0.15, 0.05, 0.38], why: "the poster's top left (the title is lower right)" },
+        load_z_lv: {
+            crop: [0.25, 0.03, 0.36],
+            why: "the poster's top (the title is lower)",
+        },
+        load_z_oi: {
+            crop: [0.15, 0.05, 0.38],
+            why: "the poster's top left (the title is lower right)",
+        },
     },
     thps2: {
         load_thps2_hangar: collage(),
@@ -146,14 +198,29 @@ export const FRONT: Readonly<Record<Game, Readonly<Record<string, FrontVariant>>
         load_thps2_ny: collage(),
         load_thps2_venice: collage(),
         load_thps2_philly: collage(),
-        load_thps2_marseille: { crop: [0.25, 0.1, 0.55], source: "bmp:s2bgd6", why: BLANK_BOARD },
-        load_thps2_skatestreet: { crop: [0.25, 0.1, 0.55], source: "bmp:s2bgd6", why: BLANK_BOARD },
-        load_thps2_bullring: { crop: [0.25, 0.1, 0.55], source: "bmp:s2bgd6", why: BLANK_BOARD },
+        load_thps2_marseille: {
+            crop: [0.25, 0.1, 0.55],
+            source: "bmp:s2bgd6",
+            why: BLANK_BOARD,
+        },
+        load_thps2_skatestreet: {
+            crop: [0.25, 0.1, 0.55],
+            source: "bmp:s2bgd6",
+            why: BLANK_BOARD,
+        },
+        load_thps2_bullring: {
+            crop: [0.25, 0.1, 0.55],
+            source: "bmp:s2bgd6",
+            why: BLANK_BOARD,
+        },
         load_thps2_skateheaven: {
             crop: [0.2, 0.22, 0.52],
             why: "the picture between ASCENDING TO... and ...SKATE HEAVEN",
         },
-        load_thps2_chopperdrop: { crop: [0.2, 0.26, 0.6], why: "the picture under the title" },
+        load_thps2_chopperdrop: {
+            crop: [0.2, 0.26, 0.6],
+            why: "the picture under the title",
+        },
     },
     thp8: {
         load_thp8_net_beavervalley: photo("adventure"),
@@ -168,7 +235,10 @@ export const FRONT: Readonly<Record<Game, Readonly<Record<string, FrontVariant>>
         load_thp8_net_capitol: photo("Capitol"),
         load_thp8_net_skatefunparks: photo("Cartoon"),
         load_thp8_net_skatecentral: photo("park"),
-        load_thp8_bedroom: { crop: [0, 0.3, 0.35], why: "the left end of the band and sky (the logo is to the right)" },
+        load_thp8_bedroom: {
+            crop: [0, 0.3, 0.35],
+            why: "the left end of the band and sky (the logo is to the right)",
+        },
         load_thp8_skateshop: {
             crop: [0, 0.3, 0.35],
             why: "the left end of the band and sky (the logo is to the right)",

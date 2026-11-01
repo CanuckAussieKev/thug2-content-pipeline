@@ -59,24 +59,20 @@ import * as zlib from "node:zlib";
 import { textOutput } from "thug2-level-converter-core/level_port/common.ts";
 import * as pedModels from "thug2-level-converter-core/level_port/ped_models.ts"; // (the ported levels' own people: their profiles and CAS parts)
 import * as portedLevels from "thug2-level-converter-core/level_port/ported_levels.ts"; // (the converted levels: added when <game>\thug2-decomp-<game> exist)
-import { parseCli } from "thug2-level-converter-core/lib/cli.ts";
+import { exitWith, isMain, parseCli, print, runMain } from "thug2-level-converter-core/lib/cli.ts";
 import { DECOMP } from "thug2-level-converter-core/lib/decomp.ts";
 import type { UnitLookup } from "thug2-level-converter-core/lib/edits.ts";
 import { resolveInstall } from "thug2-level-converter-core/lib/install.ts";
 import { requireNs } from "thug2-level-converter-core/lib/neverscript.ts";
+import { findall, search } from "thug2-level-converter-core/lib/re.ts";
+import { unpackNumbers } from "thug2-level-converter-core/lib/struct.ts";
 import {
     decodeAsciiReplace,
     decodeLatin1,
     encodeLatin1,
-    isMain,
-    print,
-    pyExit,
-    readTextPy,
-    runMain,
-    writeTextPy,
-} from "thug2-level-converter-core/lib/py.ts";
-import { findall, search } from "thug2-level-converter-core/lib/re.ts";
-import { unpackNumbers } from "thug2-level-converter-core/lib/struct.ts";
+    readText,
+    writeText,
+} from "thug2-level-converter-core/lib/text.ts";
 import { applyTextEdits, CAR_SCRIPTS, DRIVING_EDITS } from "thug2-thug1-level-converter/thug1_levels/driving.ts"; // (PC-THUG1-22, Anteara Mod's copy)
 import * as hdUi from "../hd_textures/ui.ts"; // (--hd-ui: the menus' images and fonts upscaled)
 import { PIPELINE } from "../pipeline.ts";
@@ -184,7 +180,7 @@ export function prxFile(file: string, name: string): Buffer {
         }
         offset = body + ((stored + 3) & ~3);
     }
-    pyExit(`${file}: ${name} not found`);
+    exitWith(`${file}: ${name} not found`);
 }
 
 // {name as stored: data} of an archive's files with `extension` (as prxFile reads one).
@@ -261,7 +257,7 @@ export function addSkateshopLevel(text: string): string {
         lighting +
         "} \n";
     const anchor = "\nscript Load_TestLevel {";
-    if (countOf(text, anchor) !== 1) pyExit("Levels.qb: Load_TestLevel not found once");
+    if (countOf(text, anchor) !== 1) exitWith("Levels.qb: Load_TestLevel not found once");
     return replaceFirst(text, anchor, `\n${level}${anchor.slice(1)}`);
 }
 
@@ -275,7 +271,7 @@ export function skateshopNodes(text: string): string {
     text = replaceFirst(text, "mainmenu_NodeArray =", "skateshop_NodeArray =");
     for (const trigger of SHOP_FRONT_END_TRIGGERS) {
         const n = countOf(text, trigger);
-        if (n !== 1) pyExit(`mainmenu.qb: ${trigger} found ${n} times`);
+        if (n !== 1) exitWith(`mainmenu.qb: ${trigger} found ${n} times`);
         text = replaceFirst(text, trigger, "");
     }
     let [elements] = arrayElements(text, "skateshop_NodeArray");
@@ -297,7 +293,7 @@ export function skateshopNodes(text: string): string {
     const first = named.get("SS_player_restart");
     const wanted = named.get("TRG_Playerrestart");
     if (!first || !wanted || indexOrThrow(text, first) > indexOrThrow(text, wanted)) {
-        pyExit("mainmenu.qb: the shop's restarts not as expected");
+        exitWith("mainmenu.qb: the shop's restarts not as expected");
     }
     return replaceFirst(replaceFirst(replaceFirst(text, wanted, "\0"), first, wanted), "\0", first);
 }
@@ -306,7 +302,7 @@ export function addSkateshopSign(text: string, thps4: portedLevels.Manifest | nu
     // The level select's SKATE SHOP sign, after TRAINING (its unlock flag and sign; level 21's records, the test
     // level's slot - LevelNum_Default is shared); the converted THPS4 levels' signs after it (thug2-thps4-level-converter/thps4_levels).
     const training = search(/\n( *)\{text="TRAINING" level_num=LevelNum_TR level_prefix="TR"[^\n]*\n/, text);
-    if (!training) pyExit("gamemenu_levelselect.qb: the TRAINING entry not found");
+    if (!training) exitWith("gamemenu_levelselect.qb: the TRAINING entry not found");
     let sign =
         `${training.str(1)}{text="SKATE SHOP" level_num=${SKATESHOP_SIGN_LEVEL} num_goals=0 flag=LEVEL_UNLOCKED_TR level=Load_SkateShopLevel ` +
         "sign_texture=sign_training dot_pos=(89.0, 82.0)} \n";
@@ -319,7 +315,7 @@ export function addSkateshopSign(text: string, thps4: portedLevels.Manifest | nu
     // The developers' TestLevel (all its data ships: scene, collision, peds, scripts) in the list too: its entry was
     // DEVKIT_ONLY (dropped: CD is always true) and had no sign.
     const test = search(/\{text="TestLevel" level_num=21 [^\n]*DEVKIT_ONLY[^\n]*\}/, text);
-    if (!test) pyExit("gamemenu_levelselect.qb: the TestLevel entry not found");
+    if (!test) exitWith("gamemenu_levelselect.qb: the TestLevel entry not found");
     text = replaceFirst(
         text,
         test.str(0),
@@ -330,7 +326,7 @@ export function addSkateshopSign(text: string, thps4: portedLevels.Manifest | nu
     // for them): skipped, as the created park's are.
     for (const script of ["level_select_info_add_gaps", "level_select_info_add_highscore"]) {
         const head = `script ${script} {\n    if (<level_num> = <created_park_number>) {\n        return \n    } \n`;
-        if (countOf(text, head) !== 1) pyExit(`gamemenu_levelselect.qb: ${script}'s start not as expected`);
+        if (countOf(text, head) !== 1) exitWith(`gamemenu_levelselect.qb: ${script}'s start not as expected`);
         const skips = [SKATESHOP_SIGN_LEVEL, TESTLEVEL_SIGN_LEVEL, ...extraNumbers]
             .map((n) => `    if (<level_num> = ${n}) {\n        return \n    } \n`)
             .join("");
@@ -354,7 +350,7 @@ export function dropUninstalledDefault(text: string, game: string): string {
     // Choosing it crashed: LoadScene's load returns no scene and the game writes through it (0x0048C5AA). Its entry
     // is dropped unless the scene is installed.
     const entry = search(/\n *\{text="Default" level_num=30 [^\n]*level=load_Default[^\n]*\} *(?=\n)/, text);
-    if (!entry) pyExit("gamemenu_levelselect.qb: the Default entry not found");
+    if (!entry) exitWith("gamemenu_levelselect.qb: the Default entry not found");
     const level = path.join(game, "Data", "levels", "Default");
     if (fs.existsSync(path.join(level, "Default.scn.xbx")) && fs.existsSync(path.join(level, "Default.qb"))) {
         return text;
@@ -598,7 +594,7 @@ export function addLevelEditor(text: string): string {
         text,
     );
     if (!options || countOf(text, 'text="YOUR OPTIONS"') !== 1)
-        pyExit("gamemenu_pause.qb: the YOUR OPTIONS item not found once");
+        exitWith("gamemenu_pause.qb: the YOUR OPTIONS item not found once");
     const indent = options.str(1);
     let item =
         `${indent}if LevelEditor_Available {\n${indent}    add_roundbar_menu_item text="LEVEL EDITOR" id=menu_level_editor ` +
@@ -746,20 +742,20 @@ export function addNewFrontendMain(text: string): string {
     // our items (newfe_main_menu_items) instead of the game's; STORY / CLASSIC MODE OPTIONS go back to our Career
     // menu; CREATE-A-MODES gets LEVEL EDITOR (NewFrontend_Open screen=editlevels) while NewFrontend_Item item=editor.
     const items = "script add_main_menu_list_items {\n";
-    if (countOf(text, items) !== 1) pyExit("mainmenu_scripts.qb: add_main_menu_list_items not found once");
+    if (countOf(text, items) !== 1) exitWith("mainmenu_scripts.qb: add_main_menu_list_items not found once");
     text = replaceFirst(
         text,
         items,
         `${items}    if NewFrontend_Item item=on {\n        newfe_main_menu_items \n        return \n    } \n`,
     );
     const back = "pad_back_params={callback=create_main_menu} vmenu_id=career_options_vmenu";
-    if (countOf(text, back) !== 1) pyExit("mainmenu_scripts.qb: create_gamemode_options_menu's back not found once");
+    if (countOf(text, back) !== 1) exitWith("mainmenu_scripts.qb: create_gamemode_options_menu's back not found once");
     text = replaceFirst(text, back, "pad_back_params={callback=newfe_back_to_career} vmenu_id=career_options_vmenu");
     const create = search(
         /script create_createamodes_menu \{\n[\s\S]*?\n( *)draw_menu_background create_mode \n/,
         text,
     );
-    if (!create) pyExit("mainmenu_scripts.qb: create_createamodes_menu's draw_menu_background not found");
+    if (!create) exitWith("mainmenu_scripts.qb: create_createamodes_menu's draw_menu_background not found");
     const indent = create.str(1);
     const at = create.end() - `${indent}draw_menu_background create_mode \n`.length;
     const editor =
@@ -887,7 +883,7 @@ export function ns(tool: string, ...args: string[]): void {
     const result = spawnSync(tool, args, { maxBuffer: 1 << 30 });
     if (result.error) throw result.error;
     if (result.status !== 0) {
-        pyExit(`ns ${args.join(" ")} failed:\n${textOutput(result.stdout)}${textOutput(result.stderr)}`);
+        exitWith(`ns ${args.join(" ")} failed:\n${textOutput(result.stdout)}${textOutput(result.stderr)}`);
     }
 }
 
@@ -917,8 +913,8 @@ async function main(): Promise<number> {
     for (const g of loadingArtGames.GAMES) if (values[g]) loadingArtOverrides[g] = values[g];
     const hdScale = values["hd-ui"] === undefined ? 0 : Number(values["hd-ui"]);
     const scenicStyle = values["scenic-style"];
-    if (!["a", "b", "c", "off"].includes(scenicStyle)) pyExit("--scenic-style is a, b, c or off");
-    if (hdScale !== 0 && hdScale !== 2 && hdScale !== 4) pyExit("--hd-ui is 2 or 4");
+    if (!["a", "b", "c", "off"].includes(scenicStyle)) exitWith("--scenic-style is a, b, c or off");
+    if (hdScale !== 0 && hdScale !== 2 && hdScale !== 4) exitWith("--hd-ui is 2 or 4");
     let game = values.game;
     const tool = requireNs(values.ns);
     // (the install root or the game folder itself: C:\Games\THUG2 -> C:\Games\THUG2\Game - thug2-level-converter-core/lib/install.ts)
@@ -945,12 +941,12 @@ async function main(): Promise<number> {
             "frontend",
         ]);
         if (!fs.existsSync(marker) && !fs.readdirSync(out).every((name) => ours.has(name))) {
-            pyExit(`${out} has files this tool didn't make: not emptying it`);
+            exitWith(`${out} has files this tool didn't make: not emptying it`);
         }
         fs.rmSync(out, { recursive: true, force: true });
     }
     fs.mkdirSync(out, { recursive: true });
-    writeTextPy(
+    writeText(
         marker,
         "Made by tools/pipeline/menu_level/make_menu_level.ts from the game's files; emptied and made again on each run.\n",
     );
@@ -961,11 +957,11 @@ async function main(): Promise<number> {
             const file = path.join(work, name);
             fs.writeFileSync(file, data);
             ns(tool, "-d", file, "-o", `${file}.ns`);
-            return readTextPy(`${file}.ns`);
+            return readText(`${file}.ns`);
         };
         const write: Write = (text, name) => {
             const file = path.join(work, `new_${name.replaceAll(/[\\/]/g, "_")}.ns`);
-            writeTextPy(file, text);
+            writeText(file, text);
             const target = path.join(out, ...name.split(/[\\/]/));
             fs.mkdirSync(path.dirname(target), { recursive: true });
             ns(tool, "-c", file, "-o", target, "-targetGame", "thug2");

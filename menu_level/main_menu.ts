@@ -16,7 +16,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
-import { helpFromHeader } from "thug2-level-converter-core/lib/cli.ts";
+import { helpFromHeader, isMain, print, runMain } from "thug2-level-converter-core/lib/cli.ts";
 import {
     applyOwnEdits,
     EditsError,
@@ -29,7 +29,6 @@ import {
 } from "thug2-level-converter-core/lib/edits.ts";
 import { resolveInstall } from "thug2-level-converter-core/lib/install.ts";
 import { requireNs } from "thug2-level-converter-core/lib/neverscript.ts";
-import { isMain, print, runMain } from "thug2-level-converter-core/lib/py.ts";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const OWN = path.join(HERE, "main_menu.ns");

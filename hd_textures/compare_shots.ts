@@ -7,9 +7,8 @@
 // it N times (nearest pixel) so texel detail stays visible. The pictures must be the same size.
 
 import * as fs from "node:fs";
-import { helpFromHeader } from "thug2-level-converter-core/lib/cli.ts";
+import { exitWith, helpFromHeader, isMain, print, runMain } from "thug2-level-converter-core/lib/cli.ts";
 import { decodePng, encodePng, type Image } from "thug2-level-converter-core/lib/frame_diff.ts";
-import { isMain, print, pyExit, runMain } from "thug2-level-converter-core/lib/py.ts";
 
 const GAP = 8;
 
@@ -56,13 +55,14 @@ export async function main(argv: readonly string[] = process.argv.slice(2)): Pro
         const a = argv[i]!;
         if (a === "--crop") {
             box = (argv[++i] ?? "").split(",").map(Number);
-            if (box.length !== 4 || box.some((n) => !Number.isInteger(n) || n < 0)) pyExit("--crop x,y,w,h");
+            if (box.length !== 4 || box.some((n) => !Number.isInteger(n) || n < 0)) exitWith("--crop x,y,w,h");
         } else if (a === "--zoom") {
             factor = Number(argv[++i]);
-            if (!Number.isInteger(factor) || factor < 1) pyExit("--zoom N (a whole number)");
+            if (!Number.isInteger(factor) || factor < 1) exitWith("--zoom N (a whole number)");
         } else files.push(a);
     }
-    if (files.length < 3) pyExit("usage: compare_shots.ts <out.png> <a.png> <b.png> [...] [--crop x,y,w,h] [--zoom N]");
+    if (files.length < 3)
+        exitWith("usage: compare_shots.ts <out.png> <a.png> <b.png> [...] [--crop x,y,w,h] [--zoom N]");
     const [out, ...inputs] = files as [string, ...string[]];
     const images = inputs.map((f) => {
         let img = decodePng(fs.readFileSync(f));

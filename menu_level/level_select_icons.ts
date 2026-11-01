@@ -17,9 +17,9 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import * as zlib from "node:zlib";
 import { unswizzleOrder } from "thug2-level-converter-core/level_port/tex.ts";
-import { parseCli } from "thug2-level-converter-core/lib/cli.ts";
+import { isMain, parseCli, print, runMain } from "thug2-level-converter-core/lib/cli.ts";
 import { resolveInstall } from "thug2-level-converter-core/lib/install.ts";
-import { isMain, print, pyHypot, pyMinBy, runMain } from "thug2-level-converter-core/lib/py.ts";
+import { hypotOf, minBy } from "thug2-level-converter-core/lib/numbers.ts";
 import { pack, unpackNumbers } from "thug2-level-converter-core/lib/struct.ts";
 
 const USAGE = "usage: level_select_icons.ts out [names ...] [--game GAME] [--scale N] [--sheet]";
@@ -121,7 +121,7 @@ function ellipse(cx: number, cy: number, rx: number, ry: number, angle = 0.0): S
 
 function ring(cx: number, cy: number, r: number, width: number): Shape {
     return (x, y) => {
-        const d = pyHypot(x - cx, y - cy);
+        const d = hypotOf(x - cx, y - cy);
         return r - width / 2 <= d && d <= r + width / 2;
     };
 }
@@ -161,7 +161,7 @@ function arc(cx: number, cy: number, r: number, width: number, a0: number, a1: n
 function leaf(x0: number, y0: number, x1: number, y1: number, bend: number, width: number): Shape {
     const dx = x1 - x0;
     const dy = y1 - y0;
-    const length = pyHypot(dx, dy);
+    const length = hypotOf(dx, dy);
     const nx = -dy / length;
     const ny = dx / length;
     const upper: Point[] = [];
@@ -2274,7 +2274,7 @@ export function makeSign(frameData: Buffer, pictogram: string): Buffer {
         for (let x = 0; x < SIZE; x++) {
             if (Math.abs(x + 0.5 - 32) + Math.abs(y + 0.5 - 32) > INSIDE) continue;
             const value = FILL * (1 - ink[y * SIZE + x]!);
-            out[y * SIZE + x] = pyMinBy(greys, (g) => Math.abs(g[1] - value))[0];
+            out[y * SIZE + x] = minBy(greys, (g) => Math.abs(g[1] - value))[0];
         }
     }
     return writeImg(w, h, palette, out);

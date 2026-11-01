@@ -48,9 +48,8 @@ import * as tex from "thug2-level-converter-core/level_port/tex.ts";
 import * as thug2Scene from "thug2-level-converter-core/level_port/thug2_scene.ts";
 import type { Quat, Vec } from "thug2-level-converter-core/level_port/thug2_skeleton.ts";
 import * as skel from "thug2-level-converter-core/level_port/thug2_skeleton.ts";
-import { helpFromHeader } from "thug2-level-converter-core/lib/cli.ts";
+import { helpFromHeader, isMain, print, runMain } from "thug2-level-converter-core/lib/cli.ts";
 import { findPath, resolveInstall } from "thug2-level-converter-core/lib/install.ts";
-import { isMain, print, runMain } from "thug2-level-converter-core/lib/py.ts";
 import * as thaw from "thug2-thaw-level-converter/thaw/thaw.ts";
 import { toThug2Material } from "thug2-thaw-level-converter/thaw_levels/thaw_levels.ts";
 import * as bikeScripts from "./bike_scripts.ts";
@@ -230,7 +229,13 @@ export function remapRider(src: ska.Ska, map: HumanMap): ska.Ska {
         rotations.push(keys);
         translations.push([]);
     });
-    const out: ska.Ska = { flags: src.flags, duration: src.duration, rotations, translations, tail: Buffer.alloc(0) };
+    const out: ska.Ska = {
+        flags: src.flags,
+        duration: src.duration,
+        rotations,
+        translations,
+        tail: Buffer.alloc(0),
+    };
     if (src.partial !== undefined) {
         const set = (i: number): boolean =>
             i < src.partial!.count && Boolean(src.partial!.bits[i >> 5]! & (1 << (i & 31)));
@@ -303,7 +308,13 @@ export function convertSkin(geom: thaw.Geom, bones: number, name = "skin"): thug
             meshes,
         });
     }
-    return { versions: [1, 1, 1], materials, sectors, hierarchyCount: 0, tail: Buffer.alloc(0) };
+    return {
+        versions: [1, 1, 1],
+        materials,
+        sectors,
+        hierarchyCount: 0,
+        tail: Buffer.alloc(0),
+    };
 }
 
 // --- the animation sets ----------------------------------------------------------------------------------------------
@@ -338,7 +349,12 @@ export function loadRows(body: Buffer, script: string, names: ReadonlyMap<number
             const e = toks[i + 5];
             if (d?.[1] !== 0x16 || d[2].readUInt32LE(0) !== kDesc || e?.[1] !== 0x16)
                 throw new FormatError(`${script}: a LoadAnim of "${text}" without its descChecksum`);
-            rows.push({ script, reference, path: text, desc: nameOf(e[2].readUInt32LE(0)) });
+            rows.push({
+                script,
+                reference,
+                path: text,
+                desc: nameOf(e[2].readUInt32LE(0)),
+            });
         }
     }
     return rows;
@@ -358,7 +374,11 @@ export interface Context {
 
 export function context(thawDir: string, thug2Dir: string): Context {
     const root = resolveInstall(thawDir, "thaw");
-    return { thaw: root, thug2: resolveInstall(thug2Dir, "thug2"), names: thaw.loadNames(root) };
+    return {
+        thaw: root,
+        thug2: resolveInstall(thug2Dir, "thug2"),
+        names: thaw.loadNames(root),
+    };
 }
 
 function pak(c: Context, ...parts: string[]): [thaw.PakEntry, Buffer][] {

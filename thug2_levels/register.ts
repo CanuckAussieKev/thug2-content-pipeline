@@ -218,7 +218,11 @@ export function levelEntries(r: LevelReport, thug2Nodes: Buffer): Entry[] {
             ),
             nodes: cs.flatMap((c) => c.nodes),
             edits: mergeEdits(
-                cs.flatMap((c) => c.nodes.map((n) => ({ node_values: { [n]: { TriggerScript: c.script ?? null } } }))),
+                cs.flatMap((c) =>
+                    c.nodes.map((n) => ({
+                        node_values: { [n]: { TriggerScript: c.script ?? null } },
+                    })),
+                ),
             ),
             scripts,
         });
@@ -288,7 +292,11 @@ export function levelEntries(r: LevelReport, thug2Nodes: Buffer): Entry[] {
                 what === "kill_zones" ? "parity" : what === "gaps" ? "visible" : touched.length ? "parity" : "cosmetic";
             const replace: ScriptRef[] = roots.map((k) => {
                 const item = r.tpScripts.get(k)!;
-                return { name: ss.find((s) => ck(s.name) === k)!.name, from: item.from, crc: crcOf(item.bytes) };
+                return {
+                    name: ss.find((s) => ck(s.name) === k)!.name,
+                    from: item.from,
+                    crc: crcOf(item.bytes),
+                };
             });
             out.push({
                 ...base(

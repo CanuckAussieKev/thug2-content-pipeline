@@ -24,7 +24,13 @@ function quad(a: V3, b: V3, c: V3, d: V3): { a: V3; b: V3; c: V3; n: V3; area: n
         const e2: V3 = [r[0] - p[0], r[1] - p[1], r[2] - p[2]];
         const n: V3 = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]];
         const l = Math.hypot(...n);
-        return { a: p, b: q, c: r, n: [n[0] / l, n[1] / l, n[2] / l] as V3, area: l / 2 };
+        return {
+            a: p,
+            b: q,
+            c: r,
+            n: [n[0] / l, n[1] / l, n[2] / l] as V3,
+            area: l / 2,
+        };
     };
     return [tri(a, b, c), tri(a, c, d)];
 }
@@ -87,7 +93,11 @@ test("a pose over the ramps beats one looking out of the world", () => {
     const scene = level();
     const size = Math.hypot(4000, 4000);
     const target: V3 = [2900, 100, 2950];
-    const good = { pos: [2900 - 1200 * 0.6, 900, 2950 - 1200 * 0.6] as V3, heading: 45, pitch: 35 };
+    const good = {
+        pos: [2900 - 1200 * 0.6, 900, 2950 - 1200 * 0.6] as V3,
+        heading: 45,
+        pitch: 35,
+    };
     const out = { pos: [3900, 300, 3900] as V3, heading: 45, pitch: 10 };
     const sGood = scorePose(scene, good, target, size);
     const sOut = scorePose(scene, out, [4500, 0, 4500], size);
@@ -114,7 +124,11 @@ test("drawn-only structure in front of the collision counts as an occluder", () 
     const scene = level();
     const size = Math.hypot(4000, 4000);
     const target: V3 = [2900, 100, 2950];
-    const pose = { pos: [2900 - 720, 900, 2950 - 720] as V3, heading: 45, pitch: 35 };
+    const pose = {
+        pos: [2900 - 720, 900, 2950 - 720] as V3,
+        heading: 45,
+        pitch: 35,
+    };
     const clear = scorePose(scene, pose, target, size);
     assert.equal(clear.occl, 0);
     // a drawn plate (not in the collision) over the picture's middle

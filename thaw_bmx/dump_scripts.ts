@@ -14,9 +14,9 @@ import * as path from "node:path";
 import { parseArgs } from "node:util";
 import * as qb from "thug2-level-converter-core/level_port/qb.ts";
 import type { Tok } from "thug2-level-converter-core/level_port/script_port.ts";
-import { helpFromHeader } from "thug2-level-converter-core/lib/cli.ts";
+import { helpFromHeader, isMain, print, runMain } from "thug2-level-converter-core/lib/cli.ts";
 import { resolveInstall } from "thug2-level-converter-core/lib/install.ts";
-import { decodeLatin1, isMain, print, runMain } from "thug2-level-converter-core/lib/py.ts";
+import { decodeLatin1 } from "thug2-level-converter-core/lib/text.ts";
 import * as thaw from "thug2-thaw-level-converter/thaw/thaw.ts";
 import { scriptToks } from "thug2-thaw-level-converter/thaw/thaw_scripts.ts";
 

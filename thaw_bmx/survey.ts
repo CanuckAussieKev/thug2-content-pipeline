@@ -30,10 +30,10 @@ import {
     TABLE_MEMBERS,
     COMPONENTS as THUG2_COMPONENTS,
 } from "thug2-level-converter-core/level_port/thug2_members.ts";
-import { helpFromHeader } from "thug2-level-converter-core/lib/cli.ts";
+import { helpFromHeader, isMain, print, runMain } from "thug2-level-converter-core/lib/cli.ts";
 import { GAME_EXE_NAMES, THAW_REFERENCE_EXE } from "thug2-level-converter-core/lib/decomp.ts";
 import { resolveInstall } from "thug2-level-converter-core/lib/install.ts";
-import { decodeLatin1, isMain, print, runMain } from "thug2-level-converter-core/lib/py.ts";
+import { decodeLatin1 } from "thug2-level-converter-core/lib/text.ts";
 import * as thaw from "thug2-thaw-level-converter/thaw/thaw.ts";
 
 const BMX = /bike|bmx/i;
@@ -143,7 +143,12 @@ export function memberTables(exe: Exe, names: ReadonlyMap<number, string>): Memb
             }
             if (run.length >= 3) {
                 for (const [where, name, comp, fn] of run)
-                    out.push({ name, component: comp, fn: fn || (stored.get(where + 8) ?? 0), table: va });
+                    out.push({
+                        name,
+                        component: comp,
+                        fn: fn || (stored.get(where + 8) ?? 0),
+                        table: va,
+                    });
                 va = at;
             } else va += 4;
         }
@@ -270,7 +275,11 @@ interface ScriptSet {
 }
 
 function readScripts(c: Context): ScriptSet {
-    const out: ScriptSet = { scripts: new Map(), files: new Map(), globals: new Map() };
+    const out: ScriptSet = {
+        scripts: new Map(),
+        files: new Map(),
+        globals: new Map(),
+    };
     for (const [e, d] of thaw.pakFiles(path.join(c.thaw, "data", "pak", "qb.pak.wpc"))) {
         if (e.extension !== ".qb") continue;
         const file = e.path ?? nameOf(c, e.full);

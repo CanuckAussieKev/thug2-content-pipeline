@@ -11,8 +11,7 @@
 //   node tools/pipeline/thug2_levels/thugpro_compare.ts --extract-thugpro [levels...]   (writes the register's data)
 
 import * as fs from "node:fs";
-import { parseCli } from "thug2-level-converter-core/lib/cli.ts";
-import { isMain, print, runMain } from "thug2-level-converter-core/lib/py.ts";
+import { isMain, parseCli, print, runMain } from "thug2-level-converter-core/lib/cli.ts";
 import * as compat from "thug2-thugpro-compat/profile.ts";
 import { compactJson } from "thug2-thugpro-compat/thugpro_nodes.ts";
 import { compareLevel, type Entry, type LevelReport } from "./diff.ts";

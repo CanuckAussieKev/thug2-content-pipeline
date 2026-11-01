@@ -18,9 +18,8 @@ import { spawnSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { parseCli } from "thug2-level-converter-core/lib/cli.ts";
+import { isMain, parseCli, print, runMain } from "thug2-level-converter-core/lib/cli.ts";
 import { needDecomp } from "thug2-level-converter-core/lib/decomp.ts";
-import { isMain, print, runMain } from "thug2-level-converter-core/lib/py.ts";
 import { PIPELINE } from "../pipeline.ts";
 import { type Candidate, cameraCommands, readSpots } from "./scenic_spots.ts";
 
@@ -74,7 +73,10 @@ function main(): number {
         const start = entry.start ?? level;
         const commands = levelCommands(level, entry.candidates, Number(values.settle), start);
         for (const c of entry.candidates)
-            fs.rmSync(path.join(shots, seriesFolder(level, c.id)), { recursive: true, force: true });
+            fs.rmSync(path.join(shots, seriesFolder(level, c.id)), {
+                recursive: true,
+                force: true,
+            });
         const result = spawnSync(
             "powershell",
             [

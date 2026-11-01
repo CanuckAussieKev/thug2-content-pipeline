@@ -9,7 +9,7 @@ import * as qb from "thug2-level-converter-core/level_port/qb.ts";
 import { checksum, Name, type QbValue, Struct, Vector } from "thug2-level-converter-core/level_port/qb.ts";
 import { scriptSpans } from "thug2-level-converter-core/level_port/qb_write.ts";
 import type * as thug2Col from "thug2-level-converter-core/level_port/thug2_col.ts";
-import { Float } from "thug2-level-converter-core/lib/py.ts";
+import { Float } from "thug2-level-converter-core/lib/numbers.ts";
 import { type Context, colChanges, KLASSES, mergeEdits, nodeChanges, sameValue } from "./diff.ts";
 import { loadRegister } from "./register.ts";
 import { callsBody, chooseEntries, refusal } from "./thugpro_apply.ts";
@@ -92,8 +92,12 @@ test("nodeChanges: flags, values, links and added nodes, classified", () => {
     const c = nodeChanges(ours, theirs, ctx());
     const by = (n: string, kind: string) => c.find((x) => x.node === n && x.kind === kind);
     assert.equal(by("Rail01", "net_present")?.klass, "parity");
-    assert.deepEqual(by("Rail01", "net_present")?.edit, { net_presence: { present: ["Rail01"] } });
-    assert.deepEqual(by("Rail01", "node_values")?.edit, { rails: { links: { Rail01: ["NewRail"] } } });
+    assert.deepEqual(by("Rail01", "net_present")?.edit, {
+        net_presence: { present: ["Rail01"] },
+    });
+    assert.deepEqual(by("Rail01", "node_values")?.edit, {
+        rails: { links: { Rail01: ["NewRail"] } },
+    });
     assert.equal(c.filter((x) => x.node === "Rail02").length, 0, "a rounding difference isn't one");
     assert.equal(by("Wall01", "created_off")?.what, "collision");
     assert.equal(by("Wall01", "created_off")?.klass, "parity");
@@ -101,7 +105,16 @@ test("nodeChanges: flags, values, links and added nodes, classified", () => {
     const added = by("NewRail", "nodes_added");
     assert.equal(added?.what, "rails");
     assert.deepEqual(added?.edit, {
-        rails: { added: [{ Name: "NewRail", Class: "RailNode", Links: ["Rail01"], flags: ["CreatedAtStart"] }] },
+        rails: {
+            added: [
+                {
+                    Name: "NewRail",
+                    Class: "RailNode",
+                    Links: ["Rail01"],
+                    flags: ["CreatedAtStart"],
+                },
+            ],
+        },
     });
 });
 
@@ -140,7 +153,9 @@ test("colChanges: backs of two-sided faces taken out, flags and terrain by face"
     const c = colChanges(ours, theirs, names);
     const removed = c.find((x) => x.kind === "faces_removed");
     assert.match(removed?.detail ?? "", /1 of 3 faces taken out, all backs of two-sided faces/);
-    assert.deepEqual(removed?.edit, { collision_removed: { Sign01: { faces: 3, remove: [1] } } });
+    assert.deepEqual(removed?.edit, {
+        collision_removed: { Sign01: { faces: 3, remove: [1] } },
+    });
     assert.deepEqual(c.find((x) => x.kind === "face_flags")?.edit, {
         face_values: { Sign01: { faces: 3, set: { "0x0004": [0] } } },
     });
@@ -149,17 +164,29 @@ test("colChanges: backs of two-sided faces taken out, flags and terrain by face"
     });
     // both on one object merge
     const merged = mergeEdits(c.flatMap((x) => (x.edit ? [x.edit] : [])));
-    assert.deepEqual(merged.face_values?.Sign01, { faces: 3, set: { "0x0004": [0] }, terrain: [[2, 7]] });
+    assert.deepEqual(merged.face_values?.Sign01, {
+        faces: 3,
+        set: { "0x0004": [0] },
+        terrain: [[2, 7]],
+    });
 });
 
 test("mergeEdits: lists join, node values merge per node", () => {
     const m = mergeEdits([
-        { net_presence: { present: ["a"] }, node_values: { n: { TriggerScript: "x" } } },
-        { net_presence: { present: ["b"], absent: ["c"] }, node_values: { n: { "+TrickObject": true } } },
+        {
+            net_presence: { present: ["a"] },
+            node_values: { n: { TriggerScript: "x" } },
+        },
+        {
+            net_presence: { present: ["b"], absent: ["c"] },
+            node_values: { n: { "+TrickObject": true } },
+        },
         { rails: { added: [{ Name: "r" }] } },
     ]);
     assert.deepEqual(m.net_presence, { present: ["a", "b"], absent: ["c"] });
-    assert.deepEqual(m.node_values, { n: { TriggerScript: "x", "+TrickObject": true } });
+    assert.deepEqual(m.node_values, {
+        n: { TriggerScript: "x", "+TrickObject": true },
+    });
     assert.deepEqual(m.rails, { added: [{ Name: "r" }] });
 });
 
@@ -179,7 +206,9 @@ test("callsBody: one call per line, flags after the script", () => {
 });
 
 // (Windows folders: the guard is for this project's own installs - elsewhere the paths don't exist)
-test("refusal: the main install, backups and THUGPRO's folders", { skip: process.platform !== "win32" }, () => {
+test("refusal: the main install, backups and THUGPRO's folders", {
+    skip: process.platform !== "win32",
+}, () => {
     assert.ok(refusal("C:\\Games\\THUG2", false));
     assert.equal(refusal("C:\\Games\\THUG2", true), null);
     assert.ok(refusal("C:\\Games\\THUG2-BACKUP\\Game", true));

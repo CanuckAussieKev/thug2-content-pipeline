@@ -9,9 +9,8 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { parseCli } from "thug2-level-converter-core/lib/cli.ts";
+import { isMain, parseCli, print, runMain } from "thug2-level-converter-core/lib/cli.ts";
 import { resolveInstall } from "thug2-level-converter-core/lib/install.ts";
-import { isMain, print, runMain } from "thug2-level-converter-core/lib/py.ts";
 import { THUG2_STARS } from "../../menu_level/level_select.ts";
 import { loadLand, type Polygon } from "./geo.ts";
 import { fillMask, type PixelPolygon } from "./raster.ts";

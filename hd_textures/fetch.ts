@@ -14,8 +14,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { REPO } from "thug2-level-converter-core/level_port/common.ts";
 import { DEFAULT_TOOL, TOOL_RELEASE } from "thug2-level-converter-core/level_port/hd_textures.ts";
-import { helpFromHeader } from "thug2-level-converter-core/lib/cli.ts";
-import { isMain, print, pyExit, runMain } from "thug2-level-converter-core/lib/py.ts";
+import { exitWith, helpFromHeader, isMain, print, runMain } from "thug2-level-converter-core/lib/cli.ts";
 
 // Real-ESRGAN v0.2.5.0 (2022-04-24), the Windows build
 export const RELEASE_URL = `https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/${TOOL_RELEASE}-windows.zip`;
@@ -24,7 +23,7 @@ export const SHA256 = "abc02804e17982a3be33675e4d471e91ea374e65b70167abc09e31acb
 export async function main(argv: readonly string[] = process.argv.slice(2)): Promise<number> {
     const force = argv.includes("--force");
     const unknown = argv.filter((a) => a !== "--force");
-    if (unknown.length) pyExit(`usage: fetch.ts [--force] (unknown: ${unknown.join(" ")})`);
+    if (unknown.length) exitWith(`usage: fetch.ts [--force] (unknown: ${unknown.join(" ")})`);
     const target = path.dirname(DEFAULT_TOOL);
     if (fs.existsSync(DEFAULT_TOOL) && !force) {
         print(`already there: ${DEFAULT_TOOL}`);
@@ -35,10 +34,10 @@ export async function main(argv: readonly string[] = process.argv.slice(2)): Pro
     const zip = path.join(base, `${TOOL_RELEASE}-windows.zip`);
     print(`downloading ${RELEASE_URL}`);
     const response = await fetch(RELEASE_URL);
-    if (!response.ok) pyExit(`download failed: HTTP ${response.status}`);
+    if (!response.ok) exitWith(`download failed: HTTP ${response.status}`);
     const data = Buffer.from(await response.arrayBuffer());
     const hash = createHash("sha256").update(data).digest("hex");
-    if (hash !== SHA256) pyExit(`SHA-256 mismatch: got ${hash}, expected ${SHA256} - not unpacked`);
+    if (hash !== SHA256) exitWith(`SHA-256 mismatch: got ${hash}, expected ${SHA256} - not unpacked`);
     fs.writeFileSync(zip, data);
     // (a fresh, empty folder for the archive's files; Windows' tar.exe reads zips)
     fs.rmSync(target, { recursive: true, force: true });
@@ -48,9 +47,9 @@ export async function main(argv: readonly string[] = process.argv.slice(2)): Pro
     const tar = spawnSync(fs.existsSync(windowsTar) ? windowsTar : "tar", ["-xf", zip, "-C", target], {
         encoding: "utf8",
     });
-    if (tar.status !== 0) pyExit(`unpacking failed: ${tar.stderr}`);
+    if (tar.status !== 0) exitWith(`unpacking failed: ${tar.stderr}`);
     fs.rmSync(zip);
-    if (!fs.existsSync(DEFAULT_TOOL)) pyExit(`${DEFAULT_TOOL} not in the archive`);
+    if (!fs.existsSync(DEFAULT_TOOL)) exitWith(`${DEFAULT_TOOL} not in the archive`);
     print(`unpacked into ${target} (${data.length} bytes, SHA-256 ok)`);
     return 0;
 }

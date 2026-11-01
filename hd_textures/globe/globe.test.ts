@@ -49,7 +49,9 @@ test("simplifyRing drops collinear points, smoothRing keeps the area close", () 
     assert.ok(smooth.length > 4);
 });
 
-test("the layout cuts the strip back into the same tiles (seams, wrap)", { skip }, () => {
+test("the layout cuts the strip back into the same tiles (seams, wrap)", {
+    skip,
+}, () => {
     const strip = renderStrip(loadProjection(), { ...defaultRedraw(), scale: 2 });
     const tiles = cutTiles(strip, 2);
     assert.equal(tiles.length, TILE_COUNT);
@@ -65,7 +67,9 @@ test("the layout cuts the strip back into the same tiles (seams, wrap)", { skip 
     assert.equal(COLUMNS * ROWS, LAYOUT.flat().length);
 });
 
-test("the redraw is deterministic and uses the original's palette", { skip }, () => {
+test("the redraw is deterministic and uses the original's palette", {
+    skip,
+}, () => {
     const warp = loadProjection();
     const a = renderStrip(warp, { ...defaultRedraw(), scale: 2 });
     const b = renderStrip(warp, { ...defaultRedraw(), scale: 2 });
