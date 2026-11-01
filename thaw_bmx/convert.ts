@@ -520,7 +520,7 @@ export interface Result {
 }
 
 function write(out: string, rel: string, data: Buffer | string, files: string[]): void {
-    const target = path.join(out, rel);
+    const target = path.join(out, ...rel.split(/[\\/]/));
     fs.mkdirSync(path.dirname(target), { recursive: true });
     fs.writeFileSync(target, data);
     files.push(rel);

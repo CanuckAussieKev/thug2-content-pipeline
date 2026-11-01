@@ -10,7 +10,7 @@ import * as path from "node:path";
 
 export const STAGING = "thug2-decomp-thaw-bmx";
 export const MANIFEST = "thaw_bmx.json";
-export const SCRIPTS = "scripts\\thaw_bmx\\thaw_bmx.ns";
+export const SCRIPTS = "scripts/thaw_bmx/thaw_bmx.ns";
 export const SPECIAL_ITEMS = "scripts\\game\\skater\\specialitems.qb";
 
 // What was copied ("models", ..., "thaw_bmx.json"); empty when the game has no staging folder.

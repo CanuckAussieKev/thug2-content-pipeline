@@ -35,7 +35,7 @@ import * as thug2Scene from "thug2-level-converter-core/level_port/thug2_scene.t
 import { parseCli } from "thug2-level-converter-core/lib/cli.ts";
 import { NEVER_WRITTEN, WORK } from "thug2-level-converter-core/lib/decomp.ts";
 import { findCaseless, resolveInstall } from "thug2-level-converter-core/lib/install.ts";
-import { isMain, print, pyJoin, runMain } from "thug2-level-converter-core/lib/py.ts";
+import { isMain, print, runMain } from "thug2-level-converter-core/lib/py.ts";
 import { applyColEdits, applyNodeEdits, type LevelEdits } from "thug2-thugpro-compat/hand_edits.ts";
 import { nodeArray } from "thug2-thugpro-compat/thugpro_nodes.ts";
 import { type Entry, mergeEdits, type ScriptRef } from "./diff.ts";
@@ -299,7 +299,7 @@ export function install(
         const r = applyLevel(L, mine, game, thugpro, gameLevels);
         report.push(`${L}: ${mine.map((e) => e.id).join(", ")}`, ...r.report);
         for (const [name, data] of r.files) {
-            const target = pyJoin(out, name);
+            const target = path.join(out, ...name.split(/[\\/]/));
             report.push(`  ${dryRun ? "would write" : "wrote"} ${target}`);
             if (!dryRun) {
                 fs.mkdirSync(path.dirname(target), { recursive: true });
@@ -311,8 +311,8 @@ export function install(
     if (levelsEdits.length) {
         // the overlay's Levels.qb (and Anteara Mod's), else the game's copied in
         const targets = [
-            pyJoin(out, "scripts", "game", "Levels.qb"),
-            pyJoin(out, "anteara", "scripts", "game", "Levels.qb"),
+            path.join(out, "scripts", "game", "Levels.qb"),
+            path.join(out, "anteara", "scripts", "game", "Levels.qb"),
         ];
         const existing = targets.filter((t) => fs.existsSync(t));
         for (const t of existing.length ? existing : [targets[0]!]) {
@@ -368,12 +368,12 @@ export function main(argv: readonly string[] = process.argv.slice(2)): number {
         print("nothing to apply: no entry switched on (the register's `enabled`, or --enable)");
         return 0;
     }
-    let out = values.out ?? pyJoin(REPO, "out", "thug2_levels");
+    let out = values.out ?? path.join(REPO, "out", "thug2_levels");
     if (values.install) {
         const root = resolveInstall(values.game, "thug2");
         const why = refusal(root, values["allow-main"]);
         if (why) throw new Error(why);
-        out = pyJoin(root, "thug2-decomp-data");
+        out = path.join(root, "thug2-decomp-data");
     }
     for (const l of install(values.game, out, entries, values.thugpro, values["dry-run"])) print(l);
     return 0;

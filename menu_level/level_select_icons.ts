@@ -14,11 +14,12 @@
 // signs, then ours section by section (THUG2's two added levels, THUG1, THPS4, THPS3, THAW), tinted yellow.
 
 import * as fs from "node:fs";
+import * as path from "node:path";
 import * as zlib from "node:zlib";
 import { unswizzleOrder } from "thug2-level-converter-core/level_port/tex.ts";
 import { parseCli } from "thug2-level-converter-core/lib/cli.ts";
 import { resolveInstall } from "thug2-level-converter-core/lib/install.ts";
-import { isMain, print, pyHypot, pyJoin, pyMinBy, runMain } from "thug2-level-converter-core/lib/py.ts";
+import { isMain, print, pyHypot, pyMinBy, runMain } from "thug2-level-converter-core/lib/py.ts";
 import { pack, unpackNumbers } from "thug2-level-converter-core/lib/struct.ts";
 
 const USAGE = "usage: level_select_icons.ts out [names ...] [--game GAME] [--scale N] [--sheet]";
@@ -2321,7 +2322,7 @@ async function main(): Promise<number> {
     }
     // (the install root or the game folder itself: C:\Games\THUG2 -> C:\Games\THUG2\Game - thug2-level-converter-core/lib/install.ts)
     const game = resolveInstall(values.game, "thug2");
-    const prx = pyJoin(game, "Data", "pre", "Levelselect.prx");
+    const prx = path.join(game, "Data", "pre", "Levelselect.prx");
     const frame = prxFile(prx, FRAME_SOURCE);
     const scale = Number(values.scale);
     // rows of signs: [a row's images (as read), its names]

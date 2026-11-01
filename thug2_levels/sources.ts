@@ -8,17 +8,17 @@
 // Used by tools/pipeline/thug2_levels/thugpro_compare.ts (the comparison and the register's data) and thugpro_apply.ts.
 
 import * as fs from "node:fs";
+import * as path from "node:path";
 import * as prx from "thug2-level-converter-core/level_port/prx.ts";
 import * as qb from "thug2-level-converter-core/level_port/qb.ts";
 import { Name, type QbValue, Struct } from "thug2-level-converter-core/level_port/qb.ts";
 import { scriptSpans } from "thug2-level-converter-core/level_port/qb_write.ts";
 import { findCaseless, resolveInstall } from "thug2-level-converter-core/lib/install.ts";
-import { pyJoin } from "thug2-level-converter-core/lib/py.ts";
 
 // THUG2's own levels (Levels.qb's Level_<code>), in the level select's order.
 export const LEVELS = ["TR", "BO", "BA", "BE", "AU", "NO", "ST", "SE", "SE2", "SC", "PH", "DJ", "LA", "CA", "AP"];
 
-export const DEFAULT_THUGPRO = pyJoin(process.env.LOCALAPPDATA ?? "", "THUG Pro");
+export const DEFAULT_THUGPRO = path.join(process.env.LOCALAPPDATA ?? "", "THUG Pro");
 export const DEFAULT_GAME = "C:\\Games\\THUG2";
 
 const norm = (name: string): string => name.toLowerCase().replaceAll("/", "\\").replace(/^\\+/, "");
@@ -32,7 +32,7 @@ export function archiveIndex(pre: string): Map<string, string> {
         .filter((f) => f.toLowerCase().endsWith(".prx"))
         .sort();
     for (const f of files) {
-        const p = pyJoin(pre, f);
+        const p = path.join(pre, f);
         // (nothing is decompressed: the test only records each name)
         Array.from(
             prx.entries(p, (n) => {

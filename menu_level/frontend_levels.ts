@@ -24,7 +24,7 @@
 import { reEscape } from "./career_complete.ts";
 import type { Section } from "./level_select.ts";
 
-export const FRONTEND_LEVELS = "frontend\\levels.json";
+export const FRONTEND_LEVELS = "frontend/levels.json";
 
 // The tabs' short names and colours (docs/design/frontend/README.md: the per-game colours), by section id.
 export const SECTION_STYLE: ReadonlyMap<string, { tab: string; colour: string }> = new Map([

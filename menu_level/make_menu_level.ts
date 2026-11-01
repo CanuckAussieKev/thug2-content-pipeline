@@ -71,7 +71,6 @@ import {
     isMain,
     print,
     pyExit,
-    pyJoin,
     readTextPy,
     runMain,
     writeTextPy,
@@ -816,11 +815,11 @@ export function addCreate100Cas(decompile: Decompile, write: Write, pre: string,
     // The front end's GAME OPTIONS scripts with CREATE 100% CAS: the story's chapters, goals and rewards, the classic
     // goals and every level's gaps read from the game's scripts (Levels.qb's text `levels`, chapter_info,
     // goal_utilities, stats, the level select, and the levels' compiled scripts and node arrays).
-    const qbScripts = pyJoin(pre, "qb_scripts.prx");
+    const qbScripts = path.join(pre, "qb_scripts.prx");
     const scriptFile = (name: string): string => decompile(prxFile(qbScripts, name), ntBasename(name));
     const levelScripts = (prefix: string, qb: string, preName: string): string =>
-        decompile(prxFile(pyJoin(pre, `${splitextRoot(preName)}.prx`), qb), `${prefix}_scripts.qb`);
-    const levelQbs = (preName: string): Map<string, Buffer> => prxFiles(pyJoin(pre, `${splitextRoot(preName)}.prx`));
+        decompile(prxFile(path.join(pre, `${splitextRoot(preName)}.prx`), qb), `${prefix}_scripts.qb`);
+    const levelQbs = (preName: string): Map<string, Buffer> => prxFiles(path.join(pre, `${splitextRoot(preName)}.prx`));
     const data = careerComplete.careerData(
         levels,
         scriptFile("scripts\\game\\menu\\chapter_info.qb"),
@@ -831,7 +830,7 @@ export function addCreate100Cas(decompile: Decompile, write: Write, pre: string,
         prxFiles(qbScripts),
         levelQbs,
     );
-    const options = decompile(prxFile(pyJoin(pre, "mainmenu_scripts.prx"), OPTIONS_MENU_QB), "mainmenu_options.qb");
+    const options = decompile(prxFile(path.join(pre, "mainmenu_scripts.prx"), OPTIONS_MENU_QB), "mainmenu_options.qb");
     write(careerComplete.optionsMenu(options, data), OPTIONS_MENU_QB);
     print(`CREATE 100% CAS (GAME OPTIONS):\n${careerComplete.describe(data)}`);
 }
@@ -924,11 +923,11 @@ async function main(): Promise<number> {
     const tool = requireNs(values.ns);
     // (the install root or the game folder itself: C:\Games\THUG2 -> C:\Games\THUG2\Game - thug2-level-converter-core/lib/install.ts)
     game = resolveInstall(game, "thug2");
-    const out = values.out || pyJoin(game, "thug2-decomp-data");
+    const out = values.out || path.join(game, "thug2-decomp-data");
 
-    const pre = pyJoin(game, "Data", "pre");
-    const qbScripts = pyJoin(pre, "qb_scripts.prx");
-    const menuScripts = pyJoin(pre, "mainmenu_scripts.prx");
+    const pre = path.join(game, "Data", "pre");
+    const qbScripts = path.join(pre, "qb_scripts.prx");
+    const menuScripts = path.join(pre, "mainmenu_scripts.prx");
 
     // The folder is ours: emptied first (a file left from an earlier layout would still be read).
     const marker = path.join(out, MARKER);
@@ -965,9 +964,9 @@ async function main(): Promise<number> {
             return readTextPy(`${file}.ns`);
         };
         const write: Write = (text, name) => {
-            const file = path.join(work, `new_${name.replaceAll("\\", "_")}.ns`);
+            const file = path.join(work, `new_${name.replaceAll(/[\\/]/g, "_")}.ns`);
             writeTextPy(file, text);
-            const target = pyJoin(out, name);
+            const target = path.join(out, ...name.split(/[\\/]/));
             fs.mkdirSync(path.dirname(target), { recursive: true });
             ns(tool, "-c", file, "-o", target, "-targetGame", "thug2");
             print("wrote", target);
@@ -1101,8 +1100,8 @@ async function main(): Promise<number> {
                 `Converted levels (THPS4 / THUG1): ${ported.levels.length} added to the level select; copied ${installed.join(", ")}`,
             );
         }
-        write(levelsWithShop, "scripts\\game\\Levels.qb");
-        write(skateshopNodes(shop), "levels\\skateshop\\skateshop.qb");
+        write(levelsWithShop, "scripts/game/Levels.qb");
+        write(skateshopNodes(shop), "levels/skateshop/skateshop.qb");
         // The level select in sections, one per game, with stars and signs for our levels (level_select.ts).
         const byGame = new Map<string, portedLevels.Manifest>();
         for (const entry of ported?.levels ?? []) {
@@ -1123,7 +1122,7 @@ async function main(): Promise<number> {
                 levelSelect.otherGame(
                     staging,
                     manifest,
-                    portedLevels.readManifest(pyJoin(game, staging, portedLevels.MANIFEST))?.title,
+                    portedLevels.readManifest(path.join(game, staging, portedLevels.MANIFEST))?.title,
                 ),
             );
         const sectionList = levelSelect.sections(
@@ -1146,7 +1145,7 @@ async function main(): Promise<number> {
             levelSelect.editLevelSelect(dropUninstalledDefault(addSkateshopSign(text), game), sectionList);
         const overlaySprites = (text: string): string => levelSelect.editSprites(text, sectionList);
         const selectText = overlaySelect(select);
-        write(selectText, "scripts\\game\\menu\\gamemenu_levelselect.qb");
+        write(selectText, "scripts/game/menu/gamemenu_levelselect.qb");
         // The game's new front end ([features] new_frontend - src/game/front/new_frontend.h): the same sections as data.
         const feSections = frontendLevels.frontendSections(
             sectionList,
@@ -1159,7 +1158,7 @@ async function main(): Promise<number> {
         for (const sec of feSections)
             for (const lv of sec.levels)
                 if (!artPicks.has(lv.load.toLowerCase())) print(`scenic art: no pick for ${sec.id}/${lv.name}`);
-        const feFile = pyJoin(out, frontendLevels.FRONTEND_LEVELS);
+        const feFile = path.join(out, frontendLevels.FRONTEND_LEVELS);
         fs.mkdirSync(path.dirname(feFile), { recursive: true });
         fs.writeFileSync(feFile, frontendLevels.frontendJson(feSections));
         print(`new front end: ${feFile} (${feSections.map((sec) => `${sec.tab} ${sec.levels.length}`).join(", ")})`);
@@ -1167,29 +1166,29 @@ async function main(): Promise<number> {
         const defaultFonts = path.join(PIPELINE, "fonts");
         const fontSource = values["frontend-fonts"] ?? (fs.existsSync(defaultFonts) ? defaultFonts : undefined);
         if (fontSource) {
-            const fontDir = pyJoin(out, "frontend", "fonts");
+            const fontDir = path.join(out, "frontend", "fonts");
             fs.mkdirSync(fontDir, { recursive: true });
             const fonts = fs.readdirSync(fontSource).filter((name) => name.toLowerCase().endsWith(".ttf"));
             for (const name of fonts) fs.copyFileSync(path.join(fontSource, name), path.join(fontDir, name));
             print(`new front end fonts: ${fonts.join(", ") || "none"} into ${fontDir}`);
         }
         const sprites = decompile(prxFile(qbScripts, "scripts\\game\\menu\\sprites.qb"), "sprites.qb");
-        write(overlaySprites(sprites), "scripts\\game\\menu\\sprites.qb");
-        const frame = prxFile(pyJoin(pre, "Levelselect.prx"), levelSelect.levelSelectIcons.FRAME_SOURCE);
+        write(overlaySprites(sprites), "scripts/game/menu/sprites.qb");
+        const frame = prxFile(path.join(pre, "Levelselect.prx"), levelSelect.levelSelectIcons.FRAME_SOURCE);
         print(`level select signs: ${levelSelect.writeSigns(frame, sectionList, out).join(", ")}`);
         print(`level select maps: ${levelMap.writeMaps(out, maps, mapNames).join(", ")}`);
         print(levelSelect.describe(sectionList));
         const testlevel = decompile(
-            prxFile(pyJoin(pre, "TestLevel_scripts.prx"), "levels\\testlevel\\testlevel.qb"),
+            prxFile(path.join(pre, "TestLevel_scripts.prx"), "levels\\testlevel\\testlevel.qb"),
             "TestLevel.qb",
         );
-        write(testlevelNodes(testlevel), "levels\\TestLevel\\TestLevel.qb");
+        write(testlevelNodes(testlevel), "levels/TestLevel/TestLevel.qb");
         // Always: the pause menu's LEVEL EDITOR (the game's [features] level_editor decides whether it shows) and the
         // new front end's items (its [features] new_frontend).
         // (and THAW's BMX's RIDE BMX when its staging folder is there - tools/pipeline/thaw_bmx/install.ts)
         write(
             thawBmxInstall.addPauseItem(addNewFrontendPause(addLevelEditor(pause)), game),
-            "scripts\\game\\menu\\gamemenu_pause.qb",
+            "scripts/game/menu/gamemenu_pause.qb",
         );
         // Always: the skate shop's menu with the new front end's Play Level (its [features] new_frontend).
         write(
@@ -1220,7 +1219,7 @@ async function main(): Promise<number> {
                 const patchedText = textOf(patched, "keyboard_partymod.qb");
                 const edited = path.join(work, "new_keyboard.ns");
                 fs.writeFileSync(edited, encodeLatin1(qwertyKeyboard(patchedText)));
-                const target = pyJoin(out, KEYBOARD_QB);
+                const target = path.join(out, ...KEYBOARD_QB.split("\\"));
                 fs.mkdirSync(path.dirname(target), { recursive: true });
                 ns(tool, "-c", edited, "-o", target, "-targetGame", "thug2");
                 print("wrote", target);
@@ -1268,7 +1267,7 @@ async function main(): Promise<number> {
         const archived = new PrxScripts([prxFiles(qbScripts), prxFiles(menuScripts)], tool, work);
         write(
             addNewFrontendMain(standardMainMenu(frontEnd, archived)),
-            "front_end\\levels\\mainmenu\\mainmenu_scripts.qb",
+            "front_end/levels/mainmenu/mainmenu_scripts.qb",
         );
 
         // Anteara Mod (tools/anteara; the game reads anteara\ first while [features] anteara_mod=1): its script
@@ -1276,10 +1275,10 @@ async function main(): Promise<number> {
         // drivable cars installed - PC-THUG1-22, thug2-thug1-level-converter/thug1_levels/driving.ts - the mod's car_scripts.qb, THUG1's
         // unchanged, gets their THUG2 edits too: unchanged it hangs THUG1 Vancouver loading. Its own
         // player_controlled_vehicle.qb already has the Motion component.)
-        const thug1Driving = fs.existsSync(path.join(game, "thug2-decomp-thug1", ...CAR_SCRIPTS.split("\\")));
+        const thug1Driving = fs.existsSync(path.join(game, "thug2-decomp-thug1", ...CAR_SCRIPTS.split(/[\\/]/)));
         const anteara = await loadAnteara();
         if (!anteara) {
-            fs.rmSync(pyJoin(out, "anteara"), { recursive: true, force: true });
+            fs.rmSync(path.join(out, "anteara"), { recursive: true, force: true });
             print(`Anteara Mod: not found (${ANTEARA_CANDIDATES.join(" / ")}) - skipped, no anteara\\ in the overlay`);
         } else
             print(
