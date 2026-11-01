@@ -1,57 +1,57 @@
 {
-	"name": "thug2-content-pipeline",
-	"version": "1.4.0",
-	"private": true,
-	"type": "module",
-	"description": "THUG2 content pipeline: the data overlay and menu builder, HD menu art, THUGPRO's THUG2 level changes and the THAW BMX tools; the level converters it installs are its dependencies. TypeScript run directly by Node 24.",
-	"engines": {
-		"node": ">=24"
-	},
-	"commands": [
-		"hd_textures/compare_shots.ts",
-		"hd_textures/compare_tex.ts",
-		"hd_textures/fetch.ts",
-		"hd_textures/globe/fetch.ts",
-		"hd_textures/globe/fit.ts",
-		"hd_textures/globe/redraw.ts",
-		"hd_textures/ui.ts",
-		"menu_level/art_picks.ts",
-		"menu_level/frontend_art.ts",
-		"menu_level/level_select_icons.ts",
-		"menu_level/loading_art_games.ts",
-		"menu_level/loading_select.ts",
-		"menu_level/main_menu.ts",
-		"menu_level/make_menu_level.ts",
-		"menu_level/scenic_art.ts",
-		"menu_level/scenic_capture.ts",
-		"menu_level/scenic_spots.ts",
-		"run.ts",
-		"thaw_bmx/bike_scripts.ts",
-		"thaw_bmx/convert.ts",
-		"thaw_bmx/dump_scripts.ts",
-		"thaw_bmx/survey.ts",
-		"thug2_levels/thugpro_apply.ts",
-		"thug2_levels/thugpro_compare.ts"
-	],
-	"scripts": {
-		"typecheck": "tsc -p tsconfig.json",
-		"lint": "biome check --config-path=lint.biome.json .",
-		"test": "node --test \"**/*.test.ts\""
-	},
-	"dependencies": {
-		"thug2-level-converter-core": "git+https://git@github.com/CanuckAussieKev/thug2-level-converter-core.git#3f7390a5f224cd1c71fcec8077284961dc3610be",
-		"thug2-thugpro-compat": "git+https://git@github.com/CanuckAussieKev/thug2-thugpro-compat.git#ca72ba8ed6dcdfddb18d4062b0c756516ac44068",
-		"thug2-thps2-level-converter": "git+https://git@github.com/CanuckAussieKev/thug2-thps2-level-converter.git#f1525ee13f667575e7a6040f24a92d00b55b626d",
-		"thug2-thps3-level-converter": "git+https://git@github.com/CanuckAussieKev/thug2-thps3-level-converter.git#fed712780c7459fb71fa561176e7bbbf0abce70d",
-		"thug2-thps4-level-converter": "git+https://git@github.com/CanuckAussieKev/thug2-thps4-level-converter.git#e651e222e03eef07fc287e70439eb8aedea7a728",
-		"thug2-thug1-level-converter": "git+https://git@github.com/CanuckAussieKev/thug2-thug1-level-converter.git#c9e4a9a0275ce7f367a8c1e5237b5faf282f27a5",
-		"thug2-thaw-level-converter": "git+https://git@github.com/CanuckAussieKev/thug2-thaw-level-converter.git#33d132946f68334210173dc52a44ae7aa2a6595e",
-		"thug2-thp8-level-converter": "git+https://git@github.com/CanuckAussieKev/thug2-thp8-level-converter.git#bc3ef2ae0ccf6ba08c5dd46f57f3b7e7cba7f61f",
-		"thug2-thpg-level-converter": "git+https://git@github.com/CanuckAussieKev/thug2-thpg-level-converter.git#472cde5fd4c882fb510e86560997320351c54cd4"
-	},
-	"devDependencies": {
-		"@biomejs/biome": "2.5.15",
-		"@types/node": "24.19.2",
-		"typescript": "7.0.2"
-	}
+  "name": "thug2-content-pipeline",
+  "version": "1.4.1",
+  "private": true,
+  "type": "module",
+  "description": "THUG2 content pipeline: the data overlay and menu builder, HD menu art, THUGPRO's THUG2 level changes and the THAW BMX tools; the level converters it installs are its dependencies. TypeScript run directly by Node 24.",
+  "engines": {
+    "node": ">=24"
+  },
+  "commands": [
+    "hd_textures/compare_shots.ts",
+    "hd_textures/compare_tex.ts",
+    "hd_textures/fetch.ts",
+    "hd_textures/globe/fetch.ts",
+    "hd_textures/globe/fit.ts",
+    "hd_textures/globe/redraw.ts",
+    "hd_textures/ui.ts",
+    "menu_level/art_picks.ts",
+    "menu_level/frontend_art.ts",
+    "menu_level/level_select_icons.ts",
+    "menu_level/loading_art_games.ts",
+    "menu_level/loading_select.ts",
+    "menu_level/main_menu.ts",
+    "menu_level/make_menu_level.ts",
+    "menu_level/scenic_art.ts",
+    "menu_level/scenic_capture.ts",
+    "menu_level/scenic_spots.ts",
+    "run.ts",
+    "thaw_bmx/bike_scripts.ts",
+    "thaw_bmx/convert.ts",
+    "thaw_bmx/dump_scripts.ts",
+    "thaw_bmx/survey.ts",
+    "thug2_levels/thugpro_apply.ts",
+    "thug2_levels/thugpro_compare.ts"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "biome check --config-path=lint.biome.json .",
+    "test": "node --test \"**/*.test.ts\""
+  },
+  "dependencies": {
+    "thug2-level-converter-core": "git+https://git@github.com/CanuckAussieKev/thug2-level-converter-core.git#c10980836184700eed8acb551ddaebf854bd67d8",
+    "thug2-thugpro-compat": "git+https://git@github.com/CanuckAussieKev/thug2-thugpro-compat.git#83d4eefa45c98e49c68cb6e995db7ab2b0250a49",
+    "thug2-thps2-level-converter": "git+https://git@github.com/CanuckAussieKev/thug2-thps2-level-converter.git#e5bcd5ddf32ea678aa094b8c9558662461ee7c0e",
+    "thug2-thps3-level-converter": "git+https://git@github.com/CanuckAussieKev/thug2-thps3-level-converter.git#de7f1d0cbcece6d840b556aecb58b653b794861b",
+    "thug2-thps4-level-converter": "git+https://git@github.com/CanuckAussieKev/thug2-thps4-level-converter.git#3d708f9b869275bc055580c273b860d03c9e3cda",
+    "thug2-thug1-level-converter": "git+https://git@github.com/CanuckAussieKev/thug2-thug1-level-converter.git#44d670d1718989d4c1936d0acb4ded05de6dbee4",
+    "thug2-thaw-level-converter": "git+https://git@github.com/CanuckAussieKev/thug2-thaw-level-converter.git#235a614e5e0e02dbd3481579fa36783b51fa515b",
+    "thug2-thp8-level-converter": "git+https://git@github.com/CanuckAussieKev/thug2-thp8-level-converter.git#fa216460ae0455cda994e1ce5b516c40ef1e1cdc",
+    "thug2-thpg-level-converter": "git+https://git@github.com/CanuckAussieKev/thug2-thpg-level-converter.git#deb9028469e3b2bd7854f60a93ea354ebbe4b064"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.15",
+    "@types/node": "24.19.2",
+    "typescript": "7.0.2"
+  }
 }
