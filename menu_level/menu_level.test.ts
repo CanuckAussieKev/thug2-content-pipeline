@@ -3,9 +3,9 @@
 
 import * as assert from "node:assert/strict";
 import { test } from "node:test";
-import * as compat from "thug2-level-converter-core/compat/compat.ts";
 import type { Manifest } from "thug2-level-converter-core/level_port/ported_levels.ts";
 import { unswizzleOrder } from "thug2-level-converter-core/level_port/tex.ts";
+import * as compat from "thug2-thugpro-compat/profile.ts";
 import { nsString } from "./career_complete.ts";
 import {
     type Level,

@@ -2,7 +2,8 @@
 //
 //   - the edges follow the engines (ALLOWED): a converter depends on thug2-level-converter-core and on the converters
 //     of the games its game is built on - Project 8 on THAW's formats, Proving Ground on Project 8's engine - never
-//     the other way round; core depends on none, and nothing on this repository; the graph has no cycle;
+//     the other way round, and on thug2-thugpro-compat when it uses THUGPRO's profile (that one only on core); core
+//     depends on none, and nothing on this repository; the graph has no cycle;
 //   - one copy of each: every package.json that names a repository pins the same commit of it (two copies would be
 //     two sets of classes - a Struct of one isn't one of the other's), and npm installed one;
 //   - every import of a repository names one of its exports (no reaching into another repository's internals) and a
@@ -27,15 +28,17 @@ import { COMMANDS, FOLDERS, toolFile } from "./run.ts";
 const CORE = "thug2-level-converter-core";
 const THAW = "thug2-thaw-level-converter";
 const THP8 = "thug2-thp8-level-converter";
+const COMPAT = "thug2-thugpro-compat"; // (THUGPRO's compatibility profile: the register and its data)
 
 // What each repository may depend on (specific -> general; core at the bottom).
 export const ALLOWED: Readonly<Record<string, readonly string[]>> = {
     [CORE]: [],
+    [COMPAT]: [CORE], // a profile is data on core's mechanism - no converter's code
     "thug2-thps2-level-converter": [CORE],
-    "thug2-thps3-level-converter": [CORE],
-    "thug2-thps4-level-converter": [CORE],
-    "thug2-thug1-level-converter": [CORE],
-    [THAW]: [CORE], // (Tony Hawk's American Wasteland)
+    "thug2-thps3-level-converter": [CORE, COMPAT],
+    "thug2-thps4-level-converter": [CORE, COMPAT],
+    "thug2-thug1-level-converter": [CORE, COMPAT],
+    [THAW]: [CORE, COMPAT], // (Tony Hawk's American Wasteland)
     [THP8]: [CORE, THAW], // Project 8 reads THAW's formats (its level files, scripts, node flags)
     "thug2-thpg-level-converter": [CORE, THAW, THP8], // Proving Ground runs Project 8's engine with its own profile
 };
@@ -117,7 +120,12 @@ test("run.ts finds each repository's commands as the .js npm built", () => {
         const file = toolFile(command);
         assert.ok(file?.endsWith(".js") && fs.existsSync(file), `${command}: ${file}`);
     }
-    for (const tool of ["thps3_levels/thps3_levels.ts", "level_port/zfight.ts", "thp8_save/thp8_save.ts"])
+    for (const tool of [
+        "thps3_levels/thps3_levels.ts",
+        "level_port/zfight.ts",
+        "thp8_save/thp8_save.ts",
+        "thugpro/scripts_hash.ts",
+    ])
         assert.ok(COMMANDS.has(tool), tool);
     assert.equal(toolFile("menu_level/make_menu_level.ts"), null);
 });

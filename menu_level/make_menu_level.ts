@@ -1300,7 +1300,7 @@ async function main(): Promise<number> {
             );
 
         // THUGPRO's changes to THUG2's own levels that the user switched on (tools/pipeline/thug2_levels, register TP-42 -
-        // thug2-level-converter-core/compat/thugpro/thug2_levels.json; none by default): their changed level files into this overlay.
+        // thug2-thugpro-compat/thugpro/thug2_levels.json; none by default): their changed level files into this overlay.
         for (const line of thug2Levels.installEnabled(game, out)) print(line);
 
         // Last (the level select's signs written above are upscaled too): the menus' images and fonts, with --hd-ui.

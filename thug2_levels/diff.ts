@@ -1,6 +1,6 @@
 // NOT ORIGINAL - THUGPRO's versions of THUG2's own levels against THUG2's (the user's decision 2026-10-21: "For THUG2
 // node data, compare"): every difference found in THUGPRO's install, classified and grouped into register entries
-// (thug2-level-converter-core/compat/thugpro/thug2_levels.json, README.md there: TP-42). What is compared, per level (sources.ts):
+// (thug2-thugpro-compat/thugpro/thug2_levels.json, README.md there: TP-42). What is compared, per level (sources.ts):
 //   - the node array THUGPRO loads instead of THUG2's (TR, BO, BA, AU, LA): node by node by name - flags
 //     (CreatedAtStart, AbsentInNetGames, TrickObject...), values (TriggerScript, Cluster, Pos...), Links by name,
 //     nodes THUGPRO added (rails, a quarter pipe);
@@ -16,13 +16,13 @@
 // network games). Values that differ only by float rounding (THUGPRO's compiler) aren't differences (TOLERANCE).
 
 import { crc32 } from "node:zlib";
-import { encode, type Json, type LevelEdits } from "thug2-level-converter-core/compat/hand_edits.ts";
-import { nodeArray } from "thug2-level-converter-core/compat/thugpro_nodes.ts";
 import * as qb from "thug2-level-converter-core/level_port/qb.ts";
 import { Name, type QbValue, Struct, Vector } from "thug2-level-converter-core/level_port/qb.ts";
 import * as thug2Col from "thug2-level-converter-core/level_port/thug2_col.ts";
 import * as thug2Scene from "thug2-level-converter-core/level_port/thug2_scene.ts";
 import { Float } from "thug2-level-converter-core/lib/py.ts";
+import { encode, type Json, type LevelEdits } from "thug2-thugpro-compat/hand_edits.ts";
+import { nodeArray } from "thug2-thugpro-compat/thugpro_nodes.ts";
 import {
     type LevelFiles,
     nameKey,
@@ -64,7 +64,7 @@ export interface Entry {
     applicable: boolean; // whether thugpro_apply.ts can apply it
     description: string;
     nodes?: string[]; // the nodes / objects it concerns (all of them)
-    edits?: LevelEdits; // node / collision edits (thug2-level-converter-core/compat/hand_edits.ts's form)
+    edits?: LevelEdits; // node / collision edits (thug2-thugpro-compat/hand_edits.ts's form)
     scripts?: ScriptRef[]; // THUGPRO's scripts it needs (by reference)
     replace_scripts?: ScriptRef[]; // scripts of THUG2's level THUGPRO's file replaces (by reference)
     geometry?: GeometryRef[];

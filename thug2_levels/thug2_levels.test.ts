@@ -189,7 +189,7 @@ test("refusal: the main install, backups and THUGPRO's folders", () => {
 
 test("the register: ids, classes, every entry off, applicable ones carry their data", () => {
     const reg = loadRegister();
-    assert.ok(reg, "thug2-level-converter-core/compat/thugpro/thug2_levels.json");
+    assert.ok(reg, "thug2-thugpro-compat/thugpro/thug2_levels.json");
     assert.equal(reg._register, "TP-42");
     const ids = new Set<string>();
     for (const [L, lr] of Object.entries(reg.levels)) {

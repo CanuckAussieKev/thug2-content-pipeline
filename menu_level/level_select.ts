@@ -42,7 +42,6 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import * as compat from "thug2-level-converter-core/compat/compat.ts";
 import { type LevelEntry, loadOf, type Manifest } from "thug2-level-converter-core/level_port/ported_levels.ts";
 import {
     compareStr,
@@ -56,6 +55,7 @@ import {
     sortedNumbers,
 } from "thug2-level-converter-core/lib/py.ts";
 import { search } from "thug2-level-converter-core/lib/re.ts";
+import * as compat from "thug2-thugpro-compat/profile.ts";
 import { reEscape } from "./career_complete.ts";
 import * as levelSelectIcons from "./level_select_icons.ts";
 
@@ -741,7 +741,7 @@ export function signEntry(lv: Level): string {
     );
 }
 
-// TP-R6 (thug2-level-converter-core/compat/thugpro/README.md): the THAW levels THUGPRO sends skaters' positions of in whole units in
+// TP-R6 (thug2-thugpro-compat/thugpro/README.md): the THAW levels THUGPRO sends skaters' positions of in whole units in
 // network games (its IsBigLevel / IsTallLevel), from thaw_levels.json "net_position_scale" - their level select entries
 // get the same flags, which the DLL reads (src/game/net/thugpro_compat.h).
 export function thawPositionScaleFlags(manifest: Manifest, levels: Level[], profile = compat.load("thugpro")): Level[] {

@@ -32,13 +32,13 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { isName, nodeArray, position } from "thug2-level-converter-core/compat/thugpro_nodes.ts";
 import { Struct } from "thug2-level-converter-core/level_port/qb.ts";
 import * as thug2Col from "thug2-level-converter-core/level_port/thug2_col.ts";
 import * as thug2Scene from "thug2-level-converter-core/level_port/thug2_scene.ts";
 import { materialSeeThrough } from "thug2-level-converter-core/level_port/thug2_scene.ts";
 import { parseCli } from "thug2-level-converter-core/lib/cli.ts";
 import { isMain, print, runMain } from "thug2-level-converter-core/lib/py.ts";
+import { isName, nodeArray, position } from "thug2-thugpro-compat/thugpro_nodes.ts";
 
 export type V3 = [number, number, number];
 

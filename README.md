@@ -11,11 +11,12 @@
 What turns the Tony Hawk games you have installed into content for Tony Hawk's Underground 2 (PC) and installs it: the
 data overlay and menu builder (level select, the new front end's data, HD menu art, scenic level art), THUGPRO's changes
 to THUG2's own levels, and the THAW BMX asset and ride tools. The level converters are repositories of their own, and
-this one depends on all of them (package.json, pinned to commits):
+this one depends on all of them and on THUGPRO's compatibility profile (package.json, pinned to commits):
 
 | Repository | |
 |---|---|
-| [thug2-level-converter-core](https://github.com/CanuckAussieKev/thug2-level-converter-core) | THUG2's formats, the shared level port code, the THUGPRO compatibility register |
+| [thug2-level-converter-core](https://github.com/CanuckAussieKev/thug2-level-converter-core) | THUG2's formats, the shared level port code, the compatibility profiles' mechanism |
+| [thug2-thugpro-compat](https://github.com/CanuckAussieKev/thug2-thugpro-compat) | The THUGPRO compatibility register and its data (`--compat`); here: the level select's THAW position flags (TP-R6), THUGPRO's changes to THUG2's own levels (`thug2_levels`, TP-42), the scenic spots' node arrays |
 | [thug2-thps2-level-converter](https://github.com/CanuckAussieKev/thug2-thps2-level-converter) | Tony Hawk's Pro Skater 2 |
 | [thug2-thps3-level-converter](https://github.com/CanuckAussieKev/thug2-thps3-level-converter) | Tony Hawk's Pro Skater 3 |
 | [thug2-thps4-level-converter](https://github.com/CanuckAussieKev/thug2-thps4-level-converter) | Tony Hawk's Pro Skater 4 |
@@ -67,10 +68,12 @@ decomp's `tools/game`.
 
 Each dependency is pinned to a tagged commit by https (`git+https://git@github.com/CanuckAussieKev/<repository>.git#<commit>`:
 no SSH key needed, `npm ci` from the committed package-lock.json). The converters depend on each other only along
-their games' engines - specific to general, thug2-level-converter-core at the bottom, no cycles:
+their games' engines - specific to general, thug2-level-converter-core at the bottom, no cycles - and the ones that
+use THUGPRO's data on its profile:
 
     thug2-thpg-level-converter -> thug2-thp8-level-converter -> thug2-thaw-level-converter -> core
-    thug2-thps2- / -thps3- / -thps4- / -thug1-level-converter -> core
+    thug2-thaw- / -thps3- / -thps4- / -thug1-level-converter -> thug2-thugpro-compat -> core
+    thug2-thps2-level-converter -> core
 
 (Proving Ground's converter also uses THAW's directly, Project 8's core.) This repository uses some of their public
 modules too (each repository's package.json `exports`, listed in its README): THPS2's archive and Project 8's for the
