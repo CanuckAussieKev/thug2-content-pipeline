@@ -178,7 +178,8 @@ test("callsBody: one call per line, flags after the script", () => {
     assert.equal(body.filter((b) => b === 0x01).length, 2);
 });
 
-test("refusal: the main install, backups and THUGPRO's folders", () => {
+// (Windows folders: the guard is for this project's own installs - elsewhere the paths don't exist)
+test("refusal: the main install, backups and THUGPRO's folders", { skip: process.platform !== "win32" }, () => {
     assert.ok(refusal("C:\\Games\\THUG2", false));
     assert.equal(refusal("C:\\Games\\THUG2", true), null);
     assert.ok(refusal("C:\\Games\\THUG2-BACKUP\\Game", true));
