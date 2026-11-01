@@ -8,7 +8,7 @@ THUG2 installs read only; nothing of either game is stored in the repo.
     node tools/pipeline/thaw_bmx/convert.ts selfcheck [--thaw ..] [--thug2 ..]                               # read back / pose checks
     node tools/pipeline/menu_level/make_menu_level.ts --game C:\Games\THUG2-3 --ns ...                       # into the overlay
 
-`--ns` is NeverScript's ns.exe (tools\build_neverscript.ps1); without it the scripts are written as text only.
+`--ns` is NeverScript's ns (`npx thug2-neverscript fetch`, or the decomp's tools\build_neverscript.ps1); without it the scripts are written as text only.
 `survey.ts` (the earlier scoping survey) reads THAW's member tables and CFunctions from THAW's reference build by
 default (`--exe` another).
 

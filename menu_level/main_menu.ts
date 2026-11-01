@@ -17,7 +17,6 @@ import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { helpFromHeader } from "thug2-level-converter-core/lib/cli.ts";
-import { NS_DEFAULT } from "thug2-level-converter-core/lib/decomp.ts";
 import {
     applyOwnEdits,
     EditsError,
@@ -29,6 +28,7 @@ import {
     unitMap,
 } from "thug2-level-converter-core/lib/edits.ts";
 import { resolveInstall } from "thug2-level-converter-core/lib/install.ts";
+import { requireNs } from "thug2-level-converter-core/lib/neverscript.ts";
 import { isMain, print, runMain } from "thug2-level-converter-core/lib/py.ts";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -105,7 +105,7 @@ async function main(argv: string[]): Promise<number> {
         allowPositionals: true,
         options: {
             game: { type: "string", default: "C:\\Games\\THUG2" },
-            ns: { type: "string", default: NS_DEFAULT },
+            ns: { type: "string" },
             out: { type: "string" },
             from: { type: "string" },
         },
@@ -117,7 +117,7 @@ async function main(argv: string[]): Promise<number> {
     try {
         const look = new PrxScripts(
             ["qb_scripts.prx", "mainmenu_scripts.prx"].map((f) => prxFiles(path.join(pre, f))),
-            values.ns!,
+            requireNs(values.ns),
             work,
         );
         if (positionals[0] === "dump" && values.out) {

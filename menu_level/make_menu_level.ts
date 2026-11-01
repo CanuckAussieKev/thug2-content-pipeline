@@ -60,9 +60,10 @@ import { textOutput } from "thug2-level-converter-core/level_port/common.ts";
 import * as pedModels from "thug2-level-converter-core/level_port/ped_models.ts"; // (the ported levels' own people: their profiles and CAS parts)
 import * as portedLevels from "thug2-level-converter-core/level_port/ported_levels.ts"; // (the converted levels: added when <game>\thug2-decomp-<game> exist)
 import { parseCli } from "thug2-level-converter-core/lib/cli.ts";
-import { DECOMP, NS_DEFAULT, nsMissing } from "thug2-level-converter-core/lib/decomp.ts";
+import { DECOMP } from "thug2-level-converter-core/lib/decomp.ts";
 import type { UnitLookup } from "thug2-level-converter-core/lib/edits.ts";
 import { resolveInstall } from "thug2-level-converter-core/lib/install.ts";
+import { requireNs } from "thug2-level-converter-core/lib/neverscript.ts";
 import {
     decodeAsciiReplace,
     decodeLatin1,
@@ -896,10 +897,7 @@ async function main(): Promise<number> {
         options: {
             game: { type: "string", default: "C:\\Games\\THUG2\\Game" },
             out: { type: "string" }, // the overlay folder (default: <game>\thug2-decomp-data)
-            ns: {
-                type: "string",
-                default: NS_DEFAULT,
-            },
+            ns: { type: "string" }, // NeverScript's ns (default: found - npx thug2-neverscript where / fetch)
             "hd-ui": { type: "string" }, // 2 or 4: the menus' images and fonts upscaled (tools/pipeline/hd_textures/ui.ts)
             "hd-ui-model": { type: "string" },
             "hd-ui-globe-ai": { type: "boolean" }, // the level select globe's tiles upscaled, not redrawn from map data
@@ -923,11 +921,10 @@ async function main(): Promise<number> {
     if (!["a", "b", "c", "off"].includes(scenicStyle)) pyExit("--scenic-style is a, b, c or off");
     if (hdScale !== 0 && hdScale !== 2 && hdScale !== 4) pyExit("--hd-ui is 2 or 4");
     let game = values.game;
-    const tool = values.ns;
+    const tool = requireNs(values.ns);
     // (the install root or the game folder itself: C:\Games\THUG2 -> C:\Games\THUG2\Game - thug2-level-converter-core/lib/install.ts)
     game = resolveInstall(game, "thug2");
     const out = values.out || pyJoin(game, "thug2-decomp-data");
-    if (!fs.existsSync(tool)) pyExit(nsMissing(tool));
 
     const pre = pyJoin(game, "Data", "pre");
     const qbScripts = pyJoin(pre, "qb_scripts.prx");

@@ -54,7 +54,7 @@ own. What needs the decomp, and why:
 
 | Needs | Tools | Why |
 |---|---|---|
-| NeverScript's `ns.exe` (the decomp builds it: `tools\build_neverscript.ps1` -> `out\neverscript\ns.exe`) - or `--ns <ns.exe>` | every converter's `convert`, `thaw_bmx/convert.ts` (text only without it), `menu_level/make_menu_level.ts` | QB scripts compiled / decompiled |
+| NeverScript's `ns` (`npx thug2-neverscript fetch` downloads it - thug2-level-converter-core's `lib/neverscript.ts`; inside the decomp its own build, `tools\build_neverscript.ps1`) - or `--ns <ns>` | every converter's `convert`, `thaw_bmx/convert.ts` (text only without it), `menu_level/make_menu_level.ts` | QB scripts compiled / decompiled |
 | `src/game/skater/thaw_bmx*.cpp` | `thaw_bmx/ride.test.ts` (skipped alone) | the script names the game runs |
 | the decomp's `tools/game` scripts and its `thug2-decomp.exe` in the game folder | `menu_level/scenic_capture.ts` | it starts the game |
 
