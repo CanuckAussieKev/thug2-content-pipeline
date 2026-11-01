@@ -3,9 +3,9 @@
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { checksum } from "../level_port/qb.ts";
-import type { Quat } from "../thps3_levels/thps3_skin.ts";
-import * as skel from "../thps3_levels/thps3_skin.ts";
+import { checksum } from "thug2-level-converter-core/level_port/qb.ts";
+import type { Quat } from "thug2-thps3-level-converter/thps3_levels/thps3_skin.ts";
+import * as skel from "thug2-thps3-level-converter/thps3_levels/thps3_skin.ts";
 import {
     animKey,
     type Bone,

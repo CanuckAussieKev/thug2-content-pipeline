@@ -1,4 +1,4 @@
-# The standard main menu's changes to the game's scripts (tools/pipeline/lib/edits.ts; main_menu.ts)
+# The standard main menu's changes to the game's scripts (thug2-level-converter-core/lib/edits.ts; main_menu.ts)
 new create_main_menu
 from 9bb6610f levels\mainmenu\mainmenu_scripts.qb create_main_menu
 with 5a937638 scripts\game\menu\catmenu.qb create_CAT_pause_menu

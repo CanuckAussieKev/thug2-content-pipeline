@@ -6,7 +6,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { test } from "node:test";
-import type { Image } from "../lib/frame_diff.ts";
+import type { Image } from "thug2-level-converter-core/lib/frame_diff.ts";
 import { writeImg } from "../menu_level/level_select_icons.ts";
 import * as ui from "./ui.ts";
 
@@ -142,7 +142,7 @@ test("a font: the page x4 as 32-bit, marked; everything else as it was", () => {
 });
 
 test("a model's texture dictionary: upscaled in place (no marker), the checksums kept; the menu model names", async () => {
-    const { readTex, writeTex } = await import("../level_port/tex.ts");
+    const { readTex, writeTex } = await import("thug2-level-converter-core/level_port/tex.ts");
     const bgra = Buffer.alloc(16 * 16 * 4);
     for (let i = 0; i < 256; i++) bgra.set([i, 255 - i, (i * 7) & 255, 255], i * 4);
     const texture = (checksum: number) => ({
@@ -198,7 +198,7 @@ function loadingScreen(): Buffer {
 }
 
 test("a loading screen: x4 (2560 x 1792, its own 4096 cap) as DXT1 blocks with the image marker", async () => {
-    const dxt = await import("../level_port/dxt.ts");
+    const dxt = await import("thug2-level-converter-core/level_port/dxt.ts");
     const name = "images\\loadscrn_x.img.xbx";
     const { out, stats } = ui.upscaleUi(new Map([[name, loadingScreen()]]), options(4), nearest4);
     assert.equal(stats.loadingScreens, 1);

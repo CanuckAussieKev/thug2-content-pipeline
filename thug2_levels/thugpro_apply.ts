@@ -1,12 +1,12 @@
 // NOT ORIGINAL - applies the register's entries for THUGPRO's changes to THUG2's own levels (TP-42,
-// tools/pipeline/compat/thugpro/thug2_levels.json - thugpro_compare.ts --extract-thugpro writes it) through our data overlay:
+// thug2-level-converter-core/compat/thugpro/thug2_levels.json - thugpro_compare.ts --extract-thugpro writes it) through our data overlay:
 // never the game's files. Each changed file is made from the user's THUG2 files (Data\pre) plus the entries' data and
 // written where the game reads it first (<game>\thug2-decomp-data - src/game/front/data_overlay.h):
 //   levels\<L>\<L>.qb          the node array (edited nodes in their places, added nodes appended - every other node's
 //                              bytes kept: qb_write.replaceGlobalArray) and the trigger scripts THUGPRO's file changed;
 //   levels\<L>\<L>_scripts.qb  THUGPRO's scripts the entries need (by reference: read from the THUGPRO install, checked
 //                              by CRC-32) and the level's setup wrapper (THUGPRO's host options' state after loading);
-//   levels\<L>\<L>.col.xbx     the collision with the entries' face / object edits (tools/pipeline/thug1_levels/hand_edits.ts's
+//   levels\<L>\<L>.col.xbx     the collision with the entries' face / object edits (thug2-thug1-level-converter/thug1_levels/hand_edits.ts's
 //                              applyColEdits) and THUGPRO's added objects (by reference);
 //   levels\<L>\<L>.scn.xbx     THUGPRO's added sectors (by reference) - only when an entry adds geometry;
 //   scripts\game\Levels.qb     (the overlay's, and Anteara Mod's copy) Level_<L>'s setup_script, when an entry
@@ -22,17 +22,22 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { crc32 } from "node:zlib";
-import { nodeArray } from "../compat/thugpro_nodes.ts";
-import * as qb from "../level_port/qb.ts";
-import { Name, type QbValue, Struct } from "../level_port/qb.ts";
-import { putScripts, replaceGlobalArray, scriptSpans, setStructEntries } from "../level_port/qb_write.ts";
-import * as thug2Col from "../level_port/thug2_col.ts";
-import * as thug2Scene from "../level_port/thug2_scene.ts";
-import { parseCli } from "../lib/cli.ts";
-import { NEVER_WRITTEN, WORK } from "../lib/decomp.ts";
-import { findCaseless, resolveInstall } from "../lib/install.ts";
-import { isMain, print, pyJoin, runMain } from "../lib/py.ts";
-import { applyColEdits, applyNodeEdits, type LevelEdits } from "../thug1_levels/hand_edits.ts";
+import { nodeArray } from "thug2-level-converter-core/compat/thugpro_nodes.ts";
+import * as qb from "thug2-level-converter-core/level_port/qb.ts";
+import { Name, type QbValue, Struct } from "thug2-level-converter-core/level_port/qb.ts";
+import {
+    putScripts,
+    replaceGlobalArray,
+    scriptSpans,
+    setStructEntries,
+} from "thug2-level-converter-core/level_port/qb_write.ts";
+import * as thug2Col from "thug2-level-converter-core/level_port/thug2_col.ts";
+import * as thug2Scene from "thug2-level-converter-core/level_port/thug2_scene.ts";
+import { parseCli } from "thug2-level-converter-core/lib/cli.ts";
+import { NEVER_WRITTEN, WORK } from "thug2-level-converter-core/lib/decomp.ts";
+import { findCaseless, resolveInstall } from "thug2-level-converter-core/lib/install.ts";
+import { isMain, print, pyJoin, runMain } from "thug2-level-converter-core/lib/py.ts";
+import { applyColEdits, applyNodeEdits, type LevelEdits } from "thug2-thug1-level-converter/thug1_levels/hand_edits.ts";
 import { type Entry, mergeEdits, type ScriptRef } from "./diff.ts";
 import { loadRegister, type Register } from "./register.ts";
 import { Archives, DEFAULT_GAME, DEFAULT_THUGPRO, LEVELS } from "./sources.ts";
@@ -260,7 +265,7 @@ export function applyLevel(
 
 // --- installing -------------------------------------------------------------------------------------------------------
 
-// Folders nothing is written into, and the main install (only with allowMain) - as tools/pipeline/game/apply_layout.ts.
+// Folders nothing is written into, and the main install (only with allowMain) - as tools/game/apply_layout.ts.
 export function refusal(folder: string, allowMain: boolean): string | null {
     const norm = path.resolve(folder).toLowerCase().replace(/\\+$/, "");
     for (const never of NEVER_WRITTEN)
@@ -330,7 +335,7 @@ export function installEnabled(gameDir: string, overlay: string, thugproDir = DE
     const entries = chooseEntries(reg, undefined);
     if (!entries.length)
         return [
-            "THUG2 levels as THUGPRO's (TP-42): none switched on (tools/pipeline/compat/thugpro/thug2_levels.json)",
+            "THUG2 levels as THUGPRO's (TP-42): none switched on (thug2-level-converter-core/compat/thugpro/thug2_levels.json)",
         ];
     try {
         return ["THUG2 levels as THUGPRO's (TP-42):", ...install(gameDir, overlay, entries, thugproDir)];

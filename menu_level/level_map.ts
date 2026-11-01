@@ -20,6 +20,14 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import {
+    type ColFile,
+    FACE_DECAL,
+    FACE_INVISIBLE,
+    FACE_NON_COLLIDABLE,
+    FACE_TRIGGER,
+    readCol,
+} from "thug2-level-converter-core/level_port/thug2_col.ts";
+import {
     defaultPlan,
     fitPlan,
     PLAN_SIZE,
@@ -29,14 +37,6 @@ import {
     renderPlan,
 } from "../hd_textures/globe/plan.ts";
 import { encodeImg } from "../hd_textures/ui.ts";
-import {
-    type ColFile,
-    FACE_DECAL,
-    FACE_INVISIBLE,
-    FACE_NON_COLLIDABLE,
-    FACE_TRIGGER,
-    readCol,
-} from "../level_port/thug2_col.ts";
 import type { Level, Section } from "./level_select.ts";
 import { type Colour, writeImg } from "./level_select_icons.ts";
 

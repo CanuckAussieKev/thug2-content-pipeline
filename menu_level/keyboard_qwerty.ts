@@ -28,7 +28,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import { applyBps, bpsMadeFor } from "../lib/bps.ts";
+import { applyBps, bpsMadeFor } from "thug2-level-converter-core/lib/bps.ts";
 import { countOf, replaceFirst } from "./level_select.ts";
 
 const PARTYMOD_PATCH = path.join(path.dirname(fileURLToPath(import.meta.url)), "partymod_keyboard.bps");

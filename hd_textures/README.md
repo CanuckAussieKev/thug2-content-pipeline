@@ -1,10 +1,10 @@
 # HD textures (optional AI upscaling of converted levels)
 
-An optional pass of the level converters (THPS3 so far: `tools/pipeline/thps3_levels`) that upscales a level's own textures
+An optional pass of the level converters (THPS3 so far: `thug2-thps3-level-converter/thps3_levels`) that upscales a level's own textures
 with [Real-ESRGAN](https://github.com/xinntao/Real-ESRGAN)'s standalone `realesrgan-ncnn-vulkan` (BSD-3-Clause;
 Vulkan, no CUDA or PyTorch). **Off by default** - a convert without `--hd-textures` writes exactly what it wrote
-before and never touches the cache. The code is `tools/pipeline/level_port/hd_textures.ts` (its header has the details),
-DXT decode / encode `tools/pipeline/level_port/dxt.ts`, tests `tools/pipeline/level_port/hd_textures.test.ts`.
+before and never touches the cache. The code is `thug2-level-converter-core/level_port/hd_textures.ts` (its header has the details),
+DXT decode / encode `thug2-level-converter-core/level_port/dxt.ts`, tests `thug2-level-converter-core/level_port/hd_textures.test.ts`.
 
 ## Setup (once)
 
@@ -15,7 +15,7 @@ nothing of it is committed). Models shipped: `realesrgan-x4plus` (the default) a
 
 ## Use
 
-    node tools/pipeline/thps3_levels/thps3_levels.ts convert foun can --thug2 C:\Games\THUG2-n --hd-textures 2
+    node tools/pipeline/run.ts thps3_levels/thps3_levels.ts convert foun can --thug2 C:\Games\THUG2-n --hd-textures 2
     node tools/pipeline/menu_level/make_menu_level.ts --game C:\Games\THUG2-n
 
 The game reads the levels from the data overlay (`thug2-decomp-data`), so **make_menu_level has to run after every

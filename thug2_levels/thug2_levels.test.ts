@@ -5,11 +5,11 @@
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import * as qb from "../level_port/qb.ts";
-import { checksum, Name, type QbValue, Struct, Vector } from "../level_port/qb.ts";
-import { scriptSpans } from "../level_port/qb_write.ts";
-import type * as thug2Col from "../level_port/thug2_col.ts";
-import { Float } from "../lib/py.ts";
+import * as qb from "thug2-level-converter-core/level_port/qb.ts";
+import { checksum, Name, type QbValue, Struct, Vector } from "thug2-level-converter-core/level_port/qb.ts";
+import { scriptSpans } from "thug2-level-converter-core/level_port/qb_write.ts";
+import type * as thug2Col from "thug2-level-converter-core/level_port/thug2_col.ts";
+import { Float } from "thug2-level-converter-core/lib/py.ts";
 import { type Context, colChanges, KLASSES, mergeEdits, nodeChanges, sameValue } from "./diff.ts";
 import { loadRegister } from "./register.ts";
 import { callsBody, chooseEntries, refusal } from "./thugpro_apply.ts";
@@ -189,7 +189,7 @@ test("refusal: the main install, backups and THUGPRO's folders", () => {
 
 test("the register: ids, classes, every entry off, applicable ones carry their data", () => {
     const reg = loadRegister();
-    assert.ok(reg, "tools/pipeline/compat/thugpro/thug2_levels.json");
+    assert.ok(reg, "thug2-level-converter-core/compat/thugpro/thug2_levels.json");
     assert.equal(reg._register, "TP-42");
     const ids = new Set<string>();
     for (const [L, lr] of Object.entries(reg.levels)) {

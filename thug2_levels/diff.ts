@@ -1,6 +1,6 @@
 // NOT ORIGINAL - THUGPRO's versions of THUG2's own levels against THUG2's (the user's decision 2026-10-21: "For THUG2
 // node data, compare"): every difference found in THUGPRO's install, classified and grouped into register entries
-// (tools/pipeline/compat/thugpro/thug2_levels.json, README.md there: TP-42). What is compared, per level (sources.ts):
+// (thug2-level-converter-core/compat/thugpro/thug2_levels.json, README.md there: TP-42). What is compared, per level (sources.ts):
 //   - the node array THUGPRO loads instead of THUG2's (TR, BO, BA, AU, LA): node by node by name - flags
 //     (CreatedAtStart, AbsentInNetGames, TrickObject...), values (TriggerScript, Cluster, Pos...), Links by name,
 //     nodes THUGPRO added (rails, a quarter pipe);
@@ -16,13 +16,13 @@
 // network games). Values that differ only by float rounding (THUGPRO's compiler) aren't differences (TOLERANCE).
 
 import { crc32 } from "node:zlib";
-import { nodeArray } from "../compat/thugpro_nodes.ts";
-import * as qb from "../level_port/qb.ts";
-import { Name, type QbValue, Struct, Vector } from "../level_port/qb.ts";
-import * as thug2Col from "../level_port/thug2_col.ts";
-import * as thug2Scene from "../level_port/thug2_scene.ts";
-import { Float } from "../lib/py.ts";
-import { encode, type Json, type LevelEdits } from "../thug1_levels/hand_edits.ts";
+import { nodeArray } from "thug2-level-converter-core/compat/thugpro_nodes.ts";
+import * as qb from "thug2-level-converter-core/level_port/qb.ts";
+import { Name, type QbValue, Struct, Vector } from "thug2-level-converter-core/level_port/qb.ts";
+import * as thug2Col from "thug2-level-converter-core/level_port/thug2_col.ts";
+import * as thug2Scene from "thug2-level-converter-core/level_port/thug2_scene.ts";
+import { Float } from "thug2-level-converter-core/lib/py.ts";
+import { encode, type Json, type LevelEdits } from "thug2-thug1-level-converter/thug1_levels/hand_edits.ts";
 import {
     type LevelFiles,
     nameKey,
@@ -64,7 +64,7 @@ export interface Entry {
     applicable: boolean; // whether thugpro_apply.ts can apply it
     description: string;
     nodes?: string[]; // the nodes / objects it concerns (all of them)
-    edits?: LevelEdits; // node / collision edits (tools/pipeline/thug1_levels/hand_edits.ts's form)
+    edits?: LevelEdits; // node / collision edits (thug2-thug1-level-converter/thug1_levels/hand_edits.ts's form)
     scripts?: ScriptRef[]; // THUGPRO's scripts it needs (by reference)
     replace_scripts?: ScriptRef[]; // scripts of THUG2's level THUGPRO's file replaces (by reference)
     geometry?: GeometryRef[];
@@ -796,7 +796,7 @@ export function compareLevel(
             ...levelChanges(files.tp.dynamic, names, `thugpro_qb.prx: qb\\thugpro\\thugpro_dynamic.qb`),
         );
     // <key>_LEVEL_CHANGE_0n scripts without a menu item (THUGPRO's host options are those scripts by name, as THAW's -
-    // tools/pipeline/thaw_levels/thugpro_extract.ts)
+    // thug2-thaw-level-converter/thaw_levels/thugpro_extract.ts)
     const levelKey = stringOf(files.tp.struct, "level") ?? L;
     for (let i = 1; i <= 8; i++) {
         const script = qb.checksum(`${levelKey}_LEVEL_CHANGE_0${i}`);
@@ -810,7 +810,7 @@ export function compareLevel(
         });
     }
     // the state THUGPRO puts each option in at load: on when the level's setup sets its flag (as THAW's - see
-    // tools/pipeline/thaw_levels/thugpro_extract.ts), otherwise off
+    // thug2-thaw-level-converter/thaw_levels/thugpro_extract.ts), otherwise off
     const setup = nameKey(files.tp.struct, "setup_script");
     const setupNames = setup !== null && all.has(setup) ? usedNames(all.get(setup)!.bytes) : new Set<number>();
     for (const o of report.options) {

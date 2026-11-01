@@ -3,7 +3,7 @@
 // script (create_main_menu, add_main_menu_list_items, main_menu_list_item - the game's create_main_menu /
 // add_main_menu_items / make_spin_menu_item -, main_menu_choose and main_menu_skate_now - its main_menu_exit - and
 // more: the units main_menu.edits names), a line "//@unit <name>"; main_menu.edits holds our changes to those
-// (tools/pipeline/lib/edits.ts: line operations on the game's script, decompiled from Data\pre's qb_scripts.prx /
+// (thug2-level-converter-core/lib/edits.ts: line operations on the game's script, decompiled from Data\pre's qb_scripts.prx /
 // mainmenu_scripts.prx with NeverScript). No game text is stored. To change one: `dump`, edit, `extract`.
 //
 //   node tools/pipeline/menu_level/main_menu.ts dump [--game C:\Games\THUG2] [--ns <ns.exe>] --out <file.ns>
@@ -16,8 +16,8 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
-import { helpFromHeader } from "../lib/cli.ts";
-import { NS_DEFAULT } from "../lib/decomp.ts";
+import { helpFromHeader } from "thug2-level-converter-core/lib/cli.ts";
+import { NS_DEFAULT } from "thug2-level-converter-core/lib/decomp.ts";
 import {
     applyOwnEdits,
     EditsError,
@@ -27,9 +27,9 @@ import {
     UnitIndex,
     type UnitLookup,
     unitMap,
-} from "../lib/edits.ts";
-import { resolveInstall } from "../lib/install.ts";
-import { isMain, print, runMain } from "../lib/py.ts";
+} from "thug2-level-converter-core/lib/edits.ts";
+import { resolveInstall } from "thug2-level-converter-core/lib/install.ts";
+import { isMain, print, runMain } from "thug2-level-converter-core/lib/py.ts";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const OWN = path.join(HERE, "main_menu.ns");
@@ -131,7 +131,7 @@ async function main(argv: string[]): Promise<number> {
                 new UnitIndex(look, look.all()),
                 look,
                 "main menu",
-                "# The standard main menu's changes to the game's scripts (tools/pipeline/lib/edits.ts; main_menu.ts)",
+                "# The standard main menu's changes to the game's scripts (thug2-level-converter-core/lib/edits.ts; main_menu.ts)",
                 0.8,
                 0.9,
             );

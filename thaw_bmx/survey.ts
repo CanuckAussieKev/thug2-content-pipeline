@@ -11,7 +11,7 @@
 // members  THAW's script member tables ({u32 name, u32 component, u32 function, 3 x u32 0} - 0x18 bytes, the
 //          functions mostly stored by a static initialiser: `mov eax, imm32; mov [entry+8], eax`) and its CFunction
 //          table ({char* name, function}); the bike members (and every component's count) against THUG2's
-//          (tools/pipeline/level_port/thug2_members.ts, the reference build's CFunction table)
+//          (thug2-level-converter-core/level_port/thug2_members.ts, the reference build's CFunction table)
 // scripts  the BMX scripts in data\pak\qb.pak.wpc (names with bike / bmx, the files under a bike / bmx path, and the
 //          scripts those call, two levels down): every command they run (script_port's Thug2.commandsOf - statement
 //          position, not `obj:` calls), classed as THAW script / THUG2 CFunction / THUG2 member / THAW-only CFunction /
@@ -22,15 +22,19 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { parseArgs } from "node:util";
-import * as prx from "../level_port/prx.ts";
-import { checksum } from "../level_port/qb.ts";
-import { Thug2 } from "../level_port/script_port.ts";
-import { NAMED_MEMBERS, TABLE_MEMBERS, COMPONENTS as THUG2_COMPONENTS } from "../level_port/thug2_members.ts";
-import { helpFromHeader } from "../lib/cli.ts";
-import { GAME_EXE_NAMES, THAW_REFERENCE_EXE } from "../lib/decomp.ts";
-import { resolveInstall } from "../lib/install.ts";
-import { decodeLatin1, isMain, print, runMain } from "../lib/py.ts";
-import * as thaw from "../thaw/thaw.ts";
+import * as prx from "thug2-level-converter-core/level_port/prx.ts";
+import { checksum } from "thug2-level-converter-core/level_port/qb.ts";
+import { Thug2 } from "thug2-level-converter-core/level_port/script_port.ts";
+import {
+    NAMED_MEMBERS,
+    TABLE_MEMBERS,
+    COMPONENTS as THUG2_COMPONENTS,
+} from "thug2-level-converter-core/level_port/thug2_members.ts";
+import { helpFromHeader } from "thug2-level-converter-core/lib/cli.ts";
+import { GAME_EXE_NAMES, THAW_REFERENCE_EXE } from "thug2-level-converter-core/lib/decomp.ts";
+import { resolveInstall } from "thug2-level-converter-core/lib/install.ts";
+import { decodeLatin1, isMain, print, runMain } from "thug2-level-converter-core/lib/py.ts";
+import * as thaw from "thug2-level-converter-core/thaw/thaw.ts";
 
 const BMX = /bike|bmx/i;
 const hex8 = (n: number): string => n.toString(16).padStart(8, "0");
@@ -371,7 +375,7 @@ function readThawSke(d: Buffer): Ske {
     return { bones: at(0), parents: at(1) };
 }
 
-// A THAW .ska's key streams read with THUG2's key forms (tools/pipeline/thug1_levels/thug1.ts untableAnim): rotation keys
+// A THAW .ska's key streams read with THUG2's key forms (thug2-thug1-level-converter/thug1_levels/thug1.ts untableAnim): rotation keys
 // {u16 h; h & 0x4000 clear: 3 x u16; else h & 0x3800 clear: a table byte; else x / y / z a byte or a u16 each},
 // translation keys {byte b (b & 0x40: the time in it, else a u16); b & 0x80: a table byte, else 3 x u16}. The data
 // after the per-bone sizes (aligned to 4; flag 0x80000, a partial animation: u32 count and its bits first). True when
@@ -458,7 +462,7 @@ function surveyAssets(c: Context): void {
         else keysBad++;
     }
     print(
-        `  every bone's keys walk to its stream's end with THUG2's key forms (tools/pipeline/thug1_levels untableAnim's rules): ${keysOk} yes, ${keysBad} no`,
+        `  every bone's keys walk to its stream's end with THUG2's key forms (thug2-thug1-level-converter/thug1_levels untableAnim's rules): ${keysOk} yes, ${keysBad} no`,
     );
     for (const [k, n] of stats) print(`  ${String(n).padStart(4)} x ${k}`);
     print(`  per-bone key stream sizes add up to the header's totals: ${ok} yes, ${bad} no`);

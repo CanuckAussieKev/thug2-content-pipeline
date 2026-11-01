@@ -4,7 +4,7 @@
 
 import * as assert from "node:assert/strict";
 import { test } from "node:test";
-import * as dxt from "../level_port/dxt.ts";
+import * as dxt from "thug2-level-converter-core/level_port/dxt.ts";
 import { frontendSections, loadingScreens } from "./frontend_levels.ts";
 import type { Section } from "./level_select.ts";
 import {

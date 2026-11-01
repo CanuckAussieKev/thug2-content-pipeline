@@ -5,7 +5,7 @@
 // The game's level select sprites (Levelselect.prx) are 8-bit paletted images:
 //   u32 version (2), u32 bits per texel (8), u32 width, u32 height, u32 format (0x13 = paletted), u32 0,
 //   u16 width, u16 height, u32 palette size in bytes (64: 16 BGRA colours), the palette, then width * height
-//   indices stored swizzled (tools/pipeline/level_port/tex.ts unswizzleOrder), the rows bottom-up - read by 0x004E0790.
+//   indices stored swizzled (thug2-level-converter-core/level_port/tex.ts unswizzleOrder), the rows bottom-up - read by 0x004E0790.
 // Nothing of the game is stored here: the frame is read from the user's Levelselect.prx each time.
 //
 // A preview:
@@ -15,11 +15,11 @@
 
 import * as fs from "node:fs";
 import * as zlib from "node:zlib";
-import { unswizzleOrder } from "../level_port/tex.ts";
-import { parseCli } from "../lib/cli.ts";
-import { resolveInstall } from "../lib/install.ts";
-import { isMain, print, pyHypot, pyJoin, pyMinBy, runMain } from "../lib/py.ts";
-import { pack, unpackNumbers } from "../lib/struct.ts";
+import { unswizzleOrder } from "thug2-level-converter-core/level_port/tex.ts";
+import { parseCli } from "thug2-level-converter-core/lib/cli.ts";
+import { resolveInstall } from "thug2-level-converter-core/lib/install.ts";
+import { isMain, print, pyHypot, pyJoin, pyMinBy, runMain } from "thug2-level-converter-core/lib/py.ts";
+import { pack, unpackNumbers } from "thug2-level-converter-core/lib/struct.ts";
 
 const USAGE = "usage: level_select_icons.ts out [names ...] [--game GAME] [--scale N] [--sheet]";
 
@@ -1472,7 +1472,7 @@ function ufo(): Layer[] {
     ];
 }
 
-// --- THPS2's levels (tools/pipeline/thps2_levels): ten more, none like the others' (THUG1's Hangar has the helicopter, its
+// --- THPS2's levels (thug2-thps2-level-converter/thps2_levels): ten more, none like the others' (THUG1's Hangar has the helicopter, its
 // School II the apple, its Venice the dumbbell, its Philadelphia the LOVE sign; Alcatraz the lighthouse) -------------
 
 // Hangar: the airfield's windsock on its pole.
@@ -1652,7 +1652,7 @@ function halo(): Layer[] {
     ];
 }
 
-// --- THP8's zones (tools/pipeline/thp8_levels): THP8's own area names, a pictogram each ------------------------------------
+// --- THP8's zones (thug2-thp8-level-converter/thp8_levels): THP8's own area names, a pictogram each ------------------------------------
 
 // Suburbia: a mailbox on its post, the flag up.
 function mailbox(): Layer[] {
@@ -1845,7 +1845,7 @@ function bed(): Layer[] {
     ];
 }
 
-// --- THP8's network levels of several zones (tools/pipeline/thp8_levels networkAreas) ----------------------------------------
+// --- THP8's network levels of several zones (thug2-thp8-level-converter/thp8_levels networkAreas) ----------------------------------------
 
 // BEAVER VALLEY (the whole town): a town map - blocks between streets, one street bent.
 function citymap(): Layer[] {
@@ -1962,7 +1962,7 @@ function compass(): Layer[] {
     ];
 }
 
-// --- Tony Hawk's Proving Ground's network levels (tools/pipeline/thpg_levels) ----------------------------------------------
+// --- Tony Hawk's Proving Ground's network levels (thug2-thpg-level-converter/thpg_levels) ----------------------------------------------
 
 // (drawn on the 64 x 64 grid, then scaled about the middle to sit inside the sign's diamond)
 const fitted = (layers: Layer[], k: number): Layer[] => scaleAll(layers, 32, 32, k);
@@ -2319,7 +2319,7 @@ async function main(): Promise<number> {
         process.stderr.write(`${USAGE}\n`);
         return 2;
     }
-    // (the install root or the game folder itself: C:\Games\THUG2 -> C:\Games\THUG2\Game - tools/pipeline/lib/install.ts)
+    // (the install root or the game folder itself: C:\Games\THUG2 -> C:\Games\THUG2\Game - thug2-level-converter-core/lib/install.ts)
     const game = resolveInstall(values.game, "thug2");
     const prx = pyJoin(game, "Data", "pre", "Levelselect.prx");
     const frame = prxFile(prx, FRAME_SOURCE);

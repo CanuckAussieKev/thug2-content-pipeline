@@ -9,7 +9,7 @@
 // cand_<id>.png (with the capture's sidecar series.txt), where scenic_art.ts and make_menu_level.ts read them. What
 // makes them reproducible is committed: the poses (scenic_art/<game>.json) and this tool.
 //
-// Workspaces only, under the game lock (tools/pipeline/game/game_lock.ps1 -Action acquire ... first; the automation channel on):
+// Workspaces only, under the game lock (tools/game/game_lock.ps1 -Action acquire ... first; the automation channel on):
 //   node tools/pipeline/menu_level/scenic_capture.ts --game C:\Games\THUG2-4 [--spots tools/pipeline/menu_level/scenic_art/thps3.json]
 //       [--settle 45] [level...]
 // (the ini's [Graphics] ResolutionX / ResolutionY decide the pictures' size - 2560 x 1440 for the HD art.)
@@ -18,9 +18,10 @@ import { spawnSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { parseCli } from "../lib/cli.ts";
-import { PIPELINE } from "../lib/decomp.ts";
-import { isMain, print, runMain } from "../lib/py.ts";
+import { parseCli } from "thug2-level-converter-core/lib/cli.ts";
+import { needDecomp } from "thug2-level-converter-core/lib/decomp.ts";
+import { isMain, print, runMain } from "thug2-level-converter-core/lib/py.ts";
+import { PIPELINE } from "../pipeline.ts";
 import { type Candidate, cameraCommands, readSpots } from "./scenic_spots.ts";
 
 // The cache of captured pictures (outside the repo).
@@ -81,7 +82,7 @@ function main(): number {
                 "-ExecutionPolicy",
                 "Bypass",
                 "-File",
-                path.join(PIPELINE, "game", "run_game.ps1"),
+                path.join(needDecomp("tools/game/run_game.ps1 (it starts the game)"), "tools", "game", "run_game.ps1"),
                 "-Game",
                 game,
                 "-Level",

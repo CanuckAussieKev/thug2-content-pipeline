@@ -2,8 +2,8 @@
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import * as dxt from "thug2-level-converter-core/level_port/dxt.ts";
 import { decodeImg } from "../hd_textures/ui.ts";
-import * as dxt from "../level_port/dxt.ts";
 import { imagePath, readWpcDxtImg, writeImg32 } from "./meter.ts";
 
 // An 8 x 8 picture, top-down: the top half red and opaque, the bottom half blue and transparent.

@@ -2,15 +2,27 @@
   "name": "thug2-content-pipeline",
   "private": true,
   "type": "module",
-  "description": "THUG2 decomp content pipeline: converters and builders, TypeScript run directly by Node 24 from the decomp root.",
+  "description": "THUG2 content pipeline: the data overlay and menu builder, HD menu art, THUGPRO's THUG2 level changes and the THAW BMX tools; the level converters it installs are its dependencies. TypeScript run directly by Node 24.",
   "engines": {
     "node": ">=24"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
+    "lint": "biome check --config-path=lint.biome.json .",
     "test": "node --test \"**/*.test.ts\""
   },
+  "dependencies": {
+    "thug2-level-converter-core": "github:CanuckAussieKev/thug2-level-converter-core#ef964ed703c1875e744a6750a8b9ad9e5c5c4e13",
+    "thug2-thps2-level-converter": "github:CanuckAussieKev/thug2-thps2-level-converter#f58808706d33a4cdc74d8f8388f80f8e11ee1de2",
+    "thug2-thps3-level-converter": "github:CanuckAussieKev/thug2-thps3-level-converter#e80e4bf98ac65426b799fb7177cc76abaa9f8f21",
+    "thug2-thps4-level-converter": "github:CanuckAussieKev/thug2-thps4-level-converter#23f1def72842e9ca32b3bda1709e337a6bd6d144",
+    "thug2-thug1-level-converter": "github:CanuckAussieKev/thug2-thug1-level-converter#2cf579acc5e50234d5d04642a76950c0f512beaa",
+    "thug2-thaw-level-converter": "github:CanuckAussieKev/thug2-thaw-level-converter#028f54a0e318560b709e8286e865da5a0225f704",
+    "thug2-thp8-level-converter": "github:CanuckAussieKev/thug2-thp8-level-converter#0e3743a725e8ffb8049da5973f05f46e57b1ada5",
+    "thug2-thpg-level-converter": "github:CanuckAussieKev/thug2-thpg-level-converter#2712af7ab29ea6e8226c7d58bbb59a1b15e987a1"
+  },
   "devDependencies": {
+    "@biomejs/biome": "2.5.15",
     "@types/node": "24.19.2",
     "typescript": "7.0.2"
   }

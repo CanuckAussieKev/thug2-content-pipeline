@@ -3,7 +3,7 @@
 // wraps horizontally). Index 0 is the plain ocean tile every empty cell uses.
 
 import * as path from "node:path";
-import { entries } from "../../level_port/prx.ts";
+import { entries } from "thug2-level-converter-core/level_port/prx.ts";
 import { decodeImg, picture } from "../ui.ts";
 
 export const TILE = 64;

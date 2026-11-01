@@ -18,7 +18,7 @@
 //   thaw_bmx.json                                                        the manifest (phase 2 reads it)
 //
 // What THAW's files are, and how each becomes THUG2's:
-// - The bike (models\SpecialItems\BMX\si_bmx.skin.wpc, .tex.wpc): a memory image like the levels' .geom (tools/pipeline/thaw_levels
+// - The bike (models\SpecialItems\BMX\si_bmx.skin.wpc, .tex.wpc): a memory image like the levels' .geom (thug2-thaw-level-converter/thaw_levels
 //   readGeom reads it), with a skinned vertex that is THUG2's own (position, packed weights, four bone numbers x 3,
 //   packed normal, colour, uv - stride 40) - written as a THUG2 skin with sector flags 0x80002097 as the special items'.
 //   The 0x90 bytes after the meshes are a fixed trailer (see TRAILER below).
@@ -37,22 +37,22 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { parseArgs } from "node:util";
-import { FormatError } from "../level_port/binio.ts";
-import * as common from "../level_port/common.ts";
-import * as geometry from "../level_port/geometry.ts";
-import * as prx from "../level_port/prx.ts";
-import * as qb from "../level_port/qb.ts";
-import { checksum } from "../level_port/qb.ts";
-import { Thug2 } from "../level_port/script_port.ts";
-import * as tex from "../level_port/tex.ts";
-import * as thug2Scene from "../level_port/thug2_scene.ts";
-import { helpFromHeader } from "../lib/cli.ts";
-import { findPath, resolveInstall } from "../lib/install.ts";
-import { isMain, print, runMain } from "../lib/py.ts";
-import * as thaw from "../thaw/thaw.ts";
-import { toThug2Material } from "../thaw_levels/thaw_levels.ts";
-import type { Quat, Vec } from "../thps3_levels/thps3_skin.ts";
-import * as skel from "../thps3_levels/thps3_skin.ts";
+import { FormatError } from "thug2-level-converter-core/level_port/binio.ts";
+import * as common from "thug2-level-converter-core/level_port/common.ts";
+import * as geometry from "thug2-level-converter-core/level_port/geometry.ts";
+import * as prx from "thug2-level-converter-core/level_port/prx.ts";
+import * as qb from "thug2-level-converter-core/level_port/qb.ts";
+import { checksum } from "thug2-level-converter-core/level_port/qb.ts";
+import { Thug2 } from "thug2-level-converter-core/level_port/script_port.ts";
+import * as tex from "thug2-level-converter-core/level_port/tex.ts";
+import * as thug2Scene from "thug2-level-converter-core/level_port/thug2_scene.ts";
+import { helpFromHeader } from "thug2-level-converter-core/lib/cli.ts";
+import { findPath, resolveInstall } from "thug2-level-converter-core/lib/install.ts";
+import { isMain, print, runMain } from "thug2-level-converter-core/lib/py.ts";
+import * as thaw from "thug2-level-converter-core/thaw/thaw.ts";
+import { toThug2Material } from "thug2-thaw-level-converter/thaw_levels/thaw_levels.ts";
+import type { Quat, Vec } from "thug2-thps3-level-converter/thps3_levels/thps3_skin.ts";
+import * as skel from "thug2-thps3-level-converter/thps3_levels/thps3_skin.ts";
 import * as bikeScripts from "./bike_scripts.ts";
 import * as check from "./check.ts";
 import * as meter from "./meter.ts";

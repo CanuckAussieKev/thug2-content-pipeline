@@ -22,11 +22,11 @@
 // Phase 2 rode THUG2's vehicle machinery (Vehicle_Start); phase 4 rides THAW's own scripts (bike_scripts.ts) and the
 // bike is no vehicle any more.
 
-import type { QbValue } from "../level_port/qb.ts";
-import * as qb from "../level_port/qb.ts";
-import { Name, Struct } from "../level_port/qb.ts";
-import type { UnitLookup } from "../lib/edits.ts";
-import * as thaw from "../thaw/thaw.ts";
+import type { QbValue } from "thug2-level-converter-core/level_port/qb.ts";
+import * as qb from "thug2-level-converter-core/level_port/qb.ts";
+import { Name, Struct } from "thug2-level-converter-core/level_port/qb.ts";
+import type { UnitLookup } from "thug2-level-converter-core/lib/edits.ts";
+import * as thaw from "thug2-level-converter-core/thaw/thaw.ts";
 import { BIKE, bikeScripts, SOUNDS } from "./bike_scripts.ts";
 
 export const PHYSICS = "thaw_bicycle_physics";

@@ -42,8 +42,8 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import * as compat from "../compat/compat.ts";
-import { type LevelEntry, loadOf, type Manifest } from "../level_port/ported_levels.ts";
+import * as compat from "thug2-level-converter-core/compat/compat.ts";
+import { type LevelEntry, loadOf, type Manifest } from "thug2-level-converter-core/level_port/ported_levels.ts";
 import {
     compareStr,
     formatFixed,
@@ -54,8 +54,8 @@ import {
     pySplitlines,
     pySum,
     sortedNumbers,
-} from "../lib/py.ts";
-import { search } from "../lib/re.ts";
+} from "thug2-level-converter-core/lib/py.ts";
+import { search } from "thug2-level-converter-core/lib/re.ts";
 import { reEscape } from "./career_complete.ts";
 import * as levelSelectIcons from "./level_select_icons.ts";
 
@@ -207,7 +207,7 @@ interface TableEntry {
     misc?: string;
 }
 
-// THPS4's levels (tools/pipeline/thps4_levels' manifest, by its folder), in THPS4's own level select order (a table's
+// THPS4's levels (thug2-thps4-level-converter/thps4_levels' manifest, by its folder), in THPS4's own level select order (a table's
 // order is its section's; levels not in it come last): the sign's name as THPS4's own level select has it
 // (gamemenu.qb level_select_menu_level_info: Hof is "Chicago"), the place from the levels themselves:
 //   - Alcatraz and San Francisco: San Francisco Bay.
@@ -266,7 +266,7 @@ export const THPS4_LEVELS: ReadonlyMap<string, TableEntry> = new Map<string, Tab
     ],
 ]);
 
-// THPS3's levels (tools/pipeline/thps3_levels' manifest, by its folder), in THPS3's own level order (levels.qb's
+// THPS3's levels (thug2-thps3-level-converter/thps3_levels' manifest, by its folder), in THPS3's own level order (levels.qb's
 // master_level_list: the career's nine, then the classics, then the tutorials and the skate shop). Places:
 //   - Foundry, Suburbia, Airport, Skater Island and the Cruise Ship name no real place: no star.
 //   - Canada: a logging camp and ski slope in the Canadian woods - put in British Columbia (inferred).
@@ -312,7 +312,7 @@ export const THPS3_LEVELS: ReadonlyMap<string, TableEntry> = new Map<string, Tab
     ],
 ]);
 
-// THPS2's levels (tools/pipeline/thps2_levels' manifest, by its base name in ALL.PKR), in THPS2's career order, each a pictogram
+// THPS2's levels (thug2-thps2-level-converter/thps2_levels' manifest, by its base name in ALL.PKR), in THPS2's career order, each a pictogram
 // of its own (Hangar's airfield windsock, School II's pencil, Marseille's sailboat, NY's Empire State Building, Venice's
 // roller skate, Skatestreet's helmet, Philadelphia's pretzel, the Bullring's bull, Chopper Drop's Hawaiian volcano,
 // Skate Heaven's halo and wings - none like the THUG1 remakes' or THUG2's signs). Places: Hangar's Mullet Falls,
@@ -368,7 +368,7 @@ export const THUG1_LEVELS: ReadonlyMap<string, TableEntry> = new Map<string, Tab
     ["NJ_Skateshop", { text: "SKATE SHOP", icon: "tag", misc: "THUG" }],
 ]);
 
-// THAW's levels (tools/pipeline/thaw_levels' manifest, by zone), classic mode's first, then the story's areas. Places: the
+// THAW's levels (thug2-thaw-level-converter/thaw_levels' manifest, by zone), classic mode's first, then the story's areas. Places: the
 // classic levels' cities (Chicago, Minneapolis, Kyoto, Santa Cruz; The Mall and The Ruins name none: no star); the
 // story's areas are all Los Angeles - each at its own neighbourhood (Hollywood, Beverly Hills, Downtown, East LA,
 // Santa Monica); Vans Park, the Skate Ranch, the Casino and the Oil Rig name none in LA: around the city.
@@ -431,7 +431,7 @@ export function findPlace(text: string | null | undefined): readonly [number, nu
     return null;
 }
 
-// A converted game's levels from its manifest (as tools/pipeline/thps4_levels writes it: per level folder, level (the
+// A converted game's levels from its manifest (as thug2-thps4-level-converter/thps4_levels writes it: per level folder, level (the
 // load script is Load_<level>), display, level_num, location (text) and icon (a THUG2 sign to use)), with
 // `table`'s entries (by folder: text / icon / place / location) taking precedence.
 export function manifestLevels(manifest: Manifest, table: ReadonlyMap<string, TableEntry>, prefix: string): Level[] {
@@ -462,7 +462,7 @@ export function manifestLevels(manifest: Manifest, table: ReadonlyMap<string, Ta
             ...(misc
                 ? { miscKey: `${prefix}:${entry.folder}`, ...(GAME_TAGGED.has(prefix) ? { gameTag: prefix } : {}) }
                 : {}),
-            // (flags the converter set on its manifest entry: tools/pipeline/thp8_levels' IsBigLevel)
+            // (flags the converter set on its manifest entry: thug2-thp8-level-converter/thp8_levels' IsBigLevel)
             ...(Array.isArray(entry.flags)
                 ? { flags: entry.flags.filter((f): f is string => typeof f === "string") }
                 : {}),
@@ -470,7 +470,7 @@ export function manifestLevels(manifest: Manifest, table: ReadonlyMap<string, Ta
     });
 }
 
-// THP8's levels (tools/pipeline/thp8_levels' manifest, by folder): its network levels in its own order (qb.pak's
+// THP8's levels (thug2-thp8-level-converter/thp8_levels' manifest, by folder): its network levels in its own order (qb.pak's
 // online_level_select_menu_level_info - BEAVER VALLEY, the whole town, first; the sign's text is THP8's), then its
 // standalone levels. No stars: THP8's city is fictional. (Until 2026-10-24 the city's zones were levels of their own -
 // our split, retired; their signs - schoolbell, locker, capitolflag, bench, coaster, parking, cloud - are unused.)
@@ -499,7 +499,7 @@ export const THP8_LEVELS: ReadonlyMap<string, TableEntry> = new Map<string, Tabl
     ["z_bedroom", { text: "BEDROOM", icon: "bed", place: "THP8's bedroom (no place)", location: null, misc: "P8" }],
 ]);
 
-// Tony Hawk's Proving Ground's levels (tools/pipeline/thpg_levels' manifest, by folder): its network levels in its own
+// Tony Hawk's Proving Ground's levels (thug2-thpg-level-converter/thpg_levels' manifest, by folder): its network levels in its own
 // order (qb.pak's online_level_select_menu_level_info: WORLD - the three cities and their bridges -, DC, BALTIMORE,
 // PHILLY, the SKATE LOUNGE; the signs' text is THPG's), then the bedroom (MISCELLANEOUS). Stars on the real cities.
 export const THPG_LEVELS: ReadonlyMap<string, TableEntry> = new Map<string, TableEntry>([
@@ -741,7 +741,7 @@ export function signEntry(lv: Level): string {
     );
 }
 
-// TP-R6 (tools/pipeline/compat/thugpro/README.md): the THAW levels THUGPRO sends skaters' positions of in whole units in
+// TP-R6 (thug2-level-converter-core/compat/thugpro/README.md): the THAW levels THUGPRO sends skaters' positions of in whole units in
 // network games (its IsBigLevel / IsTallLevel), from thaw_levels.json "net_position_scale" - their level select entries
 // get the same flags, which the DLL reads (src/game/net/thugpro_compat.h).
 export function thawPositionScaleFlags(manifest: Manifest, levels: Level[], profile = compat.load("thugpro")): Level[] {

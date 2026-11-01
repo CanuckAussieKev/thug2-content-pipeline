@@ -2,8 +2,8 @@
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { checksum } from "../level_port/qb.ts";
-import { Tok } from "../level_port/script_port.ts";
+import { checksum } from "thug2-level-converter-core/level_port/qb.ts";
+import { Tok } from "thug2-level-converter-core/level_port/script_port.ts";
 import { renderNs, renderScript, shortFloat } from "./thaw_ns.ts";
 
 test("shortFloat: a float32's shortest form", () => {

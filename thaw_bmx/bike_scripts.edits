@@ -1,4 +1,4 @@
-# The ported THAW bike scripts' changes to THAW's own (tools/pipeline/lib/edits.ts; bike_scripts.ts)
+# The ported THAW bike scripts' changes to THAW's own (thug2-level-converter-core/lib/edits.ts; bike_scripts.ts)
 new Skater_BarspinAnimOff
 from 38de7a70 scripts\game\skater\skater_animation.qb Skater_BarspinAnimOff
 = 1

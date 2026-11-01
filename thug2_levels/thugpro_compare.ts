@@ -2,7 +2,7 @@
 // only: THUG2's Data\pre, THUGPRO's data\pre - sources.ts), for online play with THUGPRO players
 // (docs/thugpro-online.md section 5; the user's decision 2026-10-21). Prints, per level, every difference grouped into
 // the register's entries (register.ts; class parity / visible / single_player / cosmetic / none), and with
-// --extract-thugpro writes them into tools/pipeline/compat/thugpro/thug2_levels.json (TP-42) - each entry off until the user
+// --extract-thugpro writes them into thug2-level-converter-core/compat/thugpro/thug2_levels.json (TP-42) - each entry off until the user
 // switches it on (`enabled`, kept across re-extractions); tools/pipeline/thug2_levels/thugpro_apply.ts applies the switched-on
 // ones through our data overlay.
 //
@@ -11,9 +11,10 @@
 //   node tools/pipeline/thug2_levels/thugpro_compare.ts --extract-thugpro [levels...]   (writes the register's data)
 
 import * as fs from "node:fs";
-import { compactJson } from "../compat/thugpro_nodes.ts";
-import { parseCli } from "../lib/cli.ts";
-import { isMain, print, runMain } from "../lib/py.ts";
+import * as compat from "thug2-level-converter-core/compat/compat.ts";
+import { compactJson } from "thug2-level-converter-core/compat/thugpro_nodes.ts";
+import { parseCli } from "thug2-level-converter-core/lib/cli.ts";
+import { isMain, print, runMain } from "thug2-level-converter-core/lib/py.ts";
 import { compareLevel, type Entry, type LevelReport } from "./diff.ts";
 import { carryEnabled, levelEntries, REGISTER_FILE, REGISTER_ID, type Register, readRegisterFile } from "./register.ts";
 import {
@@ -113,7 +114,7 @@ export function buildRegister(all: readonly Compared[], old: Register | null): R
             "players touch, graffiti objects), visible (seen differently, nothing to stand on: gaps, vehicles, loose " +
             "objects), single_player, cosmetic, none. `scripts` / `replace_scripts` / `geometry`: THUGPRO's own items BY " +
             "REFERENCE (archive entry and CRC-32; read from the THUGPRO install when applied, never stored here). " +
-            "`edits`: tools/pipeline/thug1_levels/hand_edits.ts's form (names, {float}, {vector}, {string}).",
+            "`edits`: thug2-thug1-level-converter/thug1_levels/hand_edits.ts's form (names, {float}, {vector}, {string}).",
         _register: REGISTER_ID,
         _source:
             "THUGPRO's installed data\\pre (thugpro_qb.prx's Levels.qb: per level its node array qb=, level_qb=, " +
@@ -156,7 +157,7 @@ export function main(argv: readonly string[] = process.argv.slice(2)): number {
             for (const [k, v] of Object.entries(old.levels)) if (!(k in reg.levels)) reg.levels[k] = v;
             reg.levels = Object.fromEntries(LEVELS.filter((l) => l in reg.levels).map((l) => [l, reg.levels[l]!]));
         }
-        fs.writeFileSync(REGISTER_FILE, compactJson(reg) + "\n");
+        fs.writeFileSync(compat.profileFileToWrite("thug2_levels"), compactJson(reg) + "\n");
         print(`wrote ${REGISTER_FILE}`);
     }
     return 0;

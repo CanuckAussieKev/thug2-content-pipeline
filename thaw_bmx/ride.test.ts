@@ -7,10 +7,10 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { test } from "node:test";
-import { checksum, Name, type QbValue, Struct, Vector } from "../level_port/qb.ts";
-import { DECOMP } from "../lib/decomp.ts";
-import { findInstall } from "../lib/install.ts";
-import * as thaw from "../thaw/thaw.ts";
+import { checksum, Name, type QbValue, Struct, Vector } from "thug2-level-converter-core/level_port/qb.ts";
+import { DECOMP } from "thug2-level-converter-core/lib/decomp.ts";
+import { findInstall } from "thug2-level-converter-core/lib/install.ts";
+import * as thaw from "thug2-level-converter-core/thaw/thaw.ts";
 import {
     bailBikeComponents,
     bikeGlobals,

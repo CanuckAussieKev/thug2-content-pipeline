@@ -1,5 +1,5 @@
 // NOT ORIGINAL - HD menu UI (an experiment the user asked for, 2026-10-24): the menus' 2D images (.img.xbx sprites)
-// and bitmap fonts (.fnt.xbx glyph pages) upscaled with the HD texture pass (tools/pipeline/level_port/hd_textures.ts:
+// and bitmap fonts (.fnt.xbx glyph pages) upscaled with the HD texture pass (thug2-level-converter-core/level_port/hd_textures.ts:
 // Real-ESRGAN, the cache, back-projection to the original's colours) into the data overlay. Off by default:
 // tools/pipeline/menu_level/make_menu_level.ts --hd-ui [2|4] adds them, a run without it leaves the overlay without them.
 //
@@ -32,14 +32,14 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import * as dxt from "../level_port/dxt.ts";
-import * as hd from "../level_port/hd_textures.ts";
-import { entries } from "../level_port/prx.ts";
-import type { TexFile, Texture } from "../level_port/tex.ts";
-import { readTex, unswizzleOrder, writeTex } from "../level_port/tex.ts";
-import { parseCli } from "../lib/cli.ts";
-import { resolveInstall } from "../lib/install.ts";
-import { isMain, print, runMain } from "../lib/py.ts";
+import * as dxt from "thug2-level-converter-core/level_port/dxt.ts";
+import * as hd from "thug2-level-converter-core/level_port/hd_textures.ts";
+import { entries } from "thug2-level-converter-core/level_port/prx.ts";
+import type { TexFile, Texture } from "thug2-level-converter-core/level_port/tex.ts";
+import { readTex, unswizzleOrder, writeTex } from "thug2-level-converter-core/level_port/tex.ts";
+import { parseCli } from "thug2-level-converter-core/lib/cli.ts";
+import { resolveInstall } from "thug2-level-converter-core/lib/install.ts";
+import { isMain, print, runMain } from "thug2-level-converter-core/lib/py.ts";
 import { redrawnTiles } from "./globe/redraw.ts";
 
 export const HD_IMG_MARKER = 0x48440000; // "HD" in the high half; the low byte the scale (src/game/gfx/hd_ui.h)

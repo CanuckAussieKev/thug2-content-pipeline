@@ -11,7 +11,7 @@ and geometry by reference: archive entry and CRC-32).
 - `node tools/pipeline/thug2_levels/thugpro_compare.ts [levels...] [--details]` - the differences, level by level, grouped into
   entries with a class: **parity** (online play: rails, collision, kill zones, spawns / crowns / CTF, graffiti
   objects), **visible** (gap triggers, vehicles, loose objects), **single_player**, **cosmetic**, **none**.
-  `--extract-thugpro` writes them into `tools/pipeline/compat/thugpro/thug2_levels.json` (each entry's `enabled` kept).
+  `--extract-thugpro` writes them into `thug2-level-converter-core/compat/thugpro/thug2_levels.json` (each entry's `enabled` kept).
 - `node tools/pipeline/thug2_levels/thugpro_apply.ts [--enable T2-BO-5,T2-AU-6 | parity | all] [--level BO]` - the entries
   switched on (`enabled` in the register, or `--enable`) into changed level files: `out\thug2_levels` by default, a
   workspace's data overlay with `--install --game C:\Games\THUG2-n` (never the main install without `--allow-main`,
@@ -19,4 +19,4 @@ and geometry by reference: archive entry and CRC-32).
   overlay it makes (none by default).
 
 Files: `sources.ts` (where each side's files are), `diff.ts` (the comparison and classification), `register.ts`
-(entries), `thugpro_compare.ts`, `thugpro_apply.ts`, `thug2_levels.test.ts`. The register row: `tools/pipeline/compat/thugpro/README.md` TP-42.
+(entries), `thugpro_compare.ts`, `thugpro_apply.ts`, `thug2_levels.test.ts`. The register row: `thug2-level-converter-core/compat/thugpro/README.md` TP-42.

@@ -26,9 +26,9 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { parseCli } from "thug2-level-converter-core/lib/cli.ts";
+import { isMain, print, runMain } from "thug2-level-converter-core/lib/py.ts";
 import { encodeImg } from "../hd_textures/ui.ts";
-import { parseCli } from "../lib/cli.ts";
-import { isMain, print, runMain } from "../lib/py.ts";
 import type { ArtPick } from "./art_picks.ts";
 import { nativeImg, type Picture, readPng, resize, toPng } from "./loading_art.ts";
 import { capturePath } from "./scenic_capture.ts";

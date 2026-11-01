@@ -1,5 +1,5 @@
 // NOT ORIGINAL - fetches the optional AI texture upscaler the converters' `--hd-textures` pass runs
-// (tools/pipeline/level_port/hd_textures.ts): Real-ESRGAN's standalone realesrgan-ncnn-vulkan (BSD-3-Clause, Xintao Wang;
+// (thug2-level-converter-core/level_port/hd_textures.ts): Real-ESRGAN's standalone realesrgan-ncnn-vulkan (BSD-3-Clause, Xintao Wang;
 // Vulkan - no CUDA or PyTorch) - one pinned release zip, its SHA-256 checked, unpacked into
 // out\hd_textures\<release>\ (out\ is git-ignored: nothing of it is committed).
 //
@@ -12,10 +12,10 @@ import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { REPO } from "../level_port/common.ts";
-import { DEFAULT_TOOL, TOOL_RELEASE } from "../level_port/hd_textures.ts";
-import { helpFromHeader } from "../lib/cli.ts";
-import { isMain, print, pyExit, runMain } from "../lib/py.ts";
+import { REPO } from "thug2-level-converter-core/level_port/common.ts";
+import { DEFAULT_TOOL, TOOL_RELEASE } from "thug2-level-converter-core/level_port/hd_textures.ts";
+import { helpFromHeader } from "thug2-level-converter-core/lib/cli.ts";
+import { isMain, print, pyExit, runMain } from "thug2-level-converter-core/lib/py.ts";
 
 // Real-ESRGAN v0.2.5.0 (2022-04-24), the Windows build
 export const RELEASE_URL = `https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/${TOOL_RELEASE}-windows.zip`;

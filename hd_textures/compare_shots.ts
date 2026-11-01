@@ -7,9 +7,9 @@
 // it N times (nearest pixel) so texel detail stays visible. The pictures must be the same size.
 
 import * as fs from "node:fs";
-import { helpFromHeader } from "../lib/cli.ts";
-import { decodePng, encodePng, type Image } from "../lib/frame_diff.ts";
-import { isMain, print, pyExit, runMain } from "../lib/py.ts";
+import { helpFromHeader } from "thug2-level-converter-core/lib/cli.ts";
+import { decodePng, encodePng, type Image } from "thug2-level-converter-core/lib/frame_diff.ts";
+import { isMain, print, pyExit, runMain } from "thug2-level-converter-core/lib/py.ts";
 
 const GAP = 8;
 

@@ -3,7 +3,7 @@
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { checksum, Name, Struct, Vector } from "../level_port/qb.ts";
+import { checksum, Name, Struct, Vector } from "thug2-level-converter-core/level_port/qb.ts";
 import { OUR_CFUNCS } from "./check.ts";
 import { bikePedIds, homeBikesText, placeOf } from "./parked.ts";
 import * as ride from "./ride.ts";

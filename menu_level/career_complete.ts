@@ -48,8 +48,8 @@
 // make_menu_level.ts calls optionsMenu() with the front end's GAME OPTIONS scripts (levels\mainmenu\
 // mainmenu_options.qb) and writes the result into the overlay.
 
-import { formatFixed, pyStrRepr } from "../lib/py.ts";
-import { findall, finditer, search } from "../lib/re.ts";
+import { formatFixed, pyStrRepr } from "thug2-level-converter-core/lib/py.ts";
+import { findall, finditer, search } from "thug2-level-converter-core/lib/re.ts";
 import * as qbWalk from "./qb_walk.ts";
 
 // The stats' maximum (the stats menu's "/10"; profile stats are clamped to 0..10 - 0x00585FD0).

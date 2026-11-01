@@ -3,7 +3,7 @@
 //
 // THAW lists its levels' bikes in bike_ped_ids (bike_scripts.qb: {level=Z_HO id=Z_HO_TRG_Ped_BikeGuy} ...) - each a
 // pedestrian node whose body is the bike. Read from the user's THAW at convert time: each node's Pos and Angles in the
-// THAW level as THUG2 has it after tools/pipeline/thaw_levels (its THUG2 name, levelName, and its default frame, frameShift - the
+// THAW level as THUG2 has it after thug2-thaw-level-converter/thaw_levels (its THUG2 name, levelName, and its default frame, frameShift - the
 // shift thaw_levels moves every node by), written as
 //
 //   thaw_bmx_home_bikes = [{level=z_ho pos=(x, y, z) heading=<degrees>} ...]
@@ -11,11 +11,11 @@
 // (heading: the node's Angles y in degrees - the same rotation, 0 = +z, as Obj_SetOrientation y= makes). The game's
 // ThawBmx_HomeSpot reads it by the current level structure's `level`. Nothing of THAW is stored.
 
-import { FormatError } from "../level_port/binio.ts";
-import type { QbValue } from "../level_port/qb.ts";
-import * as qb from "../level_port/qb.ts";
-import { Name, Struct, Vector } from "../level_port/qb.ts";
-import * as levels from "../thaw_levels/thaw_levels.ts";
+import { FormatError } from "thug2-level-converter-core/level_port/binio.ts";
+import type { QbValue } from "thug2-level-converter-core/level_port/qb.ts";
+import * as qb from "thug2-level-converter-core/level_port/qb.ts";
+import { Name, Struct, Vector } from "thug2-level-converter-core/level_port/qb.ts";
+import * as levels from "thug2-thaw-level-converter/thaw_levels/thaw_levels.ts";
 
 export const HOME_BIKES = "thaw_bmx_home_bikes";
 

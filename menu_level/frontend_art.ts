@@ -14,8 +14,8 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { parseCli } from "../lib/cli.ts";
-import { isMain, print, runMain } from "../lib/py.ts";
+import { parseCli } from "thug2-level-converter-core/lib/cli.ts";
+import { isMain, print, runMain } from "thug2-level-converter-core/lib/py.ts";
 import { cropFraction, nativeImg, type Picture, readImg, resize, SCREEN_H, SCREEN_W, toPng } from "./loading_art.ts";
 import { ART, type ArtSource, findInstalls, GAMES, type Game, GameArt } from "./loading_art_games.ts";
 

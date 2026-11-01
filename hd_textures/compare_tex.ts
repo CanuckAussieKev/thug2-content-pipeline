@@ -1,5 +1,5 @@
 // NOT ORIGINAL - side-by-side pictures of a level's textures before and after the --hd-textures pass
-// (tools/pipeline/level_port/hd_textures.ts): each texture's original (scaled up to the new size, nearest texel) left, the
+// (thug2-level-converter-core/level_port/hd_textures.ts): each texture's original (scaled up to the new size, nearest texel) left, the
 // upscaled one right, over a checkerboard where they're transparent.
 //
 //     node tools/pipeline/hd_textures/compare_tex.ts <original.tex.xbx> <upscaled.tex.xbx> <out folder> [--count N] [--min N] [--per-kind N] [--height N]
@@ -12,11 +12,11 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { alphaKind, topLevel } from "../level_port/hd_textures.ts";
-import * as tex from "../level_port/tex.ts";
-import { helpFromHeader } from "../lib/cli.ts";
-import { encodePng, type Image } from "../lib/frame_diff.ts";
-import { hex8, isMain, print, pyExit, runMain } from "../lib/py.ts";
+import { alphaKind, topLevel } from "thug2-level-converter-core/level_port/hd_textures.ts";
+import * as tex from "thug2-level-converter-core/level_port/tex.ts";
+import { helpFromHeader } from "thug2-level-converter-core/lib/cli.ts";
+import { encodePng, type Image } from "thug2-level-converter-core/lib/frame_diff.ts";
+import { hex8, isMain, print, pyExit, runMain } from "thug2-level-converter-core/lib/py.ts";
 
 // BGRA over a checkerboard, as RGB, resampled (nearest) to w x h
 function flatten(bgra: Uint8Array, sw: number, sh: number, w: number, h: number): Uint8Array {

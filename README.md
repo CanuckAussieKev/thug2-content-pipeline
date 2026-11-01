@@ -4,44 +4,70 @@
 > for preservation, interoperability and education. No game files are included: the tools work only on copies of the
 > games you own. Game names are trademarks of their owners. See LICENSE (MIT for the project's own work; no licence for material
 > from the games); the fonts in `fonts/` are under the
-> SIL Open Font License; other third-party parts (CPython-derived helpers, downloaded tools and data) are listed in
+> SIL Open Font License; other third-party parts (downloaded tools and data, PartyMod's keyboard patch) are listed in
 > THIRD_PARTY_NOTICES.md. Rights holders: open an issue and it will be dealt with promptly.
 
 
-The tools that turn the Tony Hawk games you have installed into content for Tony Hawk's Underground 2 (PC): every
-level converter (THPS2, THPS3, THPS4, THUG, THAW, Project 8 and THUG2's own levels), the shared readers and writers
-for the Neversoft formats, the data overlay and menu builder (level select, the new front end's data, HD menu art,
-scenic level art), the THAW BMX asset and ride tools, the Project 8 save tool, and the scripts that run and drive the
-game for tests.
+What turns the Tony Hawk games you have installed into content for Tony Hawk's Underground 2 (PC) and installs it: the
+data overlay and menu builder (level select, the new front end's data, HD menu art, scenic level art), THUGPRO's changes
+to THUG2's own levels, and the THAW BMX asset and ride tools. The level converters are repositories of their own, and
+this one depends on all of them (package.json, pinned to commits):
+
+| Repository | |
+|---|---|
+| [thug2-level-converter-core](https://github.com/CanuckAussieKev/thug2-level-converter-core) | THUG2's formats, the shared level port code, the THUGPRO compatibility register, THAW's and Project 8's formats |
+| [thug2-thps2-level-converter](https://github.com/CanuckAussieKev/thug2-thps2-level-converter) | Tony Hawk's Pro Skater 2 |
+| [thug2-thps3-level-converter](https://github.com/CanuckAussieKev/thug2-thps3-level-converter) | Tony Hawk's Pro Skater 3 |
+| [thug2-thps4-level-converter](https://github.com/CanuckAussieKev/thug2-thps4-level-converter) | Tony Hawk's Pro Skater 4 |
+| [thug2-thug1-level-converter](https://github.com/CanuckAussieKev/thug2-thug1-level-converter) | Tony Hawk's Underground (and the THUG1 campaign survey) |
+| [thug2-thaw-level-converter](https://github.com/CanuckAussieKev/thug2-thaw-level-converter) | Tony Hawk's American Wasteland |
+| [thug2-thp8-level-converter](https://github.com/CanuckAussieKev/thug2-thp8-level-converter) | Tony Hawk's Project 8 (and its save tool) |
+| [thug2-thpg-level-converter](https://github.com/CanuckAussieKev/thug2-thpg-level-converter) | Tony Hawk's Proving Ground |
 
 Part of the THUG2 decompilation, [github.com/CanuckAussieKev/thug2-decomp](https://github.com/CanuckAussieKev/thug2-decomp),
-where it is the submodule `tools/pipeline`. Run everything from that repository's root with Node 24, e.g.
+where it is the submodule `tools/pipeline` (and an npm workspace: the decomp's `npm install` installs the
+converters). Run everything from that repository's root with Node 24, e.g.
 
-    node tools/pipeline/thps3_levels/thps3_levels.ts convert --thug2 C:\Games\THUG2
+    node tools/pipeline/run.ts thps3_levels/thps3_levels.ts convert --thug2 C:\Games\THUG2
     node tools/pipeline/menu_level/make_menu_level.ts --game C:\Games\THUG2 --hd-ui 4
 
-Each folder has its own README.
+`run.ts` runs a converter's (or the core's) tool by its path in that repository - `thps3_levels/collfix.ts`,
+`level_port/zfight.ts`, `thp8_save/thp8_save.ts` - with the rest of the command line as its own. Each folder and each
+converter has its own README.
+
+- `menu_level/` - the data overlay `<game>\thug2-decomp-data`: every converted game's levels, Levels.qb and the level
+  select, the new front end's data, scenic and loading art (`make_menu_level.ts`).
+- `hd_textures/` - the HD menu art (Real-ESRGAN, fetched on request) and the level select globe's redrawn tiles.
+- `thug2_levels/` - THUGPRO's changes to THUG2's own levels (TP-42), applied to the overlay's copies.
+- `thaw_bmx/` - THAW's BMX: its assets converted, its ride scripts.
+- `fonts/` - the new front end's typefaces.
 
 ## With or without the decomp around it
 
-`lib/decomp.ts` finds the decomp checkout by walking up from this repository to the first folder with its
-`CMakeLists.txt` and `src/game` (or `THUG2_DECOMP=<folder>`); nothing counts folders up. On its own (a plain clone),
-`npm install`, `npm run typecheck` and `npm test` work (a test that reads the decomp's source is skipped), every tool's
-`--help` works, and `out\` is this repository's own. What needs the decomp, and why:
+The core's `lib/decomp.ts` finds the decomp checkout from the project using it (this repository, or the decomp whose
+workspace it is): that folder or the first one above it with the decomp's `CMakeLists.txt` and `src/game` (or
+`THUG2_DECOMP=<folder>`). On its own (a plain clone), `npm install`, `npm run typecheck`, `npm run lint` and `npm test`
+work (a test that reads the decomp's source is skipped), every tool's `--help` works, and `out\` is this repository's
+own. What needs the decomp, and why:
 
 | Needs | Tools | Why |
 |---|---|---|
-| NeverScript's `ns.exe` (the decomp builds it: `tools\build_neverscript.ps1` -> `out\neverscript\ns.exe`) - or `--ns <ns.exe>` | every converter's `convert` (thps2/3/4, thug1, thaw, thp8), `thaw_bmx/convert.ts` (text only without it), `menu_level/make_menu_level.ts`, `game/make_automation_tables.ts`, `game/boot_level.ts`, `thug1_campaign/script_gap.ts --dump` | QB scripts compiled / decompiled |
-| `src/game/net/thugpro_join.h` | `compat/thugpro/scripts_hash.ts` | the constant it checks |
-| `src/game/front/automation_tables.inc` | `game/make_automation_tables.ts` (or `--out`) | what it writes |
-| `notes/data/install_manifest.json` (private notes repo) | `game/install_manifest.ts` (or `--manifest` / `--out`) | the reference install's manifest |
+| NeverScript's `ns.exe` (the decomp builds it: `tools\build_neverscript.ps1` -> `out\neverscript\ns.exe`) - or `--ns <ns.exe>` | every converter's `convert`, `thaw_bmx/convert.ts` (text only without it), `menu_level/make_menu_level.ts` | QB scripts compiled / decompiled |
 | `src/game/skater/thaw_bmx*.cpp` | `thaw_bmx/ride.test.ts` (skipped alone) | the script names the game runs |
-| the decomp's `thug2-decomp.exe` (with its DLLs) in the game folder | the game scripts (`game/*.ps1`, `try_spot.ts`, `edit_level.ts`, `scenic_capture.ts`) | they start it (logs, automation channel, `-level`) |
+| the decomp's `tools/game` scripts and its `thug2-decomp.exe` in the game folder | `menu_level/scenic_capture.ts` | it starts the game |
 
 The menu builder also installs Anteara Mod when `tools/anteara` (the anteara-mod repository) is there - beside this
 repository or in the decomp; without it the overlay is made without its `anteara\` folder (a message says so).
-Everything else - the format readers, the audits (zfight, texture_check, script_check...), the THUGPRO compare /
-inventory tools, the save tool, the scenic / loading / front end art - runs on the game folders alone.
+Everything else - the format readers, the audits, the THUGPRO compare / inventory tools, the save tool, the scenic /
+loading / front end art - runs on the game folders alone. The scripts that start and drive the game for tests are the
+decomp's `tools/game`.
+
+## Dependencies
+
+Each dependency is pinned to a commit (`github:CanuckAussieKev/<repository>#<commit>`). The converters depend on
+thug2-level-converter-core too: every package.json - this one, each converter's and the decomp's - must pin the same
+core commit, so npm installs one copy (`deps.test.ts` checks it). Node strips no types under `node_modules`, so npm
+builds each dependency's `.js` when it installs it (the core's README, "Using it"); TypeScript reads their `.ts`.
 
 Nothing from the games is in this repository: every converter reads your own installed copies and writes into your
 game folder. `fonts/` holds the new front end's typefaces (Anton, IBM Plex Mono / Sans) under the SIL Open Font License

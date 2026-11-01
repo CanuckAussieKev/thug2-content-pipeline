@@ -13,8 +13,8 @@
 // u32 0, u16 width, height (the picture's), u32 0 (no palette), then the texels - swizzled when both sides are powers of
 // two (the loader's test) and the rows bottom-up (hd_textures/ui.ts decodeImg reads them the same way).
 
-import * as dxt from "../level_port/dxt.ts";
-import { unswizzleOrder } from "../level_port/tex.ts";
+import * as dxt from "thug2-level-converter-core/level_port/dxt.ts";
+import { unswizzleOrder } from "thug2-level-converter-core/level_port/tex.ts";
 
 // THAW's meter pictures (data\images\panelsprites\<name>.img.wpc) and the folder under images\ they go to.
 export const METER_IMAGES: readonly string[] = ["bike_tailmeter", "bike_nosemeter", "bike_arc"];

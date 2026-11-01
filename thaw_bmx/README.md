@@ -56,7 +56,7 @@ THUG2's allanims.ns).
   sizes at 0x28 / 0x2C, per-bone sizes from 0x30), the key forms and flags (0x06834000 / 0x06810000 / partial 0x068B4000)
   are THUG2's. Keys that read THAW's standard-key tables (`data\anims\standardkeyQ/T.bin`, other values than THUG2's) -
   rotation tables, the one-component table of flag 0x10000, translation tables - are written out in full (as
-  tools/pipeline/thug1_levels does for THUG1; THAW's flag 0x10000 forms are new). The pak (`bmx_anims.pak.wpc`) keys each file by its
+  thug2-thug1-level-converter/thug1_levels does for THUG1; THAW's flag 0x10000 forms are new). The pak (`bmx_anims.pak.wpc`) keys each file by its
   descChecksum plus its skeleton's (the load row's SetReferenceChecksum: `animKey` in convert.ts - every file of bmx_anims,
   net_anims and perm_anims, 833 of unloadable_anims' 847); the files are in the order of THAW's `animload_*` scripts
   (scripts\allanims.qb in `dbgq.pak.wpc`), which gives the names, and convert.ts checks each key. THAW's skater animations
@@ -101,7 +101,7 @@ No vehicle any more: the ride is THAW's own bike scripts.
 
 | file | what |
 |---|---|
-| `bike_scripts.ts` | THAW's bike_scripts.qb / bike_grindscripts.qb / bike_sfx.qb ported (`bikeScripts`) and THAW's data read from the user's THAW at convert time (`bikeGlobals`: the trick lists as THAW has them - its right stick's BikePress, its stick names; the game makes THAW's stick buttons, src/game/skater/thaw_bmx_sticks.cpp -, the exception tables, BikeGrindTrickList, the grind tricks' scripts, the sound tables). The ported scripts are made at convert time from the user's THAW too: `bike_scripts.ns` holds our own scripts and a line `//@unit <name>` for each of THAW's we port, `bike_scripts.edits` our changes to each (tools/pipeline/lib/edits.ts: line operations on THAW's script). No THAW text is stored. To change one: `node tools/pipeline/thaw_bmx/bike_scripts.ts dump --out x.ns`, edit, `... extract --from x.ns` |
+| `bike_scripts.ts` | THAW's bike_scripts.qb / bike_grindscripts.qb / bike_sfx.qb ported (`bikeScripts`) and THAW's data read from the user's THAW at convert time (`bikeGlobals`: the trick lists as THAW has them - its right stick's BikePress, its stick names; the game makes THAW's stick buttons, src/game/skater/thaw_bmx_sticks.cpp -, the exception tables, BikeGrindTrickList, the grind tricks' scripts, the sound tables). The ported scripts are made at convert time from the user's THAW too: `bike_scripts.ns` holds our own scripts and a line `//@unit <name>` for each of THAW's we port, `bike_scripts.edits` our changes to each (thug2-level-converter-core/lib/edits.ts: line operations on THAW's script). No THAW text is stored. To change one: `node tools/pipeline/thaw_bmx/bike_scripts.ts dump --out x.ns`, edit, `... extract --from x.ns` |
 | `thaw_ns.ts` | THAW's script bodies (thaw_scripts.ts' THUG2 tokens) written as NeverScript in THUG2's decompiled layout - what the port's edits start from; a script's first-line defaults (`JumpHeight = 380` with no newline before it) go in its header, `script BIKE_OLLIE JumpHeight=380 {`, so they stay defaults the caller overrides |
 | `sounds.ts` | THAW's global_sfx pak (its address table in `global_sfx_dat_wpc.qb`) -> THUG2 .snd (4-bit IMA ADPCM in a RIFF WAVE, a `smpl` loop for the loops) under `sounds\thaw_bmx` |
 | `check.ts` | every command the compiled scripts run is THUG2's (C function, member, script) or ours - convert.ts fails otherwise |
@@ -132,7 +132,7 @@ As THAW: each level has its own bike lying on the ground, and getting off leaves
 
 | file | what |
 |---|---|
-| `parked.ts` | THAW's bike_ped_ids (its levels' bikes: pedestrian nodes whose body is the bike) read at convert time - each node's place in the THAW level as tools/pipeline/thaw_levels ports it (its THUG2 name and default frame) -> `thaw_bmx_home_bikes`. Elsewhere the game puts the level's bike near where the skater started |
+| `parked.ts` | THAW's bike_ped_ids (its levels' bikes: pedestrian nodes whose body is the bike) read at convert time - each node's place in the THAW level as thug2-thaw-level-converter/thaw_levels ports it (its THUG2 name and default frame) -> `thaw_bmx_home_bikes`. Elsewhere the game puts the level's bike near where the skater started |
 | `ride.ts` `parkedScripts` | the level's bike (`thaw_bmx_home`, THAW's switch_all_bike_peds), the offer on each bike (`thaw_bmx_spot_watch`: within THAW's 12 feet, THUG2's speech box), taking it (`thaw_bmx_spot_ride`) and the walk (`thaw_bmx_walk_to_bike`, THAW's skater_walk_to_bike) |
 
 The stall (R1 held as a grind starts): THAW's `BikeStallTrick` (from BIKE_GRIND while `ShouldRunStallScript`), with

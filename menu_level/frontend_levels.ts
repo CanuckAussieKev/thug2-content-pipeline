@@ -5,7 +5,7 @@
 // Made from the final gamemenu_levelselect.qb text (after level_select.ts editLevelSelect: the same arrays, the same
 // order, the same load scripts as the game's level select uses) and the final Levels.qb text (each load script's
 // level structure's loading_screen - the full-bleed art). The ported levels' structures all say loadscrn_generic
-// (tools/pipeline/level_port/ported_levels.ts levelsQbText): those get one of THUG2's seven generic loading screens in turn
+// (thug2-level-converter-core/level_port/ported_levels.ts levelsQbText): those get one of THUG2's seven generic loading screens in turn
 // (generic_art) so a section doesn't show one picture for every level - until the converters bring the original
 // games' own loading screens (phase 2).
 //

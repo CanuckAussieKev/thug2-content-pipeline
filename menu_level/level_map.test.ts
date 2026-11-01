@@ -2,9 +2,9 @@
 
 import * as assert from "node:assert/strict";
 import { test } from "node:test";
+import { type ColFile, FACE_SKATABLE } from "thug2-level-converter-core/level_port/thug2_col.ts";
 import { defaultPlan, fitPlan, PLAN_SIZE, planPoint, renderPlan } from "../hd_textures/globe/plan.ts";
 import { PALETTE } from "../hd_textures/globe/redraw.ts";
-import { type ColFile, FACE_SKATABLE } from "../level_port/thug2_col.ts";
 import { footprint, nativeImage, objectMiddles, zoneOffset } from "./level_map.ts";
 import { editLevelSelect, MIN_STAR_SEPARATION, mapPosition, starPositions, THAW_LEVELS } from "./level_select.ts";
 import { readImg } from "./level_select_icons.ts";

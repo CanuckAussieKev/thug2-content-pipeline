@@ -1,19 +1,18 @@
-// NOT ORIGINAL - the register entries for THUGPRO's changes to THUG2's own levels (TP-42, tools/pipeline/compat/thugpro/README.md;
-// data: tools/pipeline/compat/thugpro/thug2_levels.json, written by `node tools/pipeline/thug2_levels/thugpro_compare.ts
+// NOT ORIGINAL - the register entries for THUGPRO's changes to THUG2's own levels (TP-42, thug2-level-converter-core/compat/thugpro/README.md;
+// data: thug2-level-converter-core/compat/thugpro/thug2_levels.json, written by `node tools/pipeline/thug2_levels/thugpro_compare.ts
 // --extract-thugpro`, never by hand except each entry's `enabled`). A difference found by diff.ts becomes part of one
 // entry: entries group the differences of one level by what they are (kind) and what they touch (what), each with its
 // class (parity / visible / single_player / cosmetic / none), a description, the nodes / objects concerned and the
-// data to apply it (`edits` in tools/pipeline/thug1_levels/hand_edits.ts's form, THUGPRO's scripts by reference). Every entry is
+// data to apply it (`edits` in thug2-thug1-level-converter/thug1_levels/hand_edits.ts's form, THUGPRO's scripts by reference). Every entry is
 // off (`enabled` false) until the user switches it on; re-extracting keeps each entry's `enabled` (matched by level,
 // kind, what and nodes).
 
 import * as fs from "node:fs";
-import { fileURLToPath } from "node:url";
 import { crc32 } from "node:zlib";
-import * as compat from "../compat/compat.ts";
-import { nodeArray } from "../compat/thugpro_nodes.ts";
-import * as qb from "../level_port/qb.ts";
-import { Struct } from "../level_port/qb.ts";
+import * as compat from "thug2-level-converter-core/compat/compat.ts";
+import { nodeArray } from "thug2-level-converter-core/compat/thugpro_nodes.ts";
+import * as qb from "thug2-level-converter-core/level_port/qb.ts";
+import { Struct } from "thug2-level-converter-core/level_port/qb.ts";
 import {
     type ColChange,
     type Context,
@@ -30,7 +29,7 @@ import {
 } from "./diff.ts";
 import { usedNames } from "./sources.ts";
 
-export const REGISTER_FILE = fileURLToPath(new URL("../compat/thugpro/thug2_levels.json", import.meta.url));
+export const REGISTER_FILE = compat.profileFile("thug2_levels"); // (thug2-level-converter-core's compat/thugpro)
 export const REGISTER_ID = "TP-42";
 
 export interface LevelRegister {
@@ -45,7 +44,7 @@ export interface Register {
     levels: Record<string, LevelRegister>;
 }
 
-// The register as the compatibility profile has it (tools/pipeline/compat/compat.ts: `none` has no entries), or null.
+// The register as the compatibility profile has it (thug2-level-converter-core/compat/compat.ts: `none` has no entries), or null.
 export function loadRegister(profile: compat.ProfileName = "thugpro"): Register | null {
     const data = compat.load(profile).file("thug2_levels");
     return "levels" in data ? (data as unknown as Register) : null;

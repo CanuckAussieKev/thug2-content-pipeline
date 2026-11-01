@@ -20,10 +20,10 @@
 //                              scripts\game\menu\sprites.qb and images\LevelSelectSprites\sign_*.img.xbx for those signs.
 //   scripts\game\menu\gamemenu_pause.qb  the pause menu with LEVEL EDITOR (src/game/front/level_editor.h) and its
 //                              scripts level_editor_enter / level_editor_exit.
-//   levels\thps4_*\, thug1_*\  the THPS4 / THUG1 levels converted by tools/pipeline/thps4_levels / tools/pipeline/thug1_levels, when
+//   levels\thps4_*\, thug1_*\  the THPS4 / THUG1 levels converted by thug2-thps4-level-converter/thps4_levels / thug2-thug1-level-converter/thug1_levels, when
 //                              they have made <game>\thug2-decomp-thps4 / -thug1: copied in, their level structures
 //                              added to both Levels.qb and their signs to the level select's THUG1 / THPS4 sections
-//                              (tools/pipeline/level_port/ported_levels.ts).
+//                              (thug2-level-converter-core/level_port/ported_levels.ts).
 //   front_end\levels\mainmenu\mainmenu_scripts.qb  the front end's scripts with create_main_menu building a standard
 //                              vertical menu (a roundbar menu, as Game Options and Create-A-Modes) instead of the
 //                              spinning wheel - the same items doing the same things - and the new front end's items.
@@ -56,14 +56,13 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { pathToFileURL } from "node:url";
 import * as zlib from "node:zlib";
-import * as hdUi from "../hd_textures/ui.ts"; // (--hd-ui: the menus' images and fonts upscaled)
-import { textOutput } from "../level_port/common.ts";
-import * as pedModels from "../level_port/ped_models.ts"; // (the ported levels' own people: their profiles and CAS parts)
-import * as portedLevels from "../level_port/ported_levels.ts"; // (the converted levels: added when <game>\thug2-decomp-<game> exist)
-import { parseCli } from "../lib/cli.ts";
-import { DECOMP, NS_DEFAULT, nsMissing, PIPELINE } from "../lib/decomp.ts";
-import type { UnitLookup } from "../lib/edits.ts";
-import { resolveInstall } from "../lib/install.ts";
+import { textOutput } from "thug2-level-converter-core/level_port/common.ts";
+import * as pedModels from "thug2-level-converter-core/level_port/ped_models.ts"; // (the ported levels' own people: their profiles and CAS parts)
+import * as portedLevels from "thug2-level-converter-core/level_port/ported_levels.ts"; // (the converted levels: added when <game>\thug2-decomp-<game> exist)
+import { parseCli } from "thug2-level-converter-core/lib/cli.ts";
+import { DECOMP, NS_DEFAULT, nsMissing } from "thug2-level-converter-core/lib/decomp.ts";
+import type { UnitLookup } from "thug2-level-converter-core/lib/edits.ts";
+import { resolveInstall } from "thug2-level-converter-core/lib/install.ts";
 import {
     decodeAsciiReplace,
     decodeLatin1,
@@ -75,11 +74,13 @@ import {
     readTextPy,
     runMain,
     writeTextPy,
-} from "../lib/py.ts";
-import { findall, search } from "../lib/re.ts";
-import { unpackNumbers } from "../lib/struct.ts";
+} from "thug2-level-converter-core/lib/py.ts";
+import { findall, search } from "thug2-level-converter-core/lib/re.ts";
+import { unpackNumbers } from "thug2-level-converter-core/lib/struct.ts";
+import { applyTextEdits, CAR_SCRIPTS, DRIVING_EDITS } from "thug2-thug1-level-converter/thug1_levels/driving.ts"; // (PC-THUG1-22, Anteara Mod's copy)
+import * as hdUi from "../hd_textures/ui.ts"; // (--hd-ui: the menus' images and fonts upscaled)
+import { PIPELINE } from "../pipeline.ts";
 import * as thawBmxInstall from "../thaw_bmx/install.ts"; // (THAW's BMX: bike, skeleton, animations - phase 1)
-import { applyTextEdits, CAR_SCRIPTS, DRIVING_EDITS } from "../thug1_levels/driving.ts"; // (PC-THUG1-22, Anteara Mod's copy)
 import * as thug2Levels from "../thug2_levels/thugpro_apply.ts"; // (THUGPRO's changes to THUG2's levels: TP-42)
 import * as artPicksFile from "./art_picks.ts"; // (the user's decided pictures and the shared placeholder)
 import * as careerComplete from "./career_complete.ts"; // (GAME OPTIONS' CREATE 100% CAS)
@@ -303,7 +304,7 @@ export function skateshopNodes(text: string): string {
 
 export function addSkateshopSign(text: string, thps4: portedLevels.Manifest | null = null): string {
     // The level select's SKATE SHOP sign, after TRAINING (its unlock flag and sign; level 21's records, the test
-    // level's slot - LevelNum_Default is shared); the converted THPS4 levels' signs after it (tools/pipeline/thps4_levels).
+    // level's slot - LevelNum_Default is shared); the converted THPS4 levels' signs after it (thug2-thps4-level-converter/thps4_levels).
     const training = search(/\n( *)\{text="TRAINING" level_num=LevelNum_TR level_prefix="TR"[^\n]*\n/, text);
     if (!training) pyExit("gamemenu_levelselect.qb: the TRAINING entry not found");
     let sign =
@@ -923,7 +924,7 @@ async function main(): Promise<number> {
     if (hdScale !== 0 && hdScale !== 2 && hdScale !== 4) pyExit("--hd-ui is 2 or 4");
     let game = values.game;
     const tool = values.ns;
-    // (the install root or the game folder itself: C:\Games\THUG2 -> C:\Games\THUG2\Game - tools/pipeline/lib/install.ts)
+    // (the install root or the game folder itself: C:\Games\THUG2 -> C:\Games\THUG2\Game - thug2-level-converter-core/lib/install.ts)
     game = resolveInstall(game, "thug2");
     const out = values.out || pyJoin(game, "thug2-decomp-data");
     if (!fs.existsSync(tool)) pyExit(nsMissing(tool));
@@ -1225,7 +1226,7 @@ async function main(): Promise<number> {
         }
         // Always: GAME OPTIONS' CREATE 100% CAS (the game's [features] create_100_cas decides whether it shows).
         addCreate100Cas(decompile, write, pre, levels);
-        // The ports' own people (tools/pipeline/level_port/ped_models.ts): their CAS parts and profiles added to THUG2's lists.
+        // The ports' own people (thug2-level-converter-core/level_port/ped_models.ts): their CAS parts and profiles added to THUG2's lists.
         const peds = pedModels.readAdditions(game);
         const pedEdits = new Map<string, (text: string) => string>();
         if (!pedModels.empty(peds)) {
@@ -1260,7 +1261,7 @@ async function main(): Promise<number> {
 
         // Anteara Mod (tools/anteara; the game reads anteara\ first while [features] anteara_mod=1): its script
         // set, with the edits above re-applied to the files it also changes or this overlay changes. (With THUG1's
-        // drivable cars installed - PC-THUG1-22, tools/pipeline/thug1_levels/driving.ts - the mod's car_scripts.qb, THUG1's
+        // drivable cars installed - PC-THUG1-22, thug2-thug1-level-converter/thug1_levels/driving.ts - the mod's car_scripts.qb, THUG1's
         // unchanged, gets their THUG2 edits too: unchanged it hangs THUG1 Vancouver loading. Its own
         // player_controlled_vehicle.qb already has the Motion component.)
         const thug1Driving = fs.existsSync(path.join(game, "thug2-decomp-thug1", ...CAR_SCRIPTS.split("\\")));
@@ -1299,7 +1300,7 @@ async function main(): Promise<number> {
             );
 
         // THUGPRO's changes to THUG2's own levels that the user switched on (tools/pipeline/thug2_levels, register TP-42 -
-        // tools/pipeline/compat/thugpro/thug2_levels.json; none by default): their changed level files into this overlay.
+        // thug2-level-converter-core/compat/thugpro/thug2_levels.json; none by default): their changed level files into this overlay.
         for (const line of thug2Levels.installEnabled(game, out)) print(line);
 
         // Last (the level select's signs written above are upscaled too): the menus' images and fonts, with --hd-ui.

@@ -8,7 +8,7 @@
 //          (aligned to 4; flag 0x80000, a partial animation: u32 count and its bits, aligned) the rotation keys, the
 //          translation keys.
 //   THUG2: u32 1, u32 flags, f32 duration, u32 bones, u32 rotation keys, u32 translation keys, u32 custom keys,
-//          u32 rotation bytes, u32 translation bytes, then the same (tools/pipeline/thug1_levels/thug1.ts untableAnim).
+//          u32 rotation bytes, u32 translation bytes, then the same (thug2-thug1-level-converter/thug1_levels/thug1.ts untableAnim).
 // A rotation key: u16 h (a sign bit 0x8000 for w; the time: h & 0x3fff in the full form, h & 0x7ff in the packed
 // ones), then
 //   h & 0x4000 clear: x, y, z as u16 each (flag 0x8000: a byte each, << 8);
@@ -22,9 +22,9 @@
 // reads the table is written out in full.
 //
 // Quaternion keys are the file's stored form: (x, y, z) / 16384 of the conjugate, w recovered and negative when the
-// sign bit is set (tools/pipeline/thps3_levels/thps3_skin.ts).
+// sign bit is set (thug2-thps3-level-converter/thps3_levels/thps3_skin.ts).
 
-import { FormatError } from "../level_port/binio.ts";
+import { FormatError } from "thug2-level-converter-core/level_port/binio.ts";
 
 export const Q_SCALE = 16384;
 export const T_SCALE = 32;

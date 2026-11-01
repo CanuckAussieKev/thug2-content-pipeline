@@ -8,8 +8,8 @@
 import { createHash } from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { REPO } from "../../level_port/common.ts";
-import { isMain, print, pyExit, runMain } from "../../lib/py.ts";
+import { REPO } from "thug2-level-converter-core/level_port/common.ts";
+import { isMain, print, pyExit, runMain } from "thug2-level-converter-core/lib/py.ts";
 
 export const BASE_URL = "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/";
 export const NE_DIR = path.join(REPO, "out", "natural_earth");

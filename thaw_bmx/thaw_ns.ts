@@ -3,9 +3,9 @@
 // arguments, `!` for not, float32s in their shortest form. bike_scripts.ts starts its ports of THAW's bike scripts
 // from this text (the port's own changes are its edits, bike_scripts.edits): it is never stored.
 
-import * as qb from "../level_port/qb.ts";
-import type { Tok } from "../level_port/script_port.ts";
-import { decodeLatin1 } from "../lib/py.ts";
+import * as qb from "thug2-level-converter-core/level_port/qb.ts";
+import type { Tok } from "thug2-level-converter-core/level_port/script_port.ts";
+import { decodeLatin1 } from "thug2-level-converter-core/lib/py.ts";
 
 // A float32 as its shortest decimal form that reads back the same (20.0, 0.4, 1.5).
 export function shortFloat(f: number): string {

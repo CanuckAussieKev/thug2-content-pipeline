@@ -4,9 +4,9 @@
 // members (OUR_MEMBERS, src/game/skater/thaw_bmx.cpp kMembers). THAW's scripts call many THAW-only commands; one left
 // in by mistake would do nothing in THUG2 (a member) or stop the script (a script call to nothing).
 
-import * as qb from "../level_port/qb.ts";
-import { checksum } from "../level_port/qb.ts";
-import { Thug2 } from "../level_port/script_port.ts";
+import * as qb from "thug2-level-converter-core/level_port/qb.ts";
+import { checksum } from "thug2-level-converter-core/level_port/qb.ts";
+import { Thug2 } from "thug2-level-converter-core/level_port/script_port.ts";
 
 // The game's bike members (src/game/skater/thaw_bmx.cpp kMembers; ride.test.ts checks the two lists agree).
 export const OUR_MEMBERS: readonly string[] = [

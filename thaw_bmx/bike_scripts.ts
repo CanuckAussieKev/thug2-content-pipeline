@@ -25,10 +25,10 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
-import { FormatError } from "../level_port/binio.ts";
-import * as qb from "../level_port/qb.ts";
-import { Name, type QbValue, Struct } from "../level_port/qb.ts";
-import { helpFromHeader } from "../lib/cli.ts";
+import { FormatError } from "thug2-level-converter-core/level_port/binio.ts";
+import * as qb from "thug2-level-converter-core/level_port/qb.ts";
+import { Name, type QbValue, Struct } from "thug2-level-converter-core/level_port/qb.ts";
+import { helpFromHeader } from "thug2-level-converter-core/lib/cli.ts";
 import {
     applyOwnEdits,
     type Edits,
@@ -38,11 +38,11 @@ import {
     parseEdits,
     UnitIndex,
     type UnitLookup,
-} from "../lib/edits.ts";
-import { resolveInstall } from "../lib/install.ts";
-import { isMain, print, runMain } from "../lib/py.ts";
-import * as thaw from "../thaw/thaw.ts";
-import { plain, scriptToks } from "../thaw/thaw_scripts.ts";
+} from "thug2-level-converter-core/lib/edits.ts";
+import { resolveInstall } from "thug2-level-converter-core/lib/install.ts";
+import { isMain, print, runMain } from "thug2-level-converter-core/lib/py.ts";
+import * as thaw from "thug2-level-converter-core/thaw/thaw.ts";
+import { plain, scriptToks } from "thug2-level-converter-core/thaw/thaw_scripts.ts";
 import { renderBody } from "./dump_scripts.ts";
 import { renderScript } from "./thaw_ns.ts";
 
@@ -231,7 +231,7 @@ export function bikeGlobals(thawBike: ThawBike, names: Map<number, string>): str
 
 // THAW's bike scripts (bike_sfx.qb, bike_scripts.qb, bike_grindscripts.qb) in THUG2's commands - made from the user's
 // THAW at convert time: bike_scripts.ns holds our own scripts and, for each of THAW's we port, a line
-// "//@unit <name>"; bike_scripts.edits holds the port's changes to each (tools/pipeline/lib/edits.ts: line operations
+// "//@unit <name>"; bike_scripts.edits holds the port's changes to each (thug2-level-converter-core/lib/edits.ts: line operations
 // on THAW's script as thaw_ns.ts writes it - THUG2's commands, the shims below, comments naming what THAW had where
 // it differs). No THAW text is stored. To change a ported script: `dump` the whole text, edit it, `extract`.
 //
@@ -343,7 +343,7 @@ export function extractBikeScripts(text: string, thawScripts: ThawScripts): [str
         index,
         thawScripts,
         "thaw_bmx bike_scripts",
-        "# The ported THAW bike scripts' changes to THAW's own (tools/pipeline/lib/edits.ts; bike_scripts.ts)",
+        "# The ported THAW bike scripts' changes to THAW's own (thug2-level-converter-core/lib/edits.ts; bike_scripts.ts)",
         0.5,
         0.9,
     );

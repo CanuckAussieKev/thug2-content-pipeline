@@ -10,7 +10,7 @@
 // src/game/script/qb.cpp and parse.cpp (ParseArguments, ParseStructure).
 
 import * as zlib from "node:zlib";
-import { encodeLatin1, Float } from "../lib/py.ts";
+import { encodeLatin1, Float } from "thug2-level-converter-core/lib/py.ts";
 
 export function checksum(name: string): number {
     return (zlib.crc32(encodeLatin1(name.toLowerCase())) ^ 0xffffffff) >>> 0;
