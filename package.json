@@ -1,6 +1,6 @@
 {
   "name": "thug2-content-pipeline",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "private": true,
   "type": "module",
   "description": "THUG2 content pipeline: the data overlay and menu builder, HD menu art, THUGPRO's THUG2 level changes and the THAW BMX tools; the level converters it installs are its dependencies. TypeScript run directly by Node 24.",
@@ -39,15 +39,15 @@
     "test": "node --test \"**/*.test.ts\""
   },
   "dependencies": {
-    "thug2-level-converter-core": "git+https://git@github.com/CanuckAussieKev/thug2-level-converter-core.git#c10980836184700eed8acb551ddaebf854bd67d8",
-    "thug2-thugpro-compat": "git+https://git@github.com/CanuckAussieKev/thug2-thugpro-compat.git#83d4eefa45c98e49c68cb6e995db7ab2b0250a49",
-    "thug2-thps2-level-converter": "git+https://git@github.com/CanuckAussieKev/thug2-thps2-level-converter.git#e5bcd5ddf32ea678aa094b8c9558662461ee7c0e",
-    "thug2-thps3-level-converter": "git+https://git@github.com/CanuckAussieKev/thug2-thps3-level-converter.git#de7f1d0cbcece6d840b556aecb58b653b794861b",
-    "thug2-thps4-level-converter": "git+https://git@github.com/CanuckAussieKev/thug2-thps4-level-converter.git#3d708f9b869275bc055580c273b860d03c9e3cda",
-    "thug2-thug1-level-converter": "git+https://git@github.com/CanuckAussieKev/thug2-thug1-level-converter.git#44d670d1718989d4c1936d0acb4ded05de6dbee4",
-    "thug2-thaw-level-converter": "git+https://git@github.com/CanuckAussieKev/thug2-thaw-level-converter.git#235a614e5e0e02dbd3481579fa36783b51fa515b",
-    "thug2-thp8-level-converter": "git+https://git@github.com/CanuckAussieKev/thug2-thp8-level-converter.git#fa216460ae0455cda994e1ce5b516c40ef1e1cdc",
-    "thug2-thpg-level-converter": "git+https://git@github.com/CanuckAussieKev/thug2-thpg-level-converter.git#deb9028469e3b2bd7854f60a93ea354ebbe4b064"
+    "thug2-level-converter-core": "git+https://git@github.com/CanuckAussieKev/thug2-level-converter-core.git#94e666ceb594a210bbb308f62915827c6d4bab5c",
+    "thug2-thugpro-compat": "git+https://git@github.com/CanuckAussieKev/thug2-thugpro-compat.git#a3fcf940c80a681ff88f8af5db49fffc76d39535",
+    "thug2-thps2-level-converter": "git+https://git@github.com/CanuckAussieKev/thug2-thps2-level-converter.git#8dc1183477536b0d4c82f4265822303be6b06917",
+    "thug2-thps3-level-converter": "git+https://git@github.com/CanuckAussieKev/thug2-thps3-level-converter.git#cdaac599a82cfed4e2aee83aab52a86cdef30684",
+    "thug2-thps4-level-converter": "git+https://git@github.com/CanuckAussieKev/thug2-thps4-level-converter.git#8a2853961a7ee3cb17a5532a256a57540ac27deb",
+    "thug2-thug1-level-converter": "git+https://git@github.com/CanuckAussieKev/thug2-thug1-level-converter.git#09ee2acdced45af34af8b8cd0c92f3b383d0bc7c",
+    "thug2-thaw-level-converter": "git+https://git@github.com/CanuckAussieKev/thug2-thaw-level-converter.git#0a79a9ef8fbdc7e7c6a429f277c8f7d18e316810",
+    "thug2-thp8-level-converter": "git+https://git@github.com/CanuckAussieKev/thug2-thp8-level-converter.git#804072d2a334f4dd7e4b588adf359ae99700c609",
+    "thug2-thpg-level-converter": "git+https://git@github.com/CanuckAussieKev/thug2-thpg-level-converter.git#41bee8e7780c04e6fdd63f53fab466f028280ae1"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
