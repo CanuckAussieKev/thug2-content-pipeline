@@ -9,7 +9,7 @@ import { frontendSections } from "./frontend_levels.ts";
 import type { Section } from "./level_select.ts";
 import { blendPictures } from "./scenic_art.ts";
 
-test("art_picks.json: 99 levels, the decided counts, Boston's trial", () => {
+test("art_picks.json: 99 levels, the decided counts, no strength trial", () => {
     const picks = readPicks();
     assert.equal(picks.size, 99);
     const placeholders = [...picks.values()].filter((p) => p.placeholder).length;
@@ -18,12 +18,11 @@ test("art_picks.json: 99 levels, the decided counts, Boston's trial", () => {
     assert.equal(chosen.length, 45);
     assert.equal(placeholders, 54);
     assert.ok(chosen.every((p) => p.variant >= 0 && p.variant <= 3));
-    assert.deepEqual(picks.get("load_bo")?.strengths, [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]);
     assert.equal(picks.get("load_bo")?.variant, 2);
     assert.equal(picks.get("load_ba")?.placeholder, true);
     assert.equal(picks.get("load_tr")?.variant, 1);
-    // only Boston has strengths
-    assert.equal([...picks.values()].filter((p) => p.strengths).length, 1);
+    // (Boston's strength trial is over - the user chose 100%, 2026-11-02: no level has strengths)
+    assert.equal([...picks.values()].filter((p) => p.strengths).length, 0);
 });
 
 test("art_picks.json: every level of the sections is named once, with its game", () => {

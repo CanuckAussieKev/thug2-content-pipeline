@@ -2,12 +2,7 @@
 	"version": 1,
 	"levels": {
 		"load_tr": { "game": "thug2", "name": "TRAINING", "pick": 1 },
-		"load_bo": {
-			"game": "thug2",
-			"name": "BOSTON",
-			"pick": 2,
-			"strengths": [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
-		},
+		"load_bo": { "game": "thug2", "name": "BOSTON", "pick": 2 },
 		"load_ba": { "game": "thug2", "name": "BARCELONA", "pick": "placeholder" },
 		"load_be": { "game": "thug2", "name": "BERLIN", "pick": 0 },
 		"load_au": { "game": "thug2", "name": "AUSTRALIA", "pick": 0 },
