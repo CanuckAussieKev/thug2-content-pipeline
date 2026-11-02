@@ -209,7 +209,10 @@ test("rideScripts: every script the game runs is there; THAW's under THAW's name
         /Anim_Command|Skater_Playanim|Skater_waitanimfinished|Skater_AnimComplete|iscreated|SI_Bike/,
     );
     // the bike's members in the C++ (thaw_bmx.cpp kMembers) are the ones check.ts allows
-    const block = /const char\* const kMembers\[\] = \{([\s\S]*?)\};/.exec(cpp);
+    // (either spelling of the table: a C array, or std::to_array once the decomp's arrays became std::array)
+    const block =
+        /const char\* const kMembers\[\] = \{([\s\S]*?)\};/.exec(cpp) ??
+        /kMembers = std::to_array<const char\*>\(\{([\s\S]*?)\}\);/.exec(cpp);
     assert.ok(block, "kMembers");
     const members = [...block[1]!.matchAll(/"(\w+)"/g)].map((m) => m[1]!);
     assert.deepEqual([...members].sort(), [...OUR_MEMBERS].sort());
