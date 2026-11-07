@@ -610,6 +610,26 @@ export function addLevelEditor(text: string): string {
     return text.slice(0, at) + LEVEL_EDITOR_SCRIPTS + text.slice(at);
 }
 
+// --- the level editor's application window (the game's src/engine/sys/editor_mode.h) ------------------------------
+
+// The pause menu's items that leave the level or reach the front end - CHANGE LEVEL (the game's and the new front end's),
+// QUIT, BACK TO CAS, CHANGE PRO, END CURRENT RUN - each made only while LevelEditor_EditorMode is false: in the editor
+// mode (the level editor's own window, thug2-editor.exe) the game plays in the level being edited, and the front end
+// is never shown. LevelEditor_EditorMode is false without the editor mode (the menu as it was).
+export function addEditorModePause(text: string): string {
+    const items = "QUIT|CHANGE LEVEL|BACK TO CAS|CHANGE PRO|END CURRENT RUN";
+    const guard = (indent: string, item: string) =>
+        `\n${indent}if ! LevelEditor_EditorMode {\n${indent}    ${item}${indent}} \n`;
+    text = text.replace(
+        new RegExp(String.raw`\n( *)(add_roundbar_menu_item text="(?:${items})" [^\n]*\n)`, "g"),
+        (_line: string, indent: string, item: string) => guard(indent, item),
+    );
+    return text.replace(
+        new RegExp(String.raw`\n( *)(add_roundbar_menu_item \{text="(?:${items})" \n[\s\S]*?\n\1\} \n)`, "g"),
+        (_block: string, indent: string, item: string) => guard(indent, item),
+    );
+}
+
 // --- the new front end's pause menu items (the game's src/game/front/new_frontend.h) ----------------------------------
 
 const NEW_FRONTEND_PAUSE_SCRIPTS = `script newfe_open {
@@ -1183,7 +1203,7 @@ async function main(): Promise<number> {
         // new front end's items (its [features] new_frontend).
         // (and THAW's BMX's RIDE BMX when its staging folder is there - tools/pipeline/thaw_bmx/install.ts)
         write(
-            thawBmxInstall.addPauseItem(addNewFrontendPause(addLevelEditor(pause)), game),
+            thawBmxInstall.addPauseItem(addEditorModePause(addNewFrontendPause(addLevelEditor(pause))), game),
             "scripts/game/menu/gamemenu_pause.qb",
         );
         // Always: the skate shop's menu with the new front end's Play Level (its [features] new_frontend).
@@ -1288,7 +1308,7 @@ async function main(): Promise<number> {
                         ["scripts\\game\\menu\\sprites.qb", overlaySprites],
                         [
                             "scripts\\game\\menu\\gamemenu_pause.qb",
-                            (text: string) => addNewFrontendPause(addLevelEditor(text)),
+                            (text: string) => addEditorModePause(addNewFrontendPause(addLevelEditor(text))),
                         ],
                         ["scripts\\game\\menu\\skateshop.qb", addNewFrontendSkateshop],
                         ...(keyboardEdit ? [[KEYBOARD_QB, keyboardEdit] as const] : []),
