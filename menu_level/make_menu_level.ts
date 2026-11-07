@@ -3,7 +3,7 @@
 // NOT ORIGINAL - the data overlay (see src/game/front/data_overlay.h): generates, from the game's own files, a
 // folder the game reads before the game's archives and data folder:
 //   - always used: the skate shop as a playable level (Level_SkateShopLevel, in the level select as "SKATE SHOP"),
-//     TestLevel in the level select, the pause menu's LEVEL EDITOR, the THPS4 levels;
+//     TestLevel in the level select, the level editor's pause menu scripts, the THPS4 levels;
 //   - front_end\, used first while the new front end is on (thug2-decomp.ini [features] new_frontend): the standard
 //     main menu.
 //
@@ -18,7 +18,7 @@
 //   scripts\game\menu\gamemenu_levelselect.qb  the level select with SKATE SHOP and TEST LEVEL signs, in sections per
 //                              game (THUG2, THUG1, THPS4) with stars and signs for our levels (level_select.ts);
 //                              scripts\game\menu\sprites.qb and images\LevelSelectSprites\sign_*.img.xbx for those signs.
-//   scripts\game\menu\gamemenu_pause.qb  the pause menu with LEVEL EDITOR (src/game/front/level_editor.h) and its
+//   scripts\game\menu\gamemenu_pause.qb  the pause menu with DEBUG OPTIONS, and the level editor's (the game's editor mode runs them)
 //                              scripts level_editor_enter / level_editor_exit.
 //   levels\thps4_*\, thug1_*\  the THPS4 / THUG1 levels converted by thug2-thps4-level-converter/thps4_levels / thug2-thug1-level-converter/thug1_levels, when
 //                              they have made <game>\thug2-decomp-thps4 / -thug1: copied in, their level structures
@@ -582,12 +582,12 @@ script level_editor_panel_hide {
 `;
 
 export function addLevelEditor(text: string): string {
-    // The pause menu's LEVEL EDITOR item (after YOUR OPTIONS: single player only - net games don't get that item, the
-    // park editor's own pause menu returns earlier) while LevelEditor_Available (the [features] level_editor setting,
-    // in a level), and the two scripts. level_editor_enter takes the pause menu down as the goal editor's
-    // my_exit_pause_menu does (the game stays paused: no UnpauseGame), the skater out of the world as its edit_goal
-    // does (PauseSkaters, HideSkaterAndMiscSkaterEffects), and Start / Select over to the editor (Start leaves it).
-    // level_editor_exit brings the skater back and the pause menu again (its CONTINUE unpauses as ever).
+    // The level editor's two scripts, which the game's editor mode runs from the pause menu it opens (the level editor's
+    // own window, thug2-editor.exe - the pause menu has no LEVEL EDITOR item: the game no longer offers the editor).
+    // level_editor_enter takes the pause menu down as the goal editor's my_exit_pause_menu does (the game stays
+    // paused: no UnpauseGame), the skater out of the world as its edit_goal does (PauseSkaters,
+    // HideSkaterAndMiscSkaterEffects), and Start / Select over to the editor (Start leaves it). level_editor_exit
+    // brings the skater back and the pause menu again (its CONTINUE unpauses as ever).
     // (Id= in Anteara Mod's pause menu: tools/anteara)
     const options = search(
         /\n( *)add_roundbar_menu_item text="YOUR OPTIONS" [Ii]d=menu_your_options pad_choose_script=create_your_options_menu \n/,
@@ -596,12 +596,11 @@ export function addLevelEditor(text: string): string {
     if (!options || countOf(text, 'text="YOUR OPTIONS"') !== 1)
         exitWith("gamemenu_pause.qb: the YOUR OPTIONS item not found once");
     const indent = options.str(1);
-    let item =
-        `${indent}if LevelEditor_Available {\n${indent}    add_roundbar_menu_item text="LEVEL EDITOR" id=menu_level_editor ` +
-        `pad_choose_script=level_editor_enter \n${indent}} \n`;
-    // DEBUG OPTIONS: Neversoft's own hub of debug menus (gamemenu.qb create_debug_options_menu), which the retail
-    // pause menu never offers; shown while CD is false - the game's [features] debug_mode (src/game/sys/debug_mode.h).
-    item +=
+    // DEBUG OPTIONS (after YOUR OPTIONS: single player only - net games don't get that item, the park editor's own
+    // pause menu returns earlier): Neversoft's own hub of debug menus (gamemenu.qb create_debug_options_menu), which the
+    // retail pause menu never offers; shown while CD is false - the game's [features] debug_mode
+    // (src/engine/sys/debug_mode.h).
+    const item =
         `${indent}if ! CD {\n${indent}    add_roundbar_menu_item text="DEBUG OPTIONS" id=menu_debug_options ` +
         `pad_choose_script=create_debug_options_menu \n${indent}} \n`;
     text = text.slice(0, options.end()) + item + text.slice(options.end());
@@ -1199,7 +1198,7 @@ async function main(): Promise<number> {
             "TestLevel.qb",
         );
         write(testlevelNodes(testlevel), "levels/TestLevel/TestLevel.qb");
-        // Always: the pause menu's LEVEL EDITOR (the game's [features] level_editor decides whether it shows) and the
+        // Always: the level editor's scripts (the game's editor mode runs them), DEBUG OPTIONS and the
         // new front end's items (its [features] new_frontend).
         // (and THAW's BMX's RIDE BMX when its staging folder is there - tools/pipeline/thaw_bmx/install.ts)
         write(

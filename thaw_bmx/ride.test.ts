@@ -468,12 +468,9 @@ test("sounds: THUG2's ADPCM - what's encoded decodes to the nearest; the .snd as
     assert.equal(snd.readUInt32LE(4), snd.length - 8);
 });
 
-test("addPauseItem: RIDE BMX after LEVEL EDITOR, IsSkaterOnBike only asked behind ThawBmx_Available", () => {
+test("addPauseItem: RIDE BMX before DEBUG OPTIONS, IsSkaterOnBike only asked behind ThawBmx_Available", () => {
     const pause =
         '        add_roundbar_menu_item text="YOUR OPTIONS" id=menu_your_options pad_choose_script=create_your_options_menu \n' +
-        "        if LevelEditor_Available {\n" +
-        '            add_roundbar_menu_item text="LEVEL EDITOR" id=menu_level_editor pad_choose_script=level_editor_enter \n' +
-        "        } \n" +
         "        if ! CD {\n" +
         '            add_roundbar_menu_item text="DEBUG OPTIONS" id=menu_debug_options pad_choose_script=create_debug_options_menu \n' +
         "        } \n";
@@ -483,15 +480,15 @@ test("addPauseItem: RIDE BMX after LEVEL EDITOR, IsSkaterOnBike only asked behin
         fs.mkdirSync(path.join(game, STAGING));
         fs.writeFileSync(path.join(game, STAGING, MANIFEST), "{}");
         const out = addPauseItem(pause, game);
-        const editor = out.indexOf('"LEVEL EDITOR"');
+        const options = out.indexOf('"YOUR OPTIONS"');
         const available = out.indexOf("if ThawBmx_Available {");
         const onBike = out.indexOf("if skater:IsSkaterOnBike {");
         const debug = out.indexOf('"DEBUG OPTIONS"');
-        assert.ok(editor < available && available < onBike && onBike < debug, out);
+        assert.ok(options < available && available < onBike && onBike < debug, out);
         assert.match(out, /text="GET OFF BMX" id=menu_thaw_bmx pad_choose_script=thaw_bmx_pause_toggle/);
         assert.match(out, /text="RIDE BMX" id=menu_thaw_bmx pad_choose_script=thaw_bmx_pause_toggle/);
         assert.equal((out.match(/\{/g) ?? []).length, (out.match(/\}/g) ?? []).length);
-        assert.throws(() => addPauseItem("nothing here\n", game), /LEVEL EDITOR item not found/);
+        assert.throws(() => addPauseItem("nothing here\n", game), /DEBUG OPTIONS item not found/);
     } finally {
         fs.rmSync(game, { recursive: true, force: true });
     }

@@ -39,18 +39,16 @@ export function specialItemsAddition(game: string): string | null {
     return fs.existsSync(file) ? fs.readFileSync(file, "utf8") : null;
 }
 
-// The pause menu's RIDE BMX / GET OFF BMX (phase 2: src/game/skater/thaw_bmx.h), after its LEVEL EDITOR item
+// The pause menu's RIDE BMX / GET OFF BMX (phase 2: src/game/skater/thaw_bmx.h), before its DEBUG OPTIONS item
 // (make_menu_level's addLevelEditor) - when the game has the staging folder. Shown while ThawBmx_Available (the game's
 // [features] thaw_bmx, and the scripts there); IsSkaterOnBike is only asked then (a member function the game registers
 // only while the feature is on: an unregistered one after `skater:` would crash the script runtime).
 export function addPauseItem(text: string, game: string): string {
     if (!fs.existsSync(path.join(game, STAGING, MANIFEST))) return text;
-    const at = text.search(/\n( *)if LevelEditor_Available \{\n/);
-    if (at < 0) throw new Error("gamemenu_pause.qb: the LEVEL EDITOR item not found");
+    const at = text.search(/\n( *)if ! CD \{\n( *)add_roundbar_menu_item text="DEBUG OPTIONS"/);
+    if (at < 0) throw new Error("gamemenu_pause.qb: the DEBUG OPTIONS item not found");
     const indent = /\n( *)if/.exec(text.slice(at))![1]!;
-    const close = text.indexOf(`\n${indent}} \n`, at + 1);
-    if (close < 0) throw new Error("gamemenu_pause.qb: the end of the LEVEL EDITOR item not found");
-    const end = close + `\n${indent}} \n`.length;
+    const end = at + 1;
     const item = (label: string): string =>
         `${indent}        add_roundbar_menu_item text="${label}" id=menu_thaw_bmx pad_choose_script=thaw_bmx_pause_toggle \n`;
     const block =
