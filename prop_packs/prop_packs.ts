@@ -43,6 +43,7 @@ import {
     cloneSector,
     levelDir,
     levelsOf,
+    MANIFEST_VERSION,
     makePack,
     packId,
     piecesOf,
@@ -186,7 +187,8 @@ export function extract(game: string, out: string, level: string, pieceName: str
     const folder = path.join(out, PROPS_FOLDER, "levels", id);
     const stampFile = path.join(folder, "source.txt");
     const stamp = sceneStamp(game, level);
-    const stampText = `${stamp.bytes} ${stamp.time}\n`;
+    // (the level's scene and the way packs are cut: a pack cut by an older rule is cut again)
+    const stampText = `${stamp.bytes} ${stamp.time} ${MANIFEST_VERSION}\n`;
     if (fs.existsSync(stampFile) && fs.readFileSync(stampFile, "utf8") === stampText) {
         syncPack(out, id);
         print(`pack ${id}`);

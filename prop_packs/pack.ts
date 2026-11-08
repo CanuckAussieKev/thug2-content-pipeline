@@ -10,7 +10,8 @@
 // its shared collision rules):
 //   - its render sector (a LevelGeometry node's Name=), with the materials and textures its meshes use;
 //   - its collision object (the same checksum), and the collision-only objects (no render sector of their name)
-//     lying wholly inside its box grown by NEAR - LA's Fire_Coll01 beside Fire_Tender - merged into one object;
+//     lying inside its box grown by NEAR (or reaching below its bottom: belongsBelow) - LA's Fire_Tender's sunken
+//     collision shell - merged into one object;
 //   - the rail nodes whose Cluster= is the piece, or that lie inside its box grown by NEAR: their positions, terrain
 //     and the links between them (links out of the set are dropped). Their TriggerScripts (gaps, sounds) are not
 //     carried (a later stage: scripts).
@@ -41,7 +42,9 @@ import { hex8 } from "thug2-level-converter-core/lib/text.ts";
 
 export const PREFIX = "pp_";
 export const NEAR = 24;
-export const MANIFEST_VERSION = 1;
+// 2: collision-only objects sunk below the piece's bottom taken along (belongsBelow) - a pack of 1 is cut again (the
+// level editor asks for it: src/editor/level_editor_props.h kManifestVersion).
+export const MANIFEST_VERSION = 2;
 
 export interface V3 {
     x: number;
@@ -200,6 +203,17 @@ export function cloneCollision(o: ColObject, name: number): ColObject {
     };
 }
 
+// A collision object cut off at `floor`: its vertices below it raised onto it, the faces left flat by that dropped. A
+// shell sunk into the source level's ground (belongsBelow) would otherwise stand in whatever lies under the spot the
+// piece is placed on - a stairwell, a lower street - as an invisible wall.
+export function cutBelow(o: ColObject, floor: number): ColObject {
+    const out = cloneCollision(o, o.checksum);
+    out.verts = out.verts.map((v) => [v[0]!, Math.max(v[1]!, floor), v[2]!]);
+    // (a face wholly on the floor - the shell's bottom, or a side squashed onto it - goes)
+    out.faces = out.faces.filter(([, , a, b, c]) => [a, b, c].some((i) => out.verts[i]![1]! > floor));
+    return out;
+}
+
 // Several collision objects as one (named `name`): vertices and faces appended, the tree and reaches made again.
 export function mergeCollision(objects: readonly ColObject[], name: number): ColObject {
     const first = objects[0]!;
@@ -329,8 +343,13 @@ function inside(p: V3, b: Box, grow: number): boolean {
     );
 }
 
-function boxInside(a: Box, b: Box, grow: number): boolean {
-    return inside(a.min, b, grow) && inside(a.max, b, grow);
+// Whether a collision-only object's box `a` goes with a piece of box `b`: inside it grown by NEAR, except that it may
+// reach any depth below the piece's bottom (but not lie wholly under it). Level designers sink such shells into the
+// ground: LA's Fire_Tender's (b98f305e: the truck's footprint, 192 units below the street to its roof) is what stops
+// the skater - the truck's own sides start 24 units up, above the skater's feelers (8 units up when skating).
+export function belongsBelow(a: Box, b: Box): boolean {
+    const lowered: Box = { min: { ...b.min, y: Math.min(b.min.y, a.min.y) }, max: b.max };
+    return inside(a.min, lowered, NEAR) && inside(a.max, b, NEAR);
 }
 
 export interface Piece {
@@ -407,7 +426,7 @@ export function piecesOf(data: LevelData): Piece[] {
         const collision = new Map<number, number[]>();
         for (const s of parts)
             collision.set(s.checksum, data.col.objects.some((o) => o.checksum === s.checksum) ? [s.checksum] : []);
-        for (const o of collisionOnly) if (boxInside(colBox(o), box, NEAR)) collision.get(head)!.push(o.checksum);
+        for (const o of collisionOnly) if (belongsBelow(colBox(o), box)) collision.get(head)!.push(o.checksum);
         const own = rails.filter((node) => {
             const pos = vec(node.get("Pos"))!;
             return inside(pos, box, NEAR) || (list.includes(nameOf(node.get("Cluster"))) && inside(pos, box, 4 * NEAR));
@@ -497,9 +516,12 @@ export function makePack(data: LevelData, piece: Piece): Pack {
         const sector = cloneSector(data.scene.sectors.find((s) => s.checksum === member)!, value);
         placeSector(sector, toLocal);
         sectors.push(sector);
+        // (the collision-only objects cut off a little below the piece's bottom: cutBelow)
+        const floor = piece.box.min.y - NEAR;
         const objects = (piece.collision.get(member) ?? [])
             .map((c) => data.col.objects.find((o) => o.checksum === c))
-            .filter((o): o is ColObject => o !== undefined);
+            .filter((o): o is ColObject => o !== undefined)
+            .map((o) => (o.checksum !== member && o.bbox[1]! < floor ? cutBelow(o, floor) : o));
         if (objects.length) {
             const merged = mergeCollision(objects, value);
             placeCollision(merged, toLocal);

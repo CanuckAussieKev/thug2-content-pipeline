@@ -1,7 +1,8 @@
 import * as assert from "node:assert/strict";
 import { test } from "node:test";
+import type { Face } from "thug2-level-converter-core/level_port/thug2_col.ts";
 import { applyInsertions } from "../retail/script_merge.ts";
-import { applyPlacement, memberName, packId, readManifest } from "./pack.ts";
+import { applyPlacement, belongsBelow, cutBelow, memberName, packId, readManifest } from "./pack.ts";
 import { HOOK, levelsQbInsertions, readLayoutProps } from "./retail_props.ts";
 
 test("pack ids and member names", () => {
@@ -15,6 +16,53 @@ test("pack ids and member names", () => {
 test("placement: scale, quarter turn, offset (the editor's order)", () => {
     const p = { quarters: 1, offset: { x: 10, y: 0, z: 0 }, scale: { x: 2, y: 1, z: 1 } };
     assert.deepEqual(applyPlacement(p, { x: 1, y: 2, z: 3 }), { x: 13, y: 2, z: -2 });
+});
+
+test("collision-only objects: inside the piece, or sunk below its bottom", () => {
+    // (LA's Fire_Tender and the collision shell under it - b98f305e)
+    const truck = { min: { x: -2703, y: -418, z: 6056 }, max: { x: -1975, y: -248, z: 6618 } };
+    const box = (x0: number, y0: number, z0: number, x1: number, y1: number, z1: number) => ({
+        min: { x: x0, y: y0, z: z0 },
+        max: { x: x1, y: y1, z: z1 },
+    });
+    assert.ok(belongsBelow(box(-2702, -610, 6065, -1975, -240, 6618), truck)); // sunk into the ground
+    assert.ok(belongsBelow(box(-2693, -420, 6370, -2587, -374, 6502), truck)); // inside
+    assert.ok(!belongsBelow(box(-2720, -451, 6429, -1950, 784, 6626), truck)); // a trigger reaching far above
+    assert.ok(!belongsBelow(box(-2702, -900, 6065, -1975, -500, 6618), truck)); // wholly under it
+    assert.ok(!belongsBelow(box(-3336, -610, 5978, -2556, -300, 6699), truck)); // wider than it
+});
+
+test("a sunk shell cut off below the piece's bottom", () => {
+    // (a wall from y -200 to 100 in two faces, and a bottom face at -200)
+    const shell = {
+        checksum: 1,
+        flags: 0,
+        smallFaces: 1,
+        fixedVerts: 0,
+        bbox: [0, -200, 0, 1, 10, 100, 10, 1],
+        verts: [
+            [0, -200, 0],
+            [10, -200, 0],
+            [10, 100, 0],
+            [0, 100, 0],
+            [0, -200, 10],
+        ],
+        intensities: Buffer.alloc(5),
+        faces: [
+            [0, 0, 0, 1, 2],
+            [0, 0, 0, 2, 3],
+            [0, 0, 0, 1, 4],
+        ] as Face[],
+        reach: Buffer.alloc(0),
+        bsp: { kind: "leaf" as const, faces: [], low: 3 },
+    };
+    const cut = cutBelow(shell, -24);
+    assert.deepEqual(
+        cut.verts.map((v) => v[1]),
+        [-24, -24, 100, 100, -24],
+    );
+    assert.equal(cut.faces.length, 2); // (the bottom face, now flat on the floor, gone)
+    assert.equal(shell.verts[0]![1], -200); // (the source left as it was)
 });
 
 test("manifest read back", () => {
