@@ -42,6 +42,8 @@ converter has its own README.
 - `hd_textures/` - the HD menu art (Real-ESRGAN, fetched on request) and the level select globe's redrawn tiles.
 - `thug2_levels/` - THUGPRO's changes to THUG2's own levels (TP-42), applied to the overlay's copies.
 - `thaw_bmx/` - THAW's BMX: its assets converted, its ride scripts.
+- `editor_import/` - the level editor's Import Level window's side: which game a folder holds, its levels, converting
+  some and making the overlay again (`import_levels.ts`; the editor runs it with the Node runtime it ships).
 - `fonts/` - the new front end's typefaces.
 
 ## With or without the decomp around it

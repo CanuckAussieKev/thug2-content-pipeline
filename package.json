@@ -8,6 +8,7 @@
     "node": ">=24"
   },
   "commands": [
+    "editor_import/import_levels.ts",
     "hd_textures/compare_shots.ts",
     "hd_textures/compare_tex.ts",
     "hd_textures/fetch.ts",
