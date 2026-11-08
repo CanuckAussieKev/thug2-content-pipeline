@@ -1,6 +1,6 @@
 {
   "name": "thug2-content-pipeline",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "private": true,
   "type": "module",
   "description": "THUG2 content pipeline: the data overlay and menu builder, HD menu art, THUGPRO's THUG2 level changes and the THAW BMX tools; the level converters it installs are its dependencies. TypeScript run directly by Node 24.",
