@@ -68,9 +68,17 @@ export function readImg(data: Buffer): Picture {
     if (data.readUInt32LE(0) !== 2 || data.readUInt32LE(16) !== 0 || data.readUInt32LE(28) !== 0)
         throw new Error("not a 32-bit .img");
     if (data.length < 32 + width * height * 4) throw new Error(".img too short");
+    let texels = data.subarray(32, 32 + width * height * 4);
+    // (a THUG2 picture with power-of-two sides is swizzled - nativeImg; THPS4's texture sizes hold something else)
+    if (data.readUInt32LE(8) === width && data.readUInt32LE(12) === height && storedSwizzled(width, height)) {
+        const order = swizzleOrder(width, height);
+        const rows = Buffer.alloc(texels.length);
+        for (let i = 0; i < order.length; i++) texels.copy(rows, order[i]! * 4, i * 4, i * 4 + 4);
+        texels = rows;
+    }
     const bgra = Buffer.alloc(width * height * 4);
     for (let y = 0; y < height; y++)
-        data.copy(bgra, y * width * 4, 32 + (height - 1 - y) * width * 4, 32 + (height - y) * width * 4);
+        texels.copy(bgra, y * width * 4, (height - 1 - y) * width * 4, (height - y) * width * 4);
     return { width, height, bgra };
 }
 
@@ -195,8 +203,46 @@ export function resize(picture: Picture, w: number, h: number): Picture {
     return { width: w, height: h, bgra: out };
 }
 
-// THUG2's loading screen file (images\<name>.img.xbx): the header of its own loadscrn_*.img.xbx (u32 2, u32 8, 640,
-// 448, format 0, ..., u16 640, 448), then the rows bottom-up, 32-bit, the alpha made opaque.
+// Whether a THUG2 picture's texels are stored swizzled: both sides powers of two (the game's loaders unswizzle those;
+// a 640 x 448 loading screen is stored as rows).
+function storedSwizzled(width: number, height: number): boolean {
+    return width > 0 && height > 0 && (width & (width - 1)) === 0 && (height & (height - 1)) === 0;
+}
+
+// The texel index of each stored (swizzled) texel: texel i's x and y are the bits of i dealt out in turn, x's first,
+// while each side has bits left - the game's unswizzle (the platform layer's).
+function swizzleOrder(width: number, height: number): Uint32Array {
+    const order = new Uint32Array(width * height);
+    for (let i = 0; i < order.length; i++) {
+        let xBits = width >> 1;
+        let yBits = height >> 1;
+        let bit = 1;
+        let xBit = 1;
+        let yBit = 1;
+        let x = 0;
+        let y = 0;
+        while (xBits !== 0 || yBits !== 0) {
+            if (xBits !== 0) {
+                xBits >>= 1;
+                if ((i & bit) !== 0) x |= xBit;
+                xBit <<= 1;
+                bit <<= 1;
+            }
+            if (yBits !== 0) {
+                yBits >>= 1;
+                if ((i & bit) !== 0) y |= yBit;
+                yBit <<= 1;
+                bit <<= 1;
+            }
+        }
+        order[i] = y * width + x;
+    }
+    return order;
+}
+
+// THUG2's picture file (images\<name>.img.xbx): the header of its own loadscrn_*.img.xbx (u32 2, u32 8, 640, 448,
+// format 0, ..., u16 640, 448), then the rows bottom-up, 32-bit, the alpha made opaque - swizzled, as the game stores
+// them, when both sides are powers of two (the level editor's piece pictures).
 export function nativeImg(picture: Picture): Buffer {
     const { width, height } = picture;
     const head = Buffer.alloc(32);
@@ -211,7 +257,11 @@ export function nativeImg(picture: Picture): Buffer {
         picture.bgra.copy(rows, (height - 1 - y) * width * 4, y * width * 4, (y + 1) * width * 4);
     }
     for (let i = 3; i < rows.length; i += 4) rows[i] = 255;
-    return Buffer.concat([head, rows]);
+    if (!storedSwizzled(width, height)) return Buffer.concat([head, rows]);
+    const order = swizzleOrder(width, height);
+    const stored = Buffer.alloc(rows.length);
+    for (let i = 0; i < order.length; i++) rows.copy(stored, i * 4, order[i]! * 4, order[i]! * 4 + 4);
+    return Buffer.concat([head, stored]);
 }
 
 // A picture as a PNG (checking pictures by eye).

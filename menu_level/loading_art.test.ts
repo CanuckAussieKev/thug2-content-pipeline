@@ -44,6 +44,21 @@ test("nativeImg writes THUG2's loading screen layout (bottom-up rows) that readI
     assert.deepEqual(back.bgra, picture.bgra);
 });
 
+test("nativeImg swizzles a picture with power-of-two sides as the game stores it, and readImg reads it back", () => {
+    const picture = gradient(4, 2);
+    const data = nativeImg(picture);
+    // stored texel i: x and y from i's bits in turn, x first (bottom-up rows: y 0 is the picture's last row)
+    // i 0 (0,0) - i 1 (1,0) - i 2 (0,1) - i 3 (1,1) - i 4 (2,0)
+    const texel = (i: number): number[] => [...data.subarray(32 + i * 4, 32 + i * 4 + 4)];
+    assert.deepEqual(texel(0), [0, 1, 7, 255]);
+    assert.deepEqual(texel(1), [1, 1, 7, 255]);
+    assert.deepEqual(texel(2), [0, 0, 7, 255]);
+    assert.deepEqual(texel(3), [1, 0, 7, 255]);
+    assert.deepEqual(texel(4), [2, 1, 7, 255]);
+    assert.deepEqual(readImg(data).bgra, picture.bgra);
+    assert.deepEqual(readImg(nativeImg(gradient(64, 64))).bgra, gradient(64, 64).bgra);
+});
+
 test("nativeImg makes the alpha opaque", () => {
     const picture = gradient(4, 4);
     picture.bgra[3] = 0;

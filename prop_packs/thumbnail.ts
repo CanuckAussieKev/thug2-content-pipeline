@@ -21,7 +21,7 @@ import type { Picture } from "../menu_level/loading_art.ts";
 
 // Pictures drawn by another version of this renderer are drawn again (prop_packs.ts thumbs' stamp): raise it when
 // the pictures change.
-export const THUMB_VERSION = 2;
+export const THUMB_VERSION = 3; // (3: the files swizzled, as the game stores power-of-two pictures)
 
 const BACKGROUND = [0x26, 0x28, 0x2c]; // (r, g, b: the editor's panel grey)
 
