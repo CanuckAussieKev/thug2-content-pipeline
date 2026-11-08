@@ -452,7 +452,11 @@ export function piecesOf(data: LevelData): Piece[] {
 // --- a pack ---------------------------------------------------------------------------------------------------------
 
 export function packId(level: string, piece: string): string {
-    const text = `${PREFIX}${level}_${piece}`.toLowerCase().replaceAll(/[^a-z0-9_]/g, "_");
+    // (no "_sky" in a scene's name: the game takes such a scene for a sky - render::cfunc_load_scene)
+    const text = `${PREFIX}${level}_${piece}`
+        .toLowerCase()
+        .replaceAll(/[^a-z0-9_]/g, "_")
+        .replaceAll("_sky", "_ski");
     return text.length > 48 ? `${text.slice(0, 39)}_${hex8(checksum(text)).toLowerCase()}` : text;
 }
 

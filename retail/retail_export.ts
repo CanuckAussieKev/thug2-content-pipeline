@@ -6,7 +6,8 @@
 //   node tools/pipeline/retail/retail_export.ts uninstall --retail <THUG2 folder> [--levels a,b]   (default: all)
 //   node tools/pipeline/retail/retail_export.ts status    --retail <THUG2 folder>
 //   node tools/pipeline/retail/retail_export.ts check     --retail <THUG2 folder> [--levels ...]   (the budget alone)
-//   (--from: the folder holding the converters' thug2-decomp-* staging folders, default the --retail folder;
+//   (--levels none: no level added or taken out - the prop packs alone baked again;
+//    --from: the folder holding the converters' thug2-decomp-* staging folders, default the --retail folder;
 //    --raised-limits: with the THUG2 decompilation's retail-limits DLL (limits_dll.ts): install puts it beside
 //    THUG2.exe as dinput8.dll (from --limits-dll <file>, else retail_limits\dinput8.dll beside this pipeline's folder,
 //    as the level editor's tools folder has it) and levels are checked against its raised limits
@@ -553,6 +554,7 @@ function writeAtomic(file: string, data: Uint8Array): void {
 
 function selectLevels(all: readonly LevelEntry[], wanted: string | undefined): LevelEntry[] {
     if (!wanted || wanted === "all") return [...all];
+    if (wanted === "none") return []; // (the installed levels kept as they are: the prop packs alone baked again)
     const keys = wanted
         .split(",")
         .map((s) => s.trim().toLowerCase())
