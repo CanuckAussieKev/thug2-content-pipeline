@@ -58,6 +58,11 @@ converter has its own README.
 - `thaw_bmx/` - THAW's BMX: its assets converted, its ride scripts.
 - `editor_import/` - the level editor's Import Level window's side: which game a folder holds, its levels, converting
   some and making the overlay again (`import_levels.ts`; the editor runs it with the Node runtime it ships).
+- `prop_packs/` - prop packs: pieces of a THUG2 level (a scenery piece or a trick-object cluster - LA's fire truck -,
+  its collision and the grind rails on it) cut out into a small scene of their own that another level loads beside
+  its own (`prop_packs.ts catalogue|thumbs|extract|sync`, run by the level editor's Content Browser; packs in
+  `<game>\thug2-decomp-props`, copied into the overlay). The retail export bakes the pieces placed in THUG2's own levels
+  into a `<level>_Props` scene the level loads with two Levels.qb insertions (`retail_props.ts`).
 - `fonts/` - the new front end's typefaces.
 
 ## With or without the decomp around it

@@ -29,6 +29,11 @@
 //   Data\models, anims, skeletons\...  what a converter brings along for its levels (shared by its levels).
 //   Data\images\loadscrn_<game>_<level>.img.xbx  the level's own game's loading picture, when that game is installed.
 //   dinput8.dll, thug2-limits.ini  with --raised-limits: the limits DLL (limits_dll.ts).
+//   Data\levels\<L>_Props\...      the level editor's prop packs placed in THUG2's own level <L> (its layouts in --from's
+//                                 thug2-decomp-layouts, the packs in thug2-decomp-props), baked at their places into a
+//                                 scene the level loads after its own (prop_packs/retail_props.ts: two insertions into
+//                                 Levels.qb). Every install bakes them again from the layouts; uninstalling everything
+//                                 takes them out.
 //   Data\pre\qb_scripts.prx        the game's scripts archive with our lines added to Levels.qb and the level select
 //                                 (retail_levels.ts) - the user's current files, mods and all, decompiled, added to
 //                                 and compiled again; every other file of the archive byte for byte as it was. THUG1's
@@ -68,6 +73,7 @@ import { resolveInstall } from "thug2-level-converter-core/lib/install.ts";
 import { requireNs } from "thug2-level-converter-core/lib/neverscript.ts";
 import { decodeLatin1, encodeLatin1 } from "thug2-level-converter-core/lib/text.ts";
 import * as loadingArtGames from "../menu_level/loading_art_games.ts";
+import * as retailProps from "../prop_packs/retail_props.ts";
 import * as limitsDll from "./limits_dll.ts";
 import { retailLevelQb } from "./no_rotate.ts";
 import {
@@ -289,15 +295,22 @@ export function addOurs(
     replaced: ReadonlyMap<string, Buffer>,
     ns: Scripts,
     people: pedModels.Additions | null = null,
+    propLevels: readonly string[] = [],
 ): Planned {
     const out = copyArchive(base);
     const scripts: ScriptChange[] = [];
     const baseEntries = new Map<string, Buffer>();
-    if (!entries.length) return { archive: out, scripts, baseEntries };
+    if (!entries.length && !propLevels.length) return { archive: out, scripts, baseEntries };
     const edits: [string, (text: string) => Insertion[]][] = [
-        [LEVELS_QB, (text) => [levelsInsertion(text, entries, art, archives)]],
-        [LEVEL_SELECT_QB, (text) => levelSelectInsertions(text, entries)],
+        [
+            LEVELS_QB,
+            (text) => [
+                ...(entries.length ? [levelsInsertion(text, entries, art, archives)] : []),
+                ...retailProps.levelsQbInsertions(text, propLevels),
+            ],
+        ],
     ];
+    if (entries.length) edits.push([LEVEL_SELECT_QB, (text) => levelSelectInsertions(text, entries)]);
     // the levels' own people (their converters' peds.json: profiles and CAS parts appended to THUG2's lists - as
     // make_menu_level adds them to the overlay; without them a ported ped with its own profile crashes the game)
     if (people && !pedModels.empty(people)) {
@@ -718,9 +731,24 @@ function applyWith(options: Options, mode: "install" | "uninstall", ns: Scripts)
     const manifest = portedLevels.loadManifest(options.from);
     const known = manifest?.levels ?? [];
     const installed = new Set((state?.levels ?? []).map((l) => l.level.toLowerCase()));
+    // the level editor's prop packs placed in THUG2's own levels (prop_packs/retail_props.ts): with every install, and
+    // kept by an uninstall of some levels; an uninstall of everything takes them out too
+    const props = mode === "install" || options.levels ? retailProps.plan(options.from, game) : [];
+    for (const p of props) {
+        if (p.missing.length)
+            print(`${p.level}: prop packs not found in ${options.from} (skipped): ${p.missing.join(", ")}`);
+        if (p.pieces) print(`${p.level}: ${p.pieces} placed piece(s) baked into ${p.scene}`);
+        if (p.rails)
+            print(
+                `${p.level}: ${p.rails} rail point(s) of the packs not carried (retail: not yet - the level's node array)`,
+            );
+    }
+    const propLevels = props.filter((p) => p.files.length);
     if (mode === "install") {
-        if (!known.length)
-            exitWith(`${options.from}: no converted levels (no thug2-decomp-* staging folder with a levels.json)`);
+        if (!known.length && !propLevels.length)
+            exitWith(
+                `${options.from}: no converted levels (no thug2-decomp-* staging folder with a levels.json) and no placed prop packs`,
+            );
         const chosen = selectLevels(known, options.levels);
         const keep = known.filter((e) => installed.has(e.level.toLowerCase()) && !chosen.includes(e));
         const missing = [...installed].filter((l) => !known.some((e) => e.level.toLowerCase() === l));
@@ -806,6 +834,7 @@ function applyWith(options: Options, mode: "install" | "uninstall", ns: Scripts)
         replaced,
         ns,
         peopleOf(options.from, wanted),
+        propLevels.map((p) => p.level),
     );
     const newBytes = writeArchive(planned.archive);
 
@@ -814,6 +843,7 @@ function applyWith(options: Options, mode: "install" | "uninstall", ns: Scripts)
     for (const e of wanted)
         files.push(...levelFiles(options.from, e, options.archives, (name, data) => retailLevelQb(name, data, ns)));
     for (const staging of stagings) files.push(...stagingFiles(options.from, staging));
+    for (const p of propLevels) for (const f of p.files) files.push({ ...f, owner: `props:${p.level}` });
     for (const [name, data] of art?.images ?? []) {
         const owner = [...(art?.art ?? [])].find(([, n]) => n === name)?.[0] ?? "";
         const level = wanted.find((e) => `load_${portedLevels.loadOf(e)}`.toLowerCase() === owner)?.level ?? "images";
@@ -867,7 +897,7 @@ function applyWith(options: Options, mode: "install" | "uninstall", ns: Scripts)
     for (const line of dllPlan?.lines ?? []) print(line);
     dllPlan?.run();
     if (hadDll && !wantDll) for (const line of limitsDll.uninstall(game, stateDir, hadDll)) print(line);
-    if (wanted.length || left) {
+    if (wanted.length || propLevels.length || left) {
         const limits = wantDll ? (dllPlan?.state ?? hadDll ?? undefined) : undefined;
         const next: State = {
             format: limits ? 2 : 1,
@@ -899,6 +929,7 @@ function applyWith(options: Options, mode: "install" | "uninstall", ns: Scripts)
     const restored = fs.existsSync(original) && sha256(fs.readFileSync(original)) === sha256(newBytes);
     print(
         `${mode}: ${wanted.length} level(s) in the install (${wanted.map((e) => e.level).join(", ") || "none"}); ` +
+            `${propLevels.length ? `prop packs in ${propLevels.map((p) => p.level).join(", ")}; ` : ""}` +
             `${toWrite.length} file(s) written, ${toRemove.length - left} removed; qb_scripts.prx ` +
             (newBytes.equals(currentBytes)
                 ? "unchanged"
@@ -949,6 +980,10 @@ export function status(game: string): void {
         else if (sha256(fs.readFileSync(target)) !== f.sha256) changed += 1;
     }
     print(`files: ${state.files.length} (${missing} missing, ${changed} changed since)`);
+    const propLevels = [
+        ...new Set(state.files.filter((f) => f.owner.startsWith("props:")).map((f) => f.owner.slice(6))),
+    ];
+    if (propLevels.length) print(`prop packs: placed pieces in ${propLevels.join(", ")}`);
     if (state.limits) {
         const there = path.join(game, limitsDll.DLL);
         const now = fs.existsSync(there) ? sha256(fs.readFileSync(there)) : "";

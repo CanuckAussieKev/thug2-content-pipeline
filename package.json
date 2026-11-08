@@ -26,6 +26,7 @@
     "menu_level/scenic_art.ts",
     "menu_level/scenic_capture.ts",
     "menu_level/scenic_spots.ts",
+    "prop_packs/prop_packs.ts",
     "retail/retail_export.ts",
     "run.ts",
     "thaw_bmx/bike_scripts.ts",

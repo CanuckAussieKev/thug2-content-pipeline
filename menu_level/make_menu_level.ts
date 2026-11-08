@@ -76,6 +76,7 @@ import {
 import { applyTextEdits, CAR_SCRIPTS, DRIVING_EDITS } from "thug2-thug1-level-converter/thug1_levels/driving.ts"; // (PC-THUG1-22, Anteara Mod's copy)
 import * as hdUi from "../hd_textures/ui.ts"; // (--hd-ui: the menus' images and fonts upscaled)
 import { PIPELINE } from "../pipeline.ts";
+import * as propPacks from "../prop_packs/prop_packs.ts"; // (the level editor's prop packs, copied back in)
 import * as thawBmxInstall from "../thaw_bmx/install.ts"; // (THAW's BMX: bike, skeleton, animations - phase 1)
 import * as thug2Levels from "../thug2_levels/thugpro_apply.ts"; // (THUGPRO's changes to THUG2's levels: TP-42)
 import * as artPicksFile from "./art_picks.ts"; // (the user's decided pictures and the shared placeholder)
@@ -1345,6 +1346,10 @@ async function main(): Promise<number> {
             ))
                 print(line);
         }
+        // The level editor's prop packs and their pictures (prop_packs/prop_packs.ts: <game>\thug2-decomp-props), back
+        // in the overlay made again.
+        const props = propPacks.sync(game, out);
+        if (props) print(`prop packs: ${props} file(s) copied from ${propPacks.PROPS_FOLDER}`);
     } finally {
         fs.rmSync(work, { recursive: true, force: true });
     }
