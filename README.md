@@ -40,6 +40,15 @@ converter has its own README.
 - `menu_level/` - the data overlay `<game>\thug2-decomp-data`: every converted game's levels, Levels.qb and the level
   select, the new front end's data, scenic and loading art (`make_menu_level.ts`).
 - `hd_textures/` - the HD menu art (Real-ESRGAN, fetched on request) and the level select globe's redrawn tiles.
+- `retail/` - the retail export: converted levels installed into a THUG2 install's own data, for the original game
+  (no data overlay, none of the decomp's engine): `node tools/pipeline/retail/retail_export.ts install|uninstall|status
+  --retail <THUG2 folder> [--levels thps2_hangar,thps2|all]`. The levels' files go where THUG2's own are (Data\levels,
+  and archives named as THUG2's), their level structures and level select signs into the user's own
+  `Data\pre\qb_scripts.prx` - added to its current scripts, mods and all, every other file byte for byte as it was; the
+  first archive is kept, and uninstall takes out only what the export added (the user's later edits stay). Each level
+  is checked against the original game's fixed limits first (thug2-level-converter-core's
+  `level_port/retail_budget.ts`): one too big is refused unless `--raised-limits` (an install with a patch raising
+  them). What it wrote is listed in `<THUG2 folder>\thug2-retail-export\state.json`.
 - `thug2_levels/` - THUGPRO's changes to THUG2's own levels (TP-42), applied to the overlay's copies.
 - `thaw_bmx/` - THAW's BMX: its assets converted, its ride scripts.
 - `editor_import/` - the level editor's Import Level window's side: which game a folder holds, its levels, converting
