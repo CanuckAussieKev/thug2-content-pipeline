@@ -43,12 +43,17 @@ converter has its own README.
 - `retail/` - the retail export: converted levels installed into a THUG2 install's own data, for the original game
   (no data overlay, none of the decomp's engine): `node tools/pipeline/retail/retail_export.ts install|uninstall|status
   --retail <THUG2 folder> [--levels thps2_hangar,thps2|all]`. The levels' files go where THUG2's own are (Data\levels,
-  and archives named as THUG2's), their level structures and level select signs into the user's own
+  loose - `--pre` also writes archives named as THUG2's, which cost the game memory while a level loads), their level
+  structures and level select signs into the user's own
   `Data\pre\qb_scripts.prx` - added to its current scripts, mods and all, every other file byte for byte as it was; the
   first archive is kept, and uninstall takes out only what the export added (the user's later edits stay). Each level
   is checked against the original game's fixed limits first (thug2-level-converter-core's
-  `level_port/retail_budget.ts`): one too big is refused unless `--raised-limits` (an install with a patch raising
-  them). What it wrote is listed in `<THUG2 folder>\thug2-retail-export\state.json`.
+  `level_port/retail_budget.ts`): one too big is refused unless `--raised-limits`, which installs the THUG2
+  decompilation's retail-limits DLL (`--limits-dll <dinput8.dll>`, an x86 build of its `thug2_retail_limits_dll`)
+  beside THUG2.exe with them - a dinput8.dll already there is renamed and chained, never deleted (`limits_dll.ts`).
+  THAW's `no_rotate` locks (Santa Monica's ferris cars), which the original game doesn't know, are turned back by a
+  script of the level's own (`no_rotate.ts`). What it wrote is listed in
+  `<THUG2 folder>\thug2-retail-export\state.json`; uninstall takes all of it out again.
 - `thug2_levels/` - THUGPRO's changes to THUG2's own levels (TP-42), applied to the overlay's copies.
 - `thaw_bmx/` - THAW's BMX: its assets converted, its ride scripts.
 - `editor_import/` - the level editor's Import Level window's side: which game a folder holds, its levels, converting

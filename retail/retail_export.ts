@@ -7,21 +7,28 @@
 //   node tools/pipeline/retail/retail_export.ts status    --retail <THUG2 folder>
 //   node tools/pipeline/retail/retail_export.ts check     --retail <THUG2 folder> [--levels ...]   (the budget alone)
 //   (--from: the folder holding the converters' thug2-decomp-* staging folders, default the --retail folder;
-//    --raised-limits: the install has the decomp's retail-limits patch (dinput8.dll beside THUG2.exe) - levels are
-//    checked against its raised limits (retail_budget.RAISED_LIMITS) instead of the original's; --no-pre: no level archives; --ns <ns.exe>; --thps2 ... --thp8 <install>: the games' own loading
-//    pictures, as make_menu_level's)
+//    --raised-limits: with the THUG2 decompilation's retail-limits DLL (limits_dll.ts): install puts it beside
+//    THUG2.exe as dinput8.dll (from --limits-dll <file>, else retail_limits\dinput8.dll beside this pipeline's folder,
+//    as the level editor's tools folder has it) and levels are checked against its raised limits
+//    (retail_budget.RAISED_LIMITS); an install without it takes ours out again, as uninstalling every level does. A limits
+//    DLL the player put there himself counts as raised limits. --pre: the level archives too; --ns <ns.exe>;
+//    --thps2 ... --thp8 <install>: the games' own loading pictures, as make_menu_level's; --ignore-budget: levels too
+//    big are installed anyway - for measuring them)
 //
 // What it writes into the install (each file listed, with its hash, in <THUG2>\thug2-retail-export\state.json, and
 // taken out again by uninstall unless it changed since):
 //   Data\levels\<level>\...       the level's files (scene, textures, collision, node array, its sky's folder too),
-//                                 where THUG2's own levels are: the game loads levels from loose files
-//                                 (UsePreFilesForLevelLoading = 0) and finds a file in a loaded archive first, then
-//                                 in Data\.
-//   Data\pre\<level>scn.prx, <level>col.prx, <level>_scripts.prx  the same files as THUG2's own levels' archives (named
-//                                 by the level structure's scnpre= / colpre= / pre=; used only where a mod sets
-//                                 UsePreFilesForLevelLoading); --no-pre leaves them out.
+//                                 where THUG2's own levels are; with no archive keys in its level structure the game
+//                                 loads them as loose files (it finds a file in a loaded archive first, then in Data\).
+//   Data\pre\<level>scn.prx, <level>col.prx, <level>_scripts.prx  only with --pre: the same files as THUG2's own
+//                                 levels' archives, named by the level structure's scnpre= / colpre= / pre=. The game
+//                                 loads them (scnpre= always, the others because its start-up sets
+//                                 UsePreFilesForLevelLoading) - and a scene archive is held in memory whole while its
+//                                 files are unpacked beside it: measured, THPS3's Rio runs out of the 64 MB main block
+//                                 that way and loads with half of it free from loose files. Hence loose by default.
 //   Data\models, anims, skeletons\...  what a converter brings along for its levels (shared by its levels).
 //   Data\images\loadscrn_<game>_<level>.img.xbx  the level's own game's loading picture, when that game is installed.
+//   dinput8.dll, thug2-limits.ini  with --raised-limits: the limits DLL (limits_dll.ts).
 //   Data\pre\qb_scripts.prx        the game's scripts archive with our lines added to Levels.qb and the level select
 //                                 (retail_levels.ts) - the user's current files, mods and all, decompiled, added to
 //                                 and compiled again; every other file of the archive byte for byte as it was. THUG1's
@@ -53,12 +60,16 @@ import {
     readArchive,
     writeArchive,
 } from "thug2-level-converter-core/level_port/prx.ts";
+import { checksum, tokens } from "thug2-level-converter-core/level_port/qb.ts";
 import * as budget from "thug2-level-converter-core/level_port/retail_budget.ts";
+import { readScene } from "thug2-level-converter-core/level_port/thug2_scene.ts";
 import { exitWith, isMain, parseCli, print, runMain } from "thug2-level-converter-core/lib/cli.ts";
 import { resolveInstall } from "thug2-level-converter-core/lib/install.ts";
 import { requireNs } from "thug2-level-converter-core/lib/neverscript.ts";
 import { decodeLatin1, encodeLatin1 } from "thug2-level-converter-core/lib/text.ts";
 import * as loadingArtGames from "../menu_level/loading_art_games.ts";
+import * as limitsDll from "./limits_dll.ts";
+import { retailLevelQb } from "./no_rotate.ts";
 import {
     archiveNames,
     isEmptyScript,
@@ -66,6 +77,8 @@ import {
     LEVELS_QB,
     levelSelectInsertions,
     levelsInsertion,
+    levelsText,
+    signText,
 } from "./retail_levels.ts";
 import {
     applyInsertions,
@@ -80,7 +93,7 @@ import {
 } from "./script_merge.ts";
 
 const USAGE =
-    "usage: retail_export.ts install|uninstall|status|check --retail THUG2 [--levels LIST] [--from FOLDER] [--raised-limits] [--no-pre] [--ns NS]";
+    "usage: retail_export.ts install|uninstall|status|check --retail THUG2 [--levels LIST] [--from FOLDER] [--raised-limits [--limits-dll FILE]] [--pre] [--ns NS] [--ignore-budget]";
 
 export const STATE_FOLDER = "thug2-retail-export";
 export const STATE_FILE = "state.json";
@@ -108,11 +121,12 @@ export interface InstalledFile {
 }
 
 export interface State {
-    format: 1;
+    format: 1 | 2; // (2: with `limits`)
     levels: { level: string; staging: string }[];
     archive: { originalSha256: string; baseSha256: string; installedSha256: string };
     scripts: ScriptChange[];
     files: InstalledFile[];
+    limits?: limitsDll.LimitsState; // the limits DLL, when the export installed it
 }
 
 export function sha256(data: Uint8Array | string): string {
@@ -376,8 +390,14 @@ function listFiles(dir: string): string[] {
     return out.sort();
 }
 
-// The level's own files and its archives (THUG2's levels' layout: levels\<level>\<level>.scn.xbx ...).
-export function levelFiles(from: string, entry: LevelEntry, archives: boolean): PlannedFile[] {
+// The level's own files and its archives (THUG2's levels' layout: levels\<level>\<level>.scn.xbx ...). `qb`: what the
+// retail game needs changed in a level's scripts (no_rotate.ts), given the file's name and bytes.
+export function levelFiles(
+    from: string,
+    entry: LevelEntry,
+    archives: boolean,
+    qb: (name: string, data: Buffer) => Buffer = (_, data) => data,
+): PlannedFile[] {
     const staging = String(entry.staging);
     const folders = [entry.level, ...(typeof entry.sky === "string" && entry.sky ? [entry.sky] : [])];
     const out: PlannedFile[] = [];
@@ -389,7 +409,8 @@ export function levelFiles(from: string, entry: LevelEntry, archives: boolean): 
         const files = listFiles(dir);
         if (folder === entry.level && !files.length) throw new MergeError(`${entry.level}: no files in ${dir}`);
         for (const rel of files) {
-            const data = fs.readFileSync(path.join(dir, ...rel.split("/")));
+            const read = fs.readFileSync(path.join(dir, ...rel.split("/")));
+            const data = rel.toLowerCase().endsWith(".qb") ? qb(`${folder}/${rel}`, read) : read;
             out.push({ path: `Data/levels/${folder}/${rel}`, data, owner: entry.level });
             if (!archives) continue;
             const name = `levels\\${folder}\\${rel.replaceAll("/", "\\")}`;
@@ -460,13 +481,52 @@ export function people(from: string, stagings: Iterable<string>): pedModels.Addi
     return all;
 }
 
+// The names a level's scripts use (every name token of its folder's .qb files: its node array and scripts).
+export function levelNames(from: string, entry: LevelEntry): Set<number> {
+    const out = new Set<number>();
+    const dir = path.join(from, String(entry.staging), "levels", entry.level);
+    for (const rel of listFiles(dir)) {
+        if (!rel.toLowerCase().endsWith(".qb")) continue;
+        for (const [, t, payload] of tokens(fs.readFileSync(path.join(dir, ...rel.split("/"))))) {
+            if (t === 0x16) out.add(payload.readUInt32LE(0));
+        }
+    }
+    return out;
+}
+
+// Only the people `entries` use: a converter's peds.json has every person of its game's levels - each level's own
+// profiles (named in its node array or scripts) and the CAS parts those name. The parts are all no_random (never
+// picked for a random ped), so the rest are left out: the original game's pools have no room to spare (THUG1's 242
+// profiles and their parts are ~1,200 structures, ~250 symbols).
+export function peopleOf(from: string, entries: readonly LevelEntry[]): pedModels.Additions {
+    const all = people(from, new Set(entries.map((e) => String(e.staging))));
+    const used = new Set<number>();
+    for (const e of entries) for (const n of levelNames(from, e)) used.add(n);
+    const profiles = all.profiles.filter((text) => {
+        const name = /^\s*(\w+)\s*=/.exec(text)?.[1];
+        return name === undefined || used.has(checksum(name));
+    });
+    const parts = new Set<number>();
+    for (const text of profiles) for (const m of text.matchAll(/desc_id=(\w+)/g)) parts.add(checksum(m[1]!));
+    const cas: Record<string, string[]> = {};
+    for (const [list, entriesOf] of Object.entries(all.cas)) {
+        const kept = entriesOf.filter((text) => {
+            const id = /desc_id=(\w+)/.exec(text)?.[1];
+            return id === undefined || !/\bno_random\b/.test(text) || parts.has(checksum(id)) || used.has(checksum(id));
+        });
+        if (kept.length) cas[list] = kept;
+    }
+    return { cas, profiles };
+}
+
 // --- the commands -------------------------------------------------------------------------------------------------
 
 function readState(stateDir: string): State | null {
     const file = path.join(stateDir, STATE_FILE);
     if (!fs.existsSync(file)) return null;
     const state = JSON.parse(fs.readFileSync(file, "utf-8")) as State;
-    if (state.format !== 1) exitWith(`${file}: a state this tool doesn't know (format ${state.format})`);
+    if (state.format !== 1 && state.format !== 2)
+        exitWith(`${file}: a state this tool doesn't know (format ${state.format})`);
     return state;
 }
 
@@ -499,18 +559,111 @@ function selectLevels(all: readonly LevelEntry[], wanted: string | undefined): L
     return out;
 }
 
+// (a scene archive's packed size, of its files' - LZSS on scenes and textures: ~0.65 measured, rounded up)
+const PACKED_SHARE = 0.75;
+
 // A level's counts for the budget: every .qb of its folder (its node array and scripts) and the size of its scene,
-// textures and collision.
-export function levelCounts(from: string, entry: LevelEntry): budget.QbCounts {
+// textures and collision; with `archives`, what its scene archive holds while the level loads (the archive packed,
+// and its biggest file unpacked beside it).
+export function levelCounts(from: string, entry: LevelEntry, archives = false): budget.QbCounts {
     let sum = budget.emptyCounts();
     const dir = path.join(from, String(entry.staging), "levels", entry.level);
+    let scene = 0;
+    let biggest = 0;
     for (const rel of listFiles(dir)) {
         const file = path.join(dir, ...rel.split("/"));
         const lower = rel.toLowerCase();
         if (lower.endsWith(".qb")) sum = budget.addCounts(sum, budget.countQb(fs.readFileSync(file)));
-        else if (/\.(scn|tex|col)\.xbx$/.test(lower)) sum.sceneBytes += fs.statSync(file).size;
+        else if (/\.(scn|tex|col)\.xbx$/.test(lower)) {
+            const size = fs.statSync(file).size;
+            sum.sceneBytes += size;
+            if (!lower.endsWith(".col.xbx")) {
+                scene += size;
+                biggest = Math.max(biggest, size);
+            }
+        }
     }
+    if (archives) sum.archiveBytes = Math.round(scene * PACKED_SHARE) + biggest;
     return sum;
+}
+
+// What the export adds to THUG2's own scripts for `entries` (their level structures and load scripts, their level
+// select signs, the people of their converters' staging folders), counted as the game's loader allocates them -
+// the budget's share of the installed levels (retail_budget's `scripts`).
+export function scriptCounts(
+    from: string,
+    entries: readonly LevelEntry[],
+    archives: boolean,
+    ns: Scripts,
+    everyone = false, // (all of the staging folders' people, as the export merged them before peopleOf)
+): budget.QbCounts {
+    if (!entries.length) return budget.emptyCounts();
+    const add = everyone ? people(from, new Set(entries.map((e) => String(e.staging)))) : peopleOf(from, entries);
+    const cas = Object.values(add.cas).flat();
+    const text = [
+        levelsText(entries, new Map(), archives),
+        `retail_budget_signs = [\n${entries.map(signText).join("")}] \n`,
+        ...add.profiles.map((p) => `${p} \n`),
+        cas.length ? `retail_budget_cas = [\n${cas.join("\n")}\n] \n` : "",
+    ].join("");
+    const counts = budget.countQb(ns.compile(text));
+    // (less the two arrays and their names that only hold the signs and the CAS parts here)
+    const wrappers = cas.length ? 2 : 1;
+    counts.symbols -= wrappers;
+    counts.arrays -= wrappers;
+    return counts;
+}
+
+// Each level's budget line with `levels` installed together (what they add to THUG2's scripts counted); returns the
+// levels too big.
+export function checkLevels(
+    from: string,
+    levels: readonly LevelEntry[],
+    archives: boolean,
+    raised: boolean,
+    ns: Scripts,
+): LevelEntry[] {
+    const scripts = scriptCounts(from, levels, archives, ns);
+    const limits = raised ? budget.RAISED_LIMITS : budget.RETAIL_LIMITS;
+    const shadowRoom = raised ? SHADOW_VERTICES.raised : SHADOW_VERTICES.retail;
+    const over: LevelEntry[] = [];
+    for (const e of levels) {
+        const result = budget.checkBudget(
+            levelCounts(from, e, archives),
+            levels.length,
+            limits,
+            undefined,
+            budget.CALIBRATION,
+            scripts,
+            typeof e.game === "string" ? e.game : undefined,
+        );
+        const mesh = mostMeshVertices(from, e);
+        let text = budget.budgetText(result);
+        if (mesh > shadowRoom) {
+            const line = `shadow buffer (a mesh of ${mesh} vertices; ${shadowRoom} fit)`;
+            text = result.ok ? `too big for retail: ${line}` : `${text}, ${line}`;
+        }
+        print(`${e.level}: ${text}`);
+        if (!result.ok || mesh > shadowRoom) over.push(e);
+    }
+    return over;
+}
+
+// The skater's shadow projects every vertex of each scene mesh in its view into a fixed buffer the original game
+// never checks: 4,096 vertices (THUG2's own meshes fit; a ported one can have more and run past it). The retail-limits
+// DLL gives it room for every vertex a mesh can index (its src/retail_limits/limits.h kShadowVertices, mirrored).
+export const SHADOW_VERTICES = { retail: 0x1000, raised: 0x10000 } as const;
+
+// The most vertices of one mesh in the level's own scenes (not its sky's: the shadow isn't cast there).
+export function mostMeshVertices(from: string, entry: LevelEntry): number {
+    let most = 0;
+    const dir = path.join(from, String(entry.staging), "levels", entry.level);
+    for (const rel of listFiles(dir)) {
+        if (!rel.toLowerCase().endsWith(".scn.xbx")) continue;
+        const scene = readScene(fs.readFileSync(path.join(dir, ...rel.split("/"))), rel);
+        for (const sector of scene.sectors) for (const mesh of sector.meshes) most = Math.max(most, mesh.vertexCount);
+    }
+    return most;
 }
 
 interface Options {
@@ -518,13 +671,41 @@ interface Options {
     from: string;
     levels?: string | undefined;
     raisedLimits: boolean;
+    limitsDll?: string | undefined; // the DLL to install (default: limitsDll.findDll's)
+    ignoreBudget?: boolean;
     archives: boolean;
     ns?: string | undefined;
     artInstalls: Partial<Record<loadingArtGames.Game, string>>;
 }
 
+// The pipeline's own folder (limits_dll.findDll looks beside it).
+const PIPELINE = path.resolve(import.meta.dirname, "..");
+
+// The limits DLL to install, read and checked.
+function readDll(given: string | undefined): Buffer {
+    const file = limitsDll.findDll(given, PIPELINE);
+    if (!file) {
+        exitWith(
+            `--raised-limits: no limits DLL to install - give --limits-dll <dinput8.dll> (the THUG2 decompilation's thug2_retail_limits_dll, an x86 build)${given ? ` (${given} not found)` : ""}`,
+        );
+    }
+    const data = fs.readFileSync(file);
+    const problem = limitsDll.dllProblem(data);
+    if (problem) exitWith(`${file}: ${problem}`);
+    return data;
+}
+
 // The install (or uninstall, or update) of `wanted` levels: everything planned and checked first, then written.
 export function apply(options: Options, mode: "install" | "uninstall"): void {
+    const ns = new Scripts(requireNs(options.ns));
+    try {
+        applyWith(options, mode, ns);
+    } finally {
+        ns.close();
+    }
+}
+
+function applyWith(options: Options, mode: "install" | "uninstall", ns: Scripts): void {
     const { game } = options;
     const stateDir = path.join(game, STATE_FOLDER);
     const archiveFile = path.join(game, ...SCRIPTS_ARCHIVE);
@@ -558,146 +739,173 @@ export function apply(options: Options, mode: "install" | "uninstall"): void {
             exitWith(`levels still installed but no longer converted in ${options.from}: uninstall all of them`);
     }
 
-    // the budget (the levels being added; those already in stay as they are)
-    let refused = 0;
-    for (const e of wanted) {
-        const limits = options.raisedLimits ? budget.RAISED_LIMITS : budget.RETAIL_LIMITS;
-        const result = budget.checkBudget(levelCounts(options.from, e), wanted.length, limits);
-        print(`${e.level}: ${budget.budgetText(result)}`);
-        if (!result.ok && !installed.has(e.level.toLowerCase())) refused += 1;
-    }
-    if (refused) {
+    // the limits DLL: wanted with --raised-limits (an install) or while it is in (an uninstall leaving levels)
+    const hadDll = state?.limits ?? null;
+    const wantDll = wanted.length > 0 && (mode === "install" ? options.raisedLimits : hadDll !== null);
+    const dll = wantDll && (mode === "install" || !hadDll) ? readDll(options.limitsDll) : null;
+    // (a limits DLL of the player's own, not ours: the raised limits too)
+    const playersDll = !hadDll?.dll.installed && limitsDll.hasLimitsDll(game);
+    const raised = wantDll || playersDll;
+    const lowered = hadDll !== null && !raised;
+
+    // the budget (the levels being added; those already in stay as they are - unless the limits go down)
+    const refused = checkLevels(options.from, wanted, options.archives, raised, ns).filter(
+        (e) => lowered || !installed.has(e.level.toLowerCase()),
+    ).length;
+    if (refused && options.ignoreBudget) {
+        print(`${refused} level(s) too big - installed anyway (--ignore-budget)`);
+    } else if (refused) {
         exitWith(
-            options.raisedLimits
-                ? `${refused} level(s) too big even with the limits patch - nothing written`
-                : `${refused} level(s) too big for the original game - nothing written (--raised-limits: the install has the decomp's retail-limits patch, dinput8.dll beside THUG2.exe)`,
+            raised
+                ? `${refused} level(s) too big even with the limits DLL - nothing written`
+                : `${refused} level(s) too big for the original game - nothing written (--raised-limits: install the THUG2 decompilation's retail-limits DLL with them)`,
         );
     }
-
-    const ns = new Scripts(requireNs(options.ns));
-    try {
-        // the archive: ours out, ours (for the levels wanted) in
-        const currentBytes = fs.readFileSync(archiveFile);
-        const current = readArchive(currentBytes);
-        const base = state ? removeOurs(current, state, stateDir, ns) : current;
-        const baseBytes = writeArchive(base);
-        const loads = new Set(wanted.map((e) => `load_${portedLevels.loadOf(e)}`.toLowerCase()));
-        const art = wanted.length
-            ? loadingArtGames.buildArt(loadingArtGames.findInstalls(options.artInstalls), loads)
-            : null;
-        for (const line of art?.lines ?? []) print(`loading pictures: ${line}`);
-        const stagings = new Set(wanted.map((e) => String(e.staging)));
-        const replaced = replacedScripts(
-            options.from,
-            [...stagings].filter((s) =>
-                wanted.some((e) => e.staging === s && String(e.game ?? "").toUpperCase() === "THUG1"),
-            ),
-        );
-        const planned = addOurs(
-            base,
-            wanted,
-            art?.art ?? new Map(),
-            options.archives,
-            replaced,
-            ns,
-            people(options.from, stagings),
-        );
-        const newBytes = writeArchive(planned.archive);
-
-        // the files
-        const files: PlannedFile[] = [];
-        for (const e of wanted) files.push(...levelFiles(options.from, e, options.archives));
-        for (const staging of stagings) files.push(...stagingFiles(options.from, staging));
-        for (const [name, data] of art?.images ?? []) {
-            const owner = [...(art?.art ?? [])].find(([, n]) => n === name)?.[0] ?? "";
-            const level =
-                wanted.find((e) => `load_${portedLevels.loadOf(e)}`.toLowerCase() === owner)?.level ?? "images";
-            files.push({ path: `Data/images/${name}.img.xbx`, data, owner: level });
+    let dllPlan: limitsDll.LimitsPlan | null = null;
+    if (dll && hadDll?.dll.installed) {
+        // (ours in already: brought up to this build when it changed)
+        const now = path.join(game, limitsDll.DLL);
+        if (!fs.existsSync(now) || limitsDll.sha256Of(fs.readFileSync(now)) !== hadDll.dll.sha256) {
+            exitWith(`${now} changed since the export put it there - refused, nothing written`);
         }
-        const ours = new Map((state?.files ?? []).map((f) => [f.path.toLowerCase(), f]));
-        const keepFiles: InstalledFile[] = [];
-        const problems: string[] = [];
-        const toWrite: PlannedFile[] = [];
-        for (const f of files) {
-            const target = path.join(game, ...f.path.split("/"));
-            const mine = ours.get(f.path.toLowerCase());
-            if (fs.existsSync(target)) {
-                const now = fs.readFileSync(target);
-                if (!mine && !now.equals(f.data)) problems.push(`${f.path}: there already, not ours`);
-                else if (mine && sha256(now) !== mine.sha256 && !now.equals(f.data))
-                    problems.push(`${f.path}: changed since we wrote it`);
-                if (!mine && now.equals(f.data)) continue; // (the same file is there already: not ours to remove)
-                if (!now.equals(f.data)) toWrite.push(f); // (ours and the same: left as it is)
-            } else {
-                toWrite.push(f);
-            }
-            keepFiles.push({ path: f.path, sha256: sha256(f.data), owner: f.owner });
-        }
+        const next: limitsDll.LimitsState = { ...hadDll, dll: { sha256: limitsDll.sha256Of(dll), installed: true } };
+        dllPlan = { state: next, lines: [], run: () => writeAtomic(now, dll) };
+        if (next.dll.sha256 !== hadDll.dll.sha256) dllPlan.lines.push(`${limitsDll.DLL}: brought up to this build`);
+    } else if (dll && !hadDll) {
+        dllPlan = limitsDll.planInstall(game, stateDir, dll);
+    } else if (dll && hadDll) {
+        dllPlan = { state: hadDll, lines: [], run: () => {} }; // (the same DLL there already: not ours)
+    }
+    if (hadDll && !wantDll) {
+        const problems = limitsDll.uninstallProblems(game, hadDll);
         if (problems.length) exitWith(`refused - nothing written:\n  ${problems.join("\n  ")}`);
-        const wantedPaths = new Set(keepFiles.map((f) => f.path.toLowerCase()));
-        const toRemove = (state?.files ?? []).filter((f) => !wantedPaths.has(f.path.toLowerCase()));
-
-        // --- writing ---
-        if (!state && !fs.existsSync(path.join(stateDir, BACKUP))) {
-            fs.mkdirSync(stateDir, { recursive: true });
-            writeAtomic(path.join(stateDir, BACKUP), currentBytes);
-            print(`kept the scripts archive as it was: ${path.join(stateDir, BACKUP)}`);
-        }
-        for (const [file, data] of planned.baseEntries) writeAtomic(path.join(stateDir, ...file.split("/")), data);
-        if (!newBytes.equals(currentBytes)) writeAtomic(archiveFile, newBytes);
-        for (const f of toWrite) writeAtomic(path.join(game, ...f.path.split("/")), f.data);
-        let left = 0;
-        for (const f of toRemove) {
-            const target = path.join(game, ...f.path.split("/"));
-            if (!fs.existsSync(target)) continue;
-            if (sha256(fs.readFileSync(target)) !== f.sha256) {
-                print(`left in place (changed since we wrote it): ${f.path}`);
-                left += 1;
-                continue;
-            }
-            fs.rmSync(target);
-            removeEmptyFolders(path.dirname(target), path.join(game, "Data"));
-        }
-        if (wanted.length || left) {
-            const next: State = {
-                format: 1,
-                levels: wanted.map((e) => ({ level: e.level, staging: String(e.staging) })),
-                archive: {
-                    originalSha256: state?.archive.originalSha256 ?? sha256(currentBytes),
-                    baseSha256: sha256(baseBytes),
-                    installedSha256: sha256(newBytes),
-                },
-                scripts: planned.scripts,
-                files: keepFiles,
-            };
-            fs.mkdirSync(stateDir, { recursive: true });
-            fs.writeFileSync(path.join(stateDir, STATE_FILE), `${JSON.stringify(next, null, 1)}\n`);
-        } else {
-            // nothing of ours left: the state goes; the archive's first copy stays (the user's, as it was)
-            fs.rmSync(path.join(stateDir, STATE_FILE), { force: true });
-            fs.rmSync(path.join(stateDir, "entries"), { recursive: true, force: true });
-        }
-        // old entries no longer named
-        const named = new Set(planned.scripts.map((s) => s.baseEntry));
-        const entriesDir = path.join(stateDir, "entries");
-        if (fs.existsSync(entriesDir)) {
-            for (const name of fs.readdirSync(entriesDir))
-                if (!named.has(`entries/${name}`)) fs.rmSync(path.join(entriesDir, name));
-        }
-        const original = path.join(stateDir, BACKUP);
-        const restored = fs.existsSync(original) && sha256(fs.readFileSync(original)) === sha256(newBytes);
-        print(
-            `${mode}: ${wanted.length} level(s) in the install (${wanted.map((e) => e.level).join(", ") || "none"}); ` +
-                `${toWrite.length} file(s) written, ${toRemove.length - left} removed; qb_scripts.prx ` +
-                (newBytes.equals(currentBytes)
-                    ? "unchanged"
-                    : restored
-                      ? "back as it was before the first install"
-                      : "updated"),
-        );
-    } finally {
-        ns.close();
     }
+
+    // the archive: ours out, ours (for the levels wanted) in
+    const currentBytes = fs.readFileSync(archiveFile);
+    const current = readArchive(currentBytes);
+    const base = state ? removeOurs(current, state, stateDir, ns) : current;
+    const baseBytes = writeArchive(base);
+    const loads = new Set(wanted.map((e) => `load_${portedLevels.loadOf(e)}`.toLowerCase()));
+    const art = wanted.length
+        ? loadingArtGames.buildArt(loadingArtGames.findInstalls(options.artInstalls), loads)
+        : null;
+    for (const line of art?.lines ?? []) print(`loading pictures: ${line}`);
+    const stagings = new Set(wanted.map((e) => String(e.staging)));
+    const replaced = replacedScripts(
+        options.from,
+        [...stagings].filter((s) =>
+            wanted.some((e) => e.staging === s && String(e.game ?? "").toUpperCase() === "THUG1"),
+        ),
+    );
+    const planned = addOurs(
+        base,
+        wanted,
+        art?.art ?? new Map(),
+        options.archives,
+        replaced,
+        ns,
+        peopleOf(options.from, wanted),
+    );
+    const newBytes = writeArchive(planned.archive);
+
+    // the files
+    const files: PlannedFile[] = [];
+    for (const e of wanted)
+        files.push(...levelFiles(options.from, e, options.archives, (name, data) => retailLevelQb(name, data, ns)));
+    for (const staging of stagings) files.push(...stagingFiles(options.from, staging));
+    for (const [name, data] of art?.images ?? []) {
+        const owner = [...(art?.art ?? [])].find(([, n]) => n === name)?.[0] ?? "";
+        const level = wanted.find((e) => `load_${portedLevels.loadOf(e)}`.toLowerCase() === owner)?.level ?? "images";
+        files.push({ path: `Data/images/${name}.img.xbx`, data, owner: level });
+    }
+    const ours = new Map((state?.files ?? []).map((f) => [f.path.toLowerCase(), f]));
+    const keepFiles: InstalledFile[] = [];
+    const problems: string[] = [];
+    const toWrite: PlannedFile[] = [];
+    for (const f of files) {
+        const target = path.join(game, ...f.path.split("/"));
+        const mine = ours.get(f.path.toLowerCase());
+        if (fs.existsSync(target)) {
+            const now = fs.readFileSync(target);
+            if (!mine && !now.equals(f.data)) problems.push(`${f.path}: there already, not ours`);
+            else if (mine && sha256(now) !== mine.sha256 && !now.equals(f.data))
+                problems.push(`${f.path}: changed since we wrote it`);
+            if (!mine && now.equals(f.data)) continue; // (the same file is there already: not ours to remove)
+            if (!now.equals(f.data)) toWrite.push(f); // (ours and the same: left as it is)
+        } else {
+            toWrite.push(f);
+        }
+        keepFiles.push({ path: f.path, sha256: sha256(f.data), owner: f.owner });
+    }
+    if (problems.length) exitWith(`refused - nothing written:\n  ${problems.join("\n  ")}`);
+    const wantedPaths = new Set(keepFiles.map((f) => f.path.toLowerCase()));
+    const toRemove = (state?.files ?? []).filter((f) => !wantedPaths.has(f.path.toLowerCase()));
+
+    // --- writing ---
+    if (!state && !fs.existsSync(path.join(stateDir, BACKUP))) {
+        fs.mkdirSync(stateDir, { recursive: true });
+        writeAtomic(path.join(stateDir, BACKUP), currentBytes);
+        print(`kept the scripts archive as it was: ${path.join(stateDir, BACKUP)}`);
+    }
+    for (const [file, data] of planned.baseEntries) writeAtomic(path.join(stateDir, ...file.split("/")), data);
+    if (!newBytes.equals(currentBytes)) writeAtomic(archiveFile, newBytes);
+    for (const f of toWrite) writeAtomic(path.join(game, ...f.path.split("/")), f.data);
+    let left = 0;
+    for (const f of toRemove) {
+        const target = path.join(game, ...f.path.split("/"));
+        if (!fs.existsSync(target)) continue;
+        if (sha256(fs.readFileSync(target)) !== f.sha256) {
+            print(`left in place (changed since we wrote it): ${f.path}`);
+            left += 1;
+            continue;
+        }
+        fs.rmSync(target);
+        removeEmptyFolders(path.dirname(target), path.join(game, "Data"));
+    }
+    // the limits DLL
+    for (const line of dllPlan?.lines ?? []) print(line);
+    dllPlan?.run();
+    if (hadDll && !wantDll) for (const line of limitsDll.uninstall(game, stateDir, hadDll)) print(line);
+    if (wanted.length || left) {
+        const limits = wantDll ? (dllPlan?.state ?? hadDll ?? undefined) : undefined;
+        const next: State = {
+            format: limits ? 2 : 1,
+            levels: wanted.map((e) => ({ level: e.level, staging: String(e.staging) })),
+            archive: {
+                originalSha256: state?.archive.originalSha256 ?? sha256(currentBytes),
+                baseSha256: sha256(baseBytes),
+                installedSha256: sha256(newBytes),
+            },
+            scripts: planned.scripts,
+            files: keepFiles,
+            ...(limits ? { limits } : {}),
+        };
+        fs.mkdirSync(stateDir, { recursive: true });
+        fs.writeFileSync(path.join(stateDir, STATE_FILE), `${JSON.stringify(next, null, 1)}\n`);
+    } else {
+        // nothing of ours left: the state goes; the archive's first copy stays (the user's, as it was)
+        fs.rmSync(path.join(stateDir, STATE_FILE), { force: true });
+        fs.rmSync(path.join(stateDir, "entries"), { recursive: true, force: true });
+    }
+    // old entries no longer named
+    const named = new Set(planned.scripts.map((s) => s.baseEntry));
+    const entriesDir = path.join(stateDir, "entries");
+    if (fs.existsSync(entriesDir)) {
+        for (const name of fs.readdirSync(entriesDir))
+            if (!named.has(`entries/${name}`)) fs.rmSync(path.join(entriesDir, name));
+    }
+    const original = path.join(stateDir, BACKUP);
+    const restored = fs.existsSync(original) && sha256(fs.readFileSync(original)) === sha256(newBytes);
+    print(
+        `${mode}: ${wanted.length} level(s) in the install (${wanted.map((e) => e.level).join(", ") || "none"}); ` +
+            `${toWrite.length} file(s) written, ${toRemove.length - left} removed; qb_scripts.prx ` +
+            (newBytes.equals(currentBytes)
+                ? "unchanged"
+                : restored
+                  ? "back as it was before the first install"
+                  : "updated"),
+    );
 }
 
 function removeEmptyFolders(dir: string, stop: string): void {
@@ -741,6 +949,17 @@ export function status(game: string): void {
         else if (sha256(fs.readFileSync(target)) !== f.sha256) changed += 1;
     }
     print(`files: ${state.files.length} (${missing} missing, ${changed} changed since)`);
+    if (state.limits) {
+        const there = path.join(game, limitsDll.DLL);
+        const now = fs.existsSync(there) ? sha256(fs.readFileSync(there)) : "";
+        print(
+            `limits DLL: ${state.limits.dll.installed ? "installed by the export" : "there before the export (not ours)"}` +
+                `${now === state.limits.dll.sha256 ? "" : now ? ", changed since" : ", missing"}` +
+                `${state.limits.chained ? `; the folder's own dinput8.dll chained as ${state.limits.chained.name}` : ""}`,
+        );
+    } else if (limitsDll.hasLimitsDll(game)) {
+        print("limits DLL: one is there (not the export's)");
+    }
 }
 
 async function main(): Promise<number> {
@@ -751,7 +970,10 @@ async function main(): Promise<number> {
             from: { type: "string" },
             levels: { type: "string" },
             "raised-limits": { type: "boolean" },
-            "no-pre": { type: "boolean" },
+            "limits-dll": { type: "string" },
+            "ignore-budget": { type: "boolean" },
+            pre: { type: "boolean" },
+            "no-pre": { type: "boolean" }, // (the default now: kept for older command lines)
             ns: { type: "string" },
             thps2: { type: "string" },
             thps3: { type: "string" },
@@ -771,11 +993,21 @@ async function main(): Promise<number> {
     if (command === "check") {
         // (the budget alone: nothing written)
         const from = values.from ? values.from : game;
-        const levels = selectLevels(portedLevels.loadManifest(from)?.levels ?? [], values.levels);
-        for (const e of levels)
-            print(
-                `${e.level}: ${budget.budgetText(budget.checkBudget(levelCounts(from, e), levels.length, values["raised-limits"] ? budget.RAISED_LIMITS : budget.RETAIL_LIMITS))}`,
-            );
+        const known = portedLevels.loadManifest(from)?.levels ?? [];
+        const levels = selectLevels(known, values.levels);
+        // (checked as installed together with those in the install already; a limits DLL there counts as
+        // --raised-limits)
+        const state = readState(path.join(game, STATE_FOLDER));
+        const inAlready = known.filter(
+            (e) => !levels.includes(e) && state?.levels.some((l) => l.level.toLowerCase() === e.level.toLowerCase()),
+        );
+        const raised = values["raised-limits"] === true || limitsDll.hasLimitsDll(game);
+        const ns = new Scripts(requireNs(values.ns));
+        try {
+            checkLevels(from, [...levels, ...inAlready], values.pre === true, raised, ns);
+        } finally {
+            ns.close();
+        }
         return 0;
     }
     const artInstalls: Partial<Record<loadingArtGames.Game, string>> = {};
@@ -787,7 +1019,9 @@ async function main(): Promise<number> {
                 from: values.from ? values.from : game,
                 levels: values.levels,
                 raisedLimits: values["raised-limits"] === true,
-                archives: values["no-pre"] !== true,
+                limitsDll: values["limits-dll"],
+                ignoreBudget: values["ignore-budget"] === true,
+                archives: values.pre === true && values["no-pre"] !== true,
                 ns: values.ns,
                 artInstalls,
             },

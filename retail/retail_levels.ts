@@ -2,9 +2,10 @@
 // insertions (script_merge.ts) into the user's current files - nothing of this project's engine: no LevelEditor_*
 // commands, no level select sections, no loading screens made from the level select's pictures.
 //   scripts\game\levels.qb       each level's load script and level structure (thug2-level-converter-core's
-//                                ported_levels.levelsQbText) with pre= / scnpre= / colpre= naming its archives, as
-//                                THUG2's own levels (<level>_scripts.pre, <level>scn.pre, <level>col.pre - the names
-//                                load_level asks for in network games), and its loading picture when there is one.
+//                                ported_levels.levelsQbText) - with the export's --pre, pre= / scnpre= / colpre=
+//                                naming its archives as THUG2's own levels (<level>_scripts.pre, <level>scn.pre,
+//                                <level>col.pre - the names load_level asks for in network games) - and its loading
+//                                picture when there is one.
 //   scripts\game\menu\gamemenu_levelselect.qb  a sign per level at the end of level_select_menu_level_info - THUG2's
 //                                own level list, which is also the one the game looks a level's name up in online -
 //                                with a THUG2 sign picture that suits it; and, at the start of the info panel's
