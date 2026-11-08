@@ -36,6 +36,7 @@ import {
     placeCollision,
     placeSector,
     readManifest,
+    readTurnFields,
 } from "./pack.ts";
 import { type RailPoint, readLayoutRails } from "./retail_rails.ts";
 
@@ -71,6 +72,7 @@ export function readLayoutProps(text: string): LayoutProps {
                     quarters: Number(w[2]) & 3,
                     offset: { x: Number(w[3]), y: Number(w[4]), z: Number(w[5]) },
                     scale: parseScale(w.find((x) => x.startsWith("scale="))),
+                    ...readTurnFields(w.slice(7)),
                 },
                 hidden: w[6] === "1",
             });
@@ -81,6 +83,7 @@ export function readLayoutProps(text: string): LayoutProps {
                     quarters: Number(w[2]) & 3,
                     offset: { x: Number(w[3]), y: Number(w[4]), z: Number(w[5]) },
                     scale: parseScale(w.find((x) => x.startsWith("scale="))),
+                    ...readTurnFields(w.slice(6)),
                 },
             });
         }

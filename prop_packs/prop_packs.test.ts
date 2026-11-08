@@ -18,6 +18,20 @@ test("placement: scale, quarter turn, offset (the editor's order)", () => {
     assert.deepEqual(applyPlacement(p, { x: 1, y: 2, z: 3 }), { x: 13, y: 2, z: -2 });
 });
 
+test("a layout's turn= and tilt= read and baked (the editor's Ry Rx Rz)", () => {
+    const layout = readLayoutProps(
+        "thug2-decomp layout 2\nscene 00000001\nsector 0000ABCD 1 0 0 0 0 turn=10 tilt=30,0\nclone 0000ABCD 0 5 0 0 tilt=0,90\n",
+    );
+    const p = layout.sectors.get(0xabcd)!.placement;
+    assert.ok(Math.abs((p.twist ?? 0) - Math.PI / 18) < 1e-12 && Math.abs(p.tilt!.x - Math.PI / 6) < 1e-12);
+    // +z: pitched down 30, a quarter turn (to +x), then 10 more about up
+    const q = applyPlacement({ ...p, twist: 0 }, { x: 0, y: 0, z: 1 });
+    assert.ok(Math.abs(q.x - Math.cos(Math.PI / 6)) < 1e-6 && Math.abs(q.y + 0.5) < 1e-6);
+    // a clone rolled 90: +x to +y, then moved
+    const c = applyPlacement(layout.clones[0]!.placement, { x: 1, y: 0, z: 0 });
+    assert.ok(Math.abs(c.x - 5) < 1e-6 && Math.abs(c.y - 1) < 1e-6);
+});
+
 test("collision-only objects: inside the piece, or sunk below its bottom", () => {
     // (LA's Fire_Tender and the collision shell under it - b98f305e)
     const truck = { min: { x: -2703, y: -418, z: 6056 }, max: { x: -1975, y: -248, z: 6618 } };

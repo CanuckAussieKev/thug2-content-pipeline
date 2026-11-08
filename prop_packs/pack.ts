@@ -52,10 +52,14 @@ export interface V3 {
     z: number;
 }
 
+// The editor's placement (tools/game/layout_file.ts): `twist` (radians, a record's turn=) about up after the quarter
+// turns; `tilt` (radians, tilt=<x>,<z>) the pitch about x and the roll about z before them - Ry(heading) Rx Rz.
 export interface Placement {
     quarters: number;
     offset: V3;
     scale: V3;
+    twist?: number;
+    tilt?: { x: number; z: number };
 }
 
 export const IDENTITY: Placement = { quarters: 0, offset: { x: 0, y: 0, z: 0 }, scale: { x: 1, y: 1, z: 1 } };
@@ -75,9 +79,48 @@ export function quarterTurn(v: V3, quarters: number): V3 {
     }
 }
 
+// A direction turned by the placement (no scale, no offset): its tilt (about z, then x), its quarter turns, its twist.
+export function turnPlaced(v: V3, p: Placement): V3 {
+    let r = { x: v.x, y: v.y, z: v.z };
+    if (p.tilt && (p.tilt.x || p.tilt.z)) {
+        const cz = Math.cos(p.tilt.z);
+        const sz = Math.sin(p.tilt.z);
+        r = { x: Math.fround(r.x * cz - r.y * sz), y: Math.fround(r.x * sz + r.y * cz), z: r.z };
+        const cx = Math.cos(p.tilt.x);
+        const sx = Math.sin(p.tilt.x);
+        r = { x: r.x, y: Math.fround(r.y * cx - r.z * sx), z: Math.fround(r.y * sx + r.z * cx) };
+    }
+    const q = quarterTurn(r, p.quarters);
+    if (!p.twist) return q;
+    const c = Math.cos(p.twist);
+    const s = Math.sin(p.twist);
+    return { x: Math.fround(q.x * c + q.z * s), y: q.y, z: Math.fround(-q.x * s + q.z * c) };
+}
+
+function isTurned(p: Placement): boolean {
+    return (p.quarters & 3) !== 0 || !!p.twist || !!(p.tilt && (p.tilt.x || p.tilt.z));
+}
+
 export function applyPlacement(p: Placement, v: V3): V3 {
-    const t = quarterTurn({ x: v.x * p.scale.x, y: v.y * p.scale.y, z: v.z * p.scale.z }, p.quarters);
+    const t = turnPlaced({ x: v.x * p.scale.x, y: v.y * p.scale.y, z: v.z * p.scale.z }, p);
     return { x: t.x + p.offset.x, y: t.y + p.offset.y, z: t.z + p.offset.z };
+}
+
+// A layout record's turn= and tilt= fields (src/editor/level_editor_layout.h): the twist and tilt in radians (each
+// absent when none; malformed fields are skipped, as the pack's readers skip other unknown fields).
+export function readTurnFields(words: readonly string[]): { twist?: number; tilt?: { x: number; z: number } } {
+    const out: { twist?: number; tilt?: { x: number; z: number } } = {};
+    for (const w of words) {
+        if (w.startsWith("turn=")) {
+            const degrees = Number(w.slice(5));
+            if (Number.isFinite(degrees) && degrees) out.twist = (out.twist ?? 0) + (degrees * Math.PI) / 180;
+        } else if (w.startsWith("tilt=")) {
+            const parts = w.slice(5).split(",").map(Number);
+            if (parts.length === 2 && parts.every(Number.isFinite) && (parts[0] || parts[1]))
+                out.tilt = { x: (parts[0]! * Math.PI) / 180, z: (parts[1]! * Math.PI) / 180 };
+        }
+    }
+    return out;
 }
 
 const FVF_XYZ = 0x002;
@@ -134,14 +177,14 @@ export function placeSector(sector: Sector, p: Placement): void {
                 copy.writeFloatLE(q.y, at + 4);
                 copy.writeFloatLE(q.z, at + 8);
                 points.push(q);
-                if (normalAt >= 0 && (p.quarters & 3) !== 0) {
-                    const n = quarterTurn(
+                if (normalAt >= 0 && isTurned(p)) {
+                    const n = turnPlaced(
                         {
                             x: copy.readFloatLE(at + normalAt),
                             y: copy.readFloatLE(at + normalAt + 4),
                             z: copy.readFloatLE(at + normalAt + 8),
                         },
-                        p.quarters,
+                        p,
                     );
                     copy.writeFloatLE(n.x, at + normalAt);
                     copy.writeFloatLE(n.y, at + normalAt + 4);
