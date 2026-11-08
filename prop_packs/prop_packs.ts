@@ -5,6 +5,7 @@
 //   node prop_packs/prop_packs.ts thumbs --game <THUG2> --level <L> [--out <folder>] [--size N]
 //   node prop_packs/prop_packs.ts extract --game <THUG2> --level <L> --piece <name> [--out <folder>]
 //   node prop_packs/prop_packs.ts sync [--out <folder>]
+//   node prop_packs/prop_packs.ts prefab-thumb --game <THUG2> --prefab <file> [--out <folder>] [--size N]
 //
 // <THUG2>: the game folder whose Data\levels are read (only read). <out> (default: the game folder): where the packs
 // go - <out>\thug2-decomp-props (catalogue.txt, levels\<pack>\, images\props\<level>\) - and, when <out> has the data
@@ -22,27 +23,38 @@
 //   extract    the piece cut out into a pack (pack.ts makePack); prints "pack <id>" (made again only when its level
 //              changed since).
 //   sync       the packs and pictures copied into the overlay.
+//   prefab-thumb  a level editor prefab's picture (prefabThumb below).
 
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { readTex, type TexFile } from "thug2-level-converter-core/level_port/tex.ts";
+import {
+    type Material,
+    readScene,
+    type Scene,
+    type Sector,
+} from "thug2-level-converter-core/level_port/thug2_scene.ts";
 import { exitWith, isMain, parseCli, print, runMain } from "thug2-level-converter-core/lib/cli.ts";
 import { findCaseless, resolveInstall } from "thug2-level-converter-core/lib/install.ts";
 import { hex8 } from "thug2-level-converter-core/lib/text.ts";
 import { nativeImg } from "../menu_level/loading_art.ts";
 import {
+    cloneSector,
     levelDir,
     levelsOf,
     makePack,
     packId,
     piecesOf,
+    placeSector,
     readLevel,
     textureColours,
     thumbnail,
     writePack,
 } from "./pack.ts";
+import { readLayoutProps } from "./retail_props.ts";
 
 const USAGE =
-    "usage: prop_packs.ts catalogue|thumbs|extract|sync --game THUG2 [--out FOLDER] [--level L] [--levels A,B] [--piece NAME] [--size N]";
+    "usage: prop_packs.ts catalogue|thumbs|extract|prefab-thumb|sync --game THUG2 [--out FOLDER] [--level L] [--levels A,B] [--piece NAME] [--prefab FILE] [--size N]";
 
 export const PROPS_FOLDER = "thug2-decomp-props";
 export const OVERLAY = "thug2-decomp-data";
@@ -211,6 +223,48 @@ export function sync(out: string, overlay = path.join(out, OVERLAY)): number {
     );
 }
 
+// A prefab's picture (the level editor's prefabs - src/editor/level_editor_prefabs.h: a layout fragment, its pieces
+// as `clone` records of the level's own sectors or of prop packs' - `source <scene> <level>`, `prop <pack>`): its
+// pieces placed as the records say and drawn as the pieces' pictures are, images\prefabs\<id>.img.xbx. Prints
+// "thumb prefab <id>" (the picture is the background alone when none of its pieces is found).
+export function prefabThumb(game: string, out: string, file: string, size: number): string {
+    const id = path.basename(file).replace(/\.txt$/i, "");
+    const text = fs.readFileSync(file, "utf8");
+    const records = readLayoutProps(text);
+    const level = /^source\s+\S+\s+(\S+)/m.exec(text)?.[1];
+    const sources = new Map<number, Sector>();
+    const materials = new Map<number, Material>();
+    const colours = new Map<number, [number, number, number]>();
+    const add = (scene: Scene, tex: TexFile | null): void => {
+        for (const s of scene.sectors) if (!sources.has(s.checksum)) sources.set(s.checksum, s);
+        for (const m of scene.materials) if (!materials.has(m.checksum)) materials.set(m.checksum, m);
+        if (tex) for (const [k, v] of textureColours(tex)) if (!colours.has(k)) colours.set(k, v);
+    };
+    for (const pack of records.packs) {
+        const dir = path.join(out, PROPS_FOLDER, "levels", pack);
+        const scn = path.join(dir, `${pack}.scn.xbx`);
+        const tex = path.join(dir, `${pack}.tex.xbx`);
+        if (!fs.existsSync(scn)) continue;
+        add(readScene(fs.readFileSync(scn), scn), fs.existsSync(tex) ? readTex(fs.readFileSync(tex), tex) : null);
+    }
+    const wanted = records.clones.some((c) => !sources.has(c.source));
+    if (wanted && level && level !== "-" && levelsOf(game).some((l) => l.toLowerCase() === level.toLowerCase())) {
+        const data = readLevel(game, level, true);
+        add(data.scene, data.tex);
+    }
+    const parts: Sector[] = [];
+    records.clones.forEach((c, k) => {
+        const source = sources.get(c.source);
+        if (!source) return;
+        const copy = cloneSector(source, k + 1);
+        placeSector(copy, c.placement);
+        parts.push(copy);
+    });
+    writeBoth(out, `images/prefabs/${id}.img.xbx`, nativeImg(thumbnail(parts, materials, colours, size)));
+    print(`thumb prefab ${id}`);
+    return id;
+}
+
 async function main(): Promise<number> {
     const { values, positionals } = parseCli(USAGE, {
         allowPositionals: true,
@@ -221,6 +275,7 @@ async function main(): Promise<number> {
             levels: { type: "string" },
             piece: { type: "string" },
             size: { type: "string" },
+            prefab: { type: "string" },
         },
     });
     const command = positionals[0] ?? "";
@@ -229,10 +284,13 @@ async function main(): Promise<number> {
         print(`synced ${sync(values.out ?? values.game!)} file(s)`);
         return 0;
     }
-    if (!values.game || !["catalogue", "thumbs", "extract"].includes(command)) exitWith(USAGE);
+    if (!values.game || !["catalogue", "thumbs", "extract", "prefab-thumb"].includes(command)) exitWith(USAGE);
     const game = resolveInstall(values.game, "thug2");
     const out = values.out ?? game;
-    if (command === "catalogue") {
+    if (command === "prefab-thumb") {
+        if (!values.prefab) exitWith(USAGE);
+        prefabThumb(game, out, values.prefab, values.size ? Number.parseInt(values.size, 10) : THUMB_SIZE);
+    } else if (command === "catalogue") {
         catalogue(game, out, values.levels ? values.levels.split(",") : null);
     } else if (command === "thumbs") {
         if (!values.level) exitWith(USAGE);
