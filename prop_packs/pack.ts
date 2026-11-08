@@ -17,7 +17,6 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import * as dxt from "thug2-level-converter-core/level_port/dxt.ts";
 import { expandIncludes } from "thug2-level-converter-core/level_port/nodes.ts";
 import { checksum, Name, QbFile, type QbValue, Struct, Vector } from "thug2-level-converter-core/level_port/qb.ts";
 import { readTex, type TexFile, type Texture, writeTex } from "thug2-level-converter-core/level_port/tex.ts";
@@ -39,7 +38,6 @@ import {
 } from "thug2-level-converter-core/level_port/thug2_scene.ts";
 import { findCaseless } from "thug2-level-converter-core/lib/install.ts";
 import { hex8 } from "thug2-level-converter-core/lib/text.ts";
-import type { Picture } from "../menu_level/loading_art.ts";
 
 export const PREFIX = "pp_";
 export const NEAR = 24;
@@ -82,16 +80,10 @@ export function applyPlacement(p: Placement, v: V3): V3 {
 const FVF_XYZ = 0x002;
 const FVF_POSITION_MASK = 0x400e;
 const FVF_NORMAL = 0x010;
-const FVF_DIFFUSE = 0x040;
 
 function normalOffset(fvf: number, stride: number): number {
     if (fvf >= 0x10000 || (fvf & FVF_POSITION_MASK) !== FVF_XYZ || !(fvf & FVF_NORMAL) || stride < 24) return -1;
     return 12;
-}
-
-function colourOffset(fvf: number): number {
-    if (fvf >= 0x10000 || (fvf & FVF_POSITION_MASK) !== FVF_XYZ || !(fvf & FVF_DIFFUSE)) return -1;
-    return fvf & FVF_NORMAL ? 24 : 12;
 }
 
 interface Box {
@@ -582,158 +574,4 @@ export function readManifest(text: string): PackManifest {
             });
     }
     return out;
-}
-
-// --- thumbnails -----------------------------------------------------------------------------------------------------
-
-const BACKGROUND = [0x2c, 0x28, 0x26]; // (b, g, r: the editor's panel grey)
-
-// A texture's average colour (r, g, b in 0..1) from its smallest level of at least 4x4 texels.
-export function averageColour(t: Texture): [number, number, number] {
-    let level = 0;
-    let w = t.width;
-    let h = t.height;
-    while (level + 1 < t.levels.length && w > 4 && h > 4) {
-        level++;
-        w = Math.max(1, w >> 1);
-        h = Math.max(1, h >> 1);
-    }
-    const data = t.levels[level]!;
-    let bgra: Buffer;
-    try {
-        if (t.dxt) bgra = dxt.decode(data, w, h, t.dxt);
-        else if (t.texelDepth === 8 && t.palette.length >= 4) {
-            bgra = Buffer.alloc(data.length * 4);
-            for (let i = 0; i < data.length; i++) t.palette.copy(bgra, i * 4, data[i]! * 4, data[i]! * 4 + 4);
-        } else if (t.texelDepth === 32) bgra = data;
-        else return [0.6, 0.6, 0.6];
-    } catch {
-        return [0.6, 0.6, 0.6];
-    }
-    let r = 0;
-    let g = 0;
-    let b = 0;
-    let n = 0;
-    for (let i = 0; i + 3 < bgra.length; i += 4) {
-        b += bgra[i]!;
-        g += bgra[i + 1]!;
-        r += bgra[i + 2]!;
-        n++;
-    }
-    return n ? [r / n / 255, g / n / 255, b / n / 255] : [0.6, 0.6, 0.6];
-}
-
-// A sector drawn small (a three-quarter view from above, flat shaded with its vertex colours and its textures'
-// average colours), `size` pixels square.
-export function thumbnail(
-    parts: readonly Sector[],
-    materials: ReadonlyMap<number, Material>,
-    colours: ReadonlyMap<number, [number, number, number]>,
-    size: number,
-): Picture {
-    const bgra = Buffer.alloc(size * size * 4);
-    for (let i = 0; i < size * size; i++) {
-        bgra[i * 4] = BACKGROUND[0]!;
-        bgra[i * 4 + 1] = BACKGROUND[1]!;
-        bgra[i * 4 + 2] = BACKGROUND[2]!;
-        bgra[i * 4 + 3] = 255;
-    }
-    const depth = new Float32Array(size * size).fill(Infinity);
-    const yaw = (35 * Math.PI) / 180;
-    const pitch = (28 * Math.PI) / 180;
-    const [sy, cy, sp, cp] = [Math.sin(yaw), Math.cos(yaw), Math.sin(pitch), Math.cos(pitch)];
-    const view = (p: V3): V3 => {
-        const x = p.x * cy - p.z * sy;
-        const z1 = p.x * sy + p.z * cy;
-        return { x, y: p.y * cp - z1 * sp, z: p.y * sp + z1 * cp };
-    };
-    const light = (() => {
-        const l = { x: 0.4, y: 0.8, z: 0.45 };
-        const n = Math.hypot(l.x, l.y, l.z);
-        return { x: l.x / n, y: l.y / n, z: l.z / n };
-    })();
-    interface Tri {
-        a: V3;
-        b: V3;
-        c: V3;
-        colour: [number, number, number];
-    }
-    const tris: Tri[] = [];
-    for (const mesh of parts.flatMap((s) => s.meshes)) {
-        const data = mesh.buffers[0]?.[1];
-        const fvf = mesh.vertexShader[0] ?? 0;
-        if (!data || mesh.stride < 12 || data.length < mesh.stride * mesh.vertexCount) continue;
-        const material = materials.get(mesh.material);
-        const pass = material?.passes[0];
-        const base = pass ? (colours.get(pass.texture) ?? [0.7, 0.7, 0.7]) : [0.7, 0.7, 0.7];
-        const colourAt = colourOffset(fvf);
-        const at = (i: number): V3 => ({
-            x: data.readFloatLE(i * mesh.stride),
-            y: data.readFloatLE(i * mesh.stride + 4),
-            z: data.readFloatLE(i * mesh.stride + 8),
-        });
-        const vc = (i: number): [number, number, number] => {
-            if (colourAt < 0) return [0.5, 0.5, 0.5];
-            const o = i * mesh.stride + colourAt;
-            return [data[o + 2]! / 255, data[o + 1]! / 255, data[o]! / 255];
-        };
-        // (the shipped levels' index lists count from the mesh's first vertex in the sector's vertex range: their
-        // lowest index is the mesh's vertex 0)
-        const strip = mesh.lods[0] ?? [];
-        const first = strip.reduce((m, v) => Math.min(m, v), Infinity);
-        for (let i = 2; i < strip.length; i++) {
-            const [ia, ib, ic] = [strip[i - 2]! - first, strip[i - 1]! - first, strip[i]! - first];
-            if (ia === ib || ib === ic || ia === ic || Math.max(ia, ib, ic) >= mesh.vertexCount) continue;
-            const [a, b, c] = [at(ia), at(ib), at(ic)];
-            const u = { x: b.x - a.x, y: b.y - a.y, z: b.z - a.z };
-            const v = { x: c.x - a.x, y: c.y - a.y, z: c.z - a.z };
-            const n = { x: u.y * v.z - u.z * v.y, y: u.z * v.x - u.x * v.z, z: u.x * v.y - u.y * v.x };
-            const len = Math.hypot(n.x, n.y, n.z) || 1;
-            const shade = 0.55 + 0.45 * Math.abs((n.x * light.x + n.y * light.y + n.z * light.z) / len);
-            const [ca, cb, cc] = [vc(ia), vc(ib), vc(ic)];
-            const colour: [number, number, number] = [0, 1, 2].map((k) =>
-                Math.min(1, base[k]! * ((ca[k]! + cb[k]! + cc[k]!) / 3) * 2 * shade),
-            ) as [number, number, number];
-            tris.push({ a: view(a), b: view(b), c: view(c), colour });
-        }
-    }
-    if (!tris.length) return { width: size, height: size, bgra };
-    const box = boundsOf(tris.flatMap((t) => [t.a, t.b, t.c]));
-    const span = Math.max(box.max.x - box.min.x, box.max.y - box.min.y, 1);
-    const scale = (size * 0.86) / span;
-    const ox = size / 2 - ((box.min.x + box.max.x) / 2) * scale;
-    const oy = size / 2 + ((box.min.y + box.max.y) / 2) * scale;
-    const screen = (p: V3) => ({ x: p.x * scale + ox, y: oy - p.y * scale, z: p.z });
-    for (const t of tris) {
-        const [a, b, c] = [screen(t.a), screen(t.b), screen(t.c)];
-        const area = (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
-        if (Math.abs(area) < 1e-6) continue;
-        const x0 = Math.max(0, Math.floor(Math.min(a.x, b.x, c.x)));
-        const x1 = Math.min(size - 1, Math.ceil(Math.max(a.x, b.x, c.x)));
-        const y0 = Math.max(0, Math.floor(Math.min(a.y, b.y, c.y)));
-        const y1 = Math.min(size - 1, Math.ceil(Math.max(a.y, b.y, c.y)));
-        for (let y = y0; y <= y1; y++) {
-            for (let x = x0; x <= x1; x++) {
-                const px = x + 0.5;
-                const py = y + 0.5;
-                const w0 = ((b.x - px) * (c.y - py) - (b.y - py) * (c.x - px)) / area;
-                const w1 = ((c.x - px) * (a.y - py) - (c.y - py) * (a.x - px)) / area;
-                const w2 = 1 - w0 - w1;
-                if (w0 < 0 || w1 < 0 || w2 < 0) continue;
-                // (nearer the camera: smaller z along the view - the camera looks along +z after `view`)
-                const z = w0 * a.z + w1 * b.z + w2 * c.z;
-                const at = y * size + x;
-                if (z >= depth[at]!) continue;
-                depth[at] = z;
-                bgra[at * 4] = Math.round(t.colour[2] * 255);
-                bgra[at * 4 + 1] = Math.round(t.colour[1] * 255);
-                bgra[at * 4 + 2] = Math.round(t.colour[0] * 255);
-            }
-        }
-    }
-    return { width: size, height: size, bgra };
-}
-
-export function textureColours(tex: TexFile): Map<number, [number, number, number]> {
-    return new Map(tex.textures.map((t) => [t.checksum, averageColour(t)]));
 }

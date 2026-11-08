@@ -2,7 +2,7 @@
 // (the decomp's src/editor/level_editor_content.h):
 //
 //   node prop_packs/prop_packs.ts catalogue --game <THUG2> [--out <folder>] [--levels A,B]
-//   node prop_packs/prop_packs.ts thumbs --game <THUG2> --level <L> [--out <folder>] [--size N]
+//   node prop_packs/prop_packs.ts thumbs --game <THUG2> --level <L> | --all [--out <folder>] [--size N]
 //   node prop_packs/prop_packs.ts extract --game <THUG2> --level <L> --piece <name> [--out <folder>]
 //   node prop_packs/prop_packs.ts sync [--out <folder>]
 //   node prop_packs/prop_packs.ts prefab-thumb --game <THUG2> --prefab <file> [--out <folder>] [--size N]
@@ -18,8 +18,9 @@
 //                level <L> <pieces> <scene bytes> <scene time>
 //                piece <L> <name> <checksum> <triangles> <textures> <rails> <min x y z> <max x y z>
 //              It prints "level <L> <pieces>" as it goes.
-//   thumbs     a small picture of each of the level's pieces, images\props\<l>\<checksum>.img.xbx (those there kept);
-//              prints "thumb <L> <checksum>" for each one made, then "thumbs <L> <count>".
+//   thumbs     a small picture of each of the level's pieces (thumbnail.ts), images\props\<l>\<checksum>.img.xbx
+//              (those there kept while the folder's stamp, thumbs.txt, names this renderer's version and the size);
+//              prints "thumb <L> <checksum>" for each one made, then "thumbs <L> <count>". --all: every level's.
 //   extract    the piece cut out into a pack (pack.ts makePack); prints "pack <id>" (made again only when its level
 //              changed since).
 //   sync       the packs and pictures copied into the overlay.
@@ -47,19 +48,21 @@ import {
     piecesOf,
     placeSector,
     readLevel,
-    textureColours,
-    thumbnail,
     writePack,
 } from "./pack.ts";
 import { readLayoutProps } from "./retail_props.ts";
+import { TextureSet, THUMB_VERSION, thumbnail } from "./thumbnail.ts";
 
 const USAGE =
-    "usage: prop_packs.ts catalogue|thumbs|extract|prefab-thumb|sync --game THUG2 [--out FOLDER] [--level L] [--levels A,B] [--piece NAME] [--prefab FILE] [--size N]";
+    "usage: prop_packs.ts catalogue|thumbs|extract|prefab-thumb|sync --game THUG2 [--out FOLDER] [--level L | --all] [--levels A,B] [--piece NAME] [--prefab FILE] [--size N]";
 
 export const PROPS_FOLDER = "thug2-decomp-props";
 export const OVERLAY = "thug2-decomp-data";
 export const CATALOGUE = "catalogue.txt";
 const THUMB_SIZE = 64;
+// (a level's pictures folder: the renderer's version and the size its pictures were drawn with - not copied into the
+// overlay)
+const THUMB_STAMP = "thumbs.txt";
 
 function sceneStamp(game: string, level: string): { bytes: number; time: number } {
     const dir = levelDir(game, level);
@@ -144,16 +147,22 @@ function overlayRoot(out: string): string[] {
 export function thumbs(game: string, out: string, level: string, size: number): number {
     const data = readLevel(game, level, true);
     const materials = new Map(data.scene.materials.map((m) => [m.checksum, m]));
-    const colours = textureColours(data.tex);
+    const textures = new TextureSet(data.tex);
     const sectors = new Map(data.scene.sectors.map((s) => [s.checksum, s]));
+    const folder = path.join(out, PROPS_FOLDER, "images", "props", data.level.toLowerCase());
+    const stampFile = path.join(folder, THUMB_STAMP);
+    const stamp = `prop-thumbs ${THUMB_VERSION} ${size}
+`;
+    // (pictures of another renderer or size: all drawn again)
+    const current = fs.existsSync(stampFile) && fs.readFileSync(stampFile, "utf8") === stamp;
     let made = 0;
     for (const piece of piecesOf(data)) {
         const name = hex8(piece.checksum).toLowerCase();
         const relative = `images/props/${data.level.toLowerCase()}/${name}.img.xbx`;
         const here = path.join(out, PROPS_FOLDER, ...relative.split("/"));
-        if (!fs.existsSync(here)) {
+        if (!current || !fs.existsSync(here)) {
             const parts = piece.members.map((m) => sectors.get(m)!);
-            writeBoth(out, relative, nativeImg(thumbnail(parts, materials, colours, size)));
+            writeBoth(out, relative, nativeImg(thumbnail(parts, materials, textures, size)));
             made += 1;
         } else {
             for (const root of overlayRoot(out)) {
@@ -166,6 +175,8 @@ export function thumbs(game: string, out: string, level: string, size: number): 
         }
         print(`thumb ${data.level} ${name}`);
     }
+    fs.mkdirSync(folder, { recursive: true });
+    fs.writeFileSync(stampFile, stamp);
     print(`thumbs ${data.level} ${made}`);
     return made;
 }
@@ -199,7 +210,7 @@ function copyTree(from: string, to: string): number {
         const a = path.join(from, entry.name);
         const b = path.join(to, entry.name);
         if (entry.isDirectory()) n += copyTree(a, b);
-        else if (entry.isFile() && entry.name !== "source.txt") {
+        else if (entry.isFile() && entry.name !== "source.txt" && entry.name !== THUMB_STAMP) {
             fs.mkdirSync(to, { recursive: true });
             fs.copyFileSync(a, b);
             n += 1;
@@ -234,11 +245,11 @@ export function prefabThumb(game: string, out: string, file: string, size: numbe
     const level = /^source\s+\S+\s+(\S+)/m.exec(text)?.[1];
     const sources = new Map<number, Sector>();
     const materials = new Map<number, Material>();
-    const colours = new Map<number, [number, number, number]>();
+    const textures = new TextureSet();
     const add = (scene: Scene, tex: TexFile | null): void => {
         for (const s of scene.sectors) if (!sources.has(s.checksum)) sources.set(s.checksum, s);
         for (const m of scene.materials) if (!materials.has(m.checksum)) materials.set(m.checksum, m);
-        if (tex) for (const [k, v] of textureColours(tex)) if (!colours.has(k)) colours.set(k, v);
+        if (tex) textures.add(tex);
     };
     for (const pack of records.packs) {
         const dir = path.join(out, PROPS_FOLDER, "levels", pack);
@@ -260,7 +271,7 @@ export function prefabThumb(game: string, out: string, file: string, size: numbe
         placeSector(copy, c.placement);
         parts.push(copy);
     });
-    writeBoth(out, `images/prefabs/${id}.img.xbx`, nativeImg(thumbnail(parts, materials, colours, size)));
+    writeBoth(out, `images/prefabs/${id}.img.xbx`, nativeImg(thumbnail(parts, materials, textures, size)));
     print(`thumb prefab ${id}`);
     return id;
 }
@@ -276,6 +287,7 @@ async function main(): Promise<number> {
             piece: { type: "string" },
             size: { type: "string" },
             prefab: { type: "string" },
+            all: { type: "boolean" },
         },
     });
     const command = positionals[0] ?? "";
@@ -293,8 +305,9 @@ async function main(): Promise<number> {
     } else if (command === "catalogue") {
         catalogue(game, out, values.levels ? values.levels.split(",") : null);
     } else if (command === "thumbs") {
-        if (!values.level) exitWith(USAGE);
-        thumbs(game, out, values.level, values.size ? Number.parseInt(values.size, 10) : THUMB_SIZE);
+        if (!values.level === !values.all) exitWith(USAGE);
+        const size = values.size ? Number.parseInt(values.size, 10) : THUMB_SIZE;
+        for (const level of values.all ? levelsOf(game) : [values.level!]) thumbs(game, out, level, size);
     } else {
         if (!values.level || !values.piece) exitWith(USAGE);
         extract(game, out, values.level, values.piece);
