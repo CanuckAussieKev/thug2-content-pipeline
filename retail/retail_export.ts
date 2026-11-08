@@ -35,6 +35,10 @@
 //                                 scene the level loads after its own (prop_packs/retail_props.ts: two insertions into
 //                                 Levels.qb). Every install bakes them again from the layouts; uninstalling everything
 //                                 takes them out.
+//   Data\pre\<L>_scripts.prx (levels\<L>\<L>.qb), Data\levels\<L>\<L>.qb   the rail points the editor added in <L> (the
+//                                 placed pieces' rails among them) appended to its node array (prop_packs/retail_rails.ts):
+//                                 the bytes from before kept in the state folder (nodes\), given back by uninstall when
+//                                 nothing else changed the file - else our nodes taken off its end, the rest kept.
 //   Data\pre\qb_scripts.prx        the game's scripts archive with our lines added to Levels.qb and the level select
 //                                 (retail_levels.ts) - the user's current files, mods and all, decompiled, added to
 //                                 and compiled again; every other file of the archive byte for byte as it was. THUG1's
@@ -75,6 +79,7 @@ import { requireNs } from "thug2-level-converter-core/lib/neverscript.ts";
 import { decodeLatin1, encodeLatin1 } from "thug2-level-converter-core/lib/text.ts";
 import * as loadingArtGames from "../menu_level/loading_art_games.ts";
 import * as retailProps from "../prop_packs/retail_props.ts";
+import * as retailRails from "../prop_packs/retail_rails.ts";
 import * as limitsDll from "./limits_dll.ts";
 import { retailLevelQb } from "./no_rotate.ts";
 import {
@@ -127,13 +132,26 @@ export interface InstalledFile {
     owner: string; // a level, or "staging:<folder>" for what a converter's levels share
 }
 
+// A level's node array with the editor's rail points appended (prop_packs/retail_rails.ts): in its scripts archive
+// (`entry` of the archive at `path`) or the loose .qb (`path`, entry null).
+export interface NodeArrayChange {
+    owner: string; // "props:<L>"
+    level: string;
+    path: string; // relative to the game folder, "/"-separated
+    entry: string | null;
+    baseFile: string; // the state folder's copy of the entry's (or the file's) bytes before (nodes/<n>.bin)
+    installedSha256: string; // of the entry's bytes (entryBytes) or the file, as written
+    nodes: string[]; // the nodes appended, in order (at the array's end)
+}
+
 export interface State {
-    format: 1 | 2; // (2: with `limits`)
+    format: 1 | 2 | 3; // (2: with `limits`; 3: with `nodeArrays`)
     levels: { level: string; staging: string }[];
     archive: { originalSha256: string; baseSha256: string; installedSha256: string };
     scripts: ScriptChange[];
     files: InstalledFile[];
     limits?: limitsDll.LimitsState; // the limits DLL, when the export installed it
+    nodeArrays?: NodeArrayChange[];
 }
 
 export function sha256(data: Uint8Array | string): string {
@@ -385,6 +403,166 @@ export function addOurs(
     return { archive: out, scripts, baseEntries };
 }
 
+// --- the levels' node arrays (the editor's rail points: prop_packs/retail_rails.ts) ---------------------------------
+
+// Where a THUG2 level's node array is: its scripts archive's entry (what the game loads) and the loose copy - those
+// that are there.
+export function nodeArrayTargets(game: string, level: string): { path: string; entry: string | null }[] {
+    const out: { path: string; entry: string | null }[] = [];
+    const archive = `Data/pre/${level}_scripts.prx`;
+    const entry = `levels\\${level}\\${level}.qb`;
+    if (fs.existsSync(path.join(game, ...archive.split("/")))) {
+        const a = readArchive(fs.readFileSync(path.join(game, ...archive.split("/"))));
+        if (entryIndex(a, entry) >= 0) out.push({ path: archive, entry });
+    }
+    const loose = `Data/levels/${level}/${level}.qb`;
+    if (fs.existsSync(path.join(game, ...loose.split("/")))) out.push({ path: loose, entry: null });
+    return out;
+}
+
+export interface NodeArrayPlan {
+    // each archive / loose file's new bytes (only those that change)
+    writes: Map<string, Buffer>;
+    changes: NodeArrayChange[];
+    baseFiles: Map<string, Buffer>; // state-folder file -> bytes
+    lines: string[];
+    problems: string[];
+}
+
+// Our rail nodes out of the node arrays the state names (the bytes from before where nothing else changed them, else
+// our nodes taken off the end), then `levels`' rail points appended.
+export function planNodeArrays(
+    game: string,
+    stateDir: string,
+    before: readonly NodeArrayChange[],
+    levels: readonly { level: string; railPoints: readonly retailRails.RailPoint[] }[],
+): NodeArrayPlan {
+    const plan: NodeArrayPlan = { writes: new Map(), changes: [], baseFiles: new Map(), lines: [], problems: [] };
+    const archives = new Map<string, Archive>(); // (read once, changed in memory)
+    const archiveOf = (p: string): Archive => {
+        let a = archives.get(p);
+        if (!a) {
+            a = readArchive(fs.readFileSync(path.join(game, ...p.split("/"))));
+            archives.set(p, a);
+        }
+        return a;
+    };
+    const looseFiles = new Map<string, Buffer>();
+    const key = (t: { path: string; entry: string | null }): string => `${t.path}|${t.entry ?? ""}`.toLowerCase();
+    // (the target's current bytes: an entry's own bytes, or the file)
+    const current = (t: { path: string; entry: string | null }): Buffer | null => {
+        if (t.entry === null) {
+            const there = looseFiles.get(t.path) ?? null;
+            if (there) return there;
+            const file = path.join(game, ...t.path.split("/"));
+            return fs.existsSync(file) ? fs.readFileSync(file) : null;
+        }
+        if (!fs.existsSync(path.join(game, ...t.path.split("/")))) return null;
+        const a = archiveOf(t.path);
+        const at = entryIndex(a, t.entry);
+        return at < 0 ? null : entryBytes(a.entries[at]!);
+    };
+    const put = (t: { path: string; entry: string | null }, bytes: Buffer): void => {
+        if (t.entry === null) {
+            looseFiles.set(t.path, bytes);
+            return;
+        }
+        const a = archiveOf(t.path);
+        a.entries[entryIndex(a, t.entry)] = entryFromBytes(bytes);
+    };
+    const dataOf = (t: { entry: string | null }, bytes: Buffer): Buffer =>
+        t.entry === null ? bytes : entryData(entryFromBytes(bytes));
+    const bytesOf = (t: { entry: string | null }, like: Buffer, data: Buffer): Buffer => {
+        if (t.entry === null) return data;
+        const e = entryFromBytes(like);
+        return entryBytes({
+            ...makeEntry(e.name, data, e.compressedSize > 0),
+            nameField: e.nameField,
+            checksum: e.checksum,
+        });
+    };
+    // ours out
+    const startBytes = new Map<string, Buffer>();
+    for (const change of before) {
+        const now = current(change);
+        if (!now) {
+            plan.lines.push(`${change.path}${change.entry ? `: ${change.entry}` : ""} is gone - its rails with it`);
+            continue;
+        }
+        startBytes.set(key(change), now);
+        if (sha256(now) === change.installedSha256) {
+            put(change, fs.readFileSync(path.join(stateDir, ...change.baseFile.split("/"))));
+            continue;
+        }
+        const stripped = retailRails.stripRails(dataOf(change, now), change.level, change.nodes);
+        if (!stripped) {
+            plan.problems.push(
+                `${change.path}${change.entry ? ` (${change.entry})` : ""}: changed since - the export's rail nodes aren't at the end of its node array any more`,
+            );
+            continue;
+        }
+        put(change, bytesOf(change, now, stripped));
+    }
+    // ours in
+    for (const { level, railPoints } of levels) {
+        if (!railPoints.length) continue;
+        const targets = nodeArrayTargets(game, level);
+        if (!targets.length) {
+            plan.lines.push(
+                `${level}: no node array found (Data\\pre\\${level}_scripts.prx / Data\\levels\\${level}) - its rails not carried`,
+            );
+            continue;
+        }
+        for (const t of targets) {
+            const base = current(t)!;
+            if (!startBytes.has(key(t))) startBytes.set(key(t), base);
+            let appended: retailRails.Appended;
+            try {
+                appended = retailRails.appendRails(dataOf(t, base), level, railPoints);
+            } catch (err) {
+                plan.problems.push(`${t.path}: ${(err as Error).message}`);
+                continue;
+            }
+            if (!appended.nodes.length) continue;
+            const bytes = bytesOf(t, base, appended.data);
+            const baseFile = `nodes/${plan.changes.length}.bin`;
+            plan.baseFiles.set(baseFile, base);
+            plan.changes.push({
+                owner: `props:${level}`,
+                level,
+                path: t.path,
+                entry: t.entry,
+                baseFile,
+                installedSha256: sha256(bytes),
+                nodes: appended.nodes,
+            });
+            put(t, bytes);
+            if (t === targets[0]) {
+                plan.lines.push(
+                    `${level}: ${appended.nodes.length} rail point(s) added to its node array` +
+                        (appended.droppedLinks
+                            ? ` (${appended.droppedLinks} link(s) to the level's own nodes not carried)`
+                            : "") +
+                        (appended.clashes.length
+                            ? ` (left out - the level has nodes of these names: ${appended.clashes.join(", ")})`
+                            : "") +
+                        (railPoints.some((p) => p.cluster) ? " (trick-object rails as plain rails)" : ""),
+                );
+            }
+        }
+    }
+    // what changed
+    for (const [p, data] of looseFiles) {
+        const before = startBytes.get(key({ path: p, entry: null }));
+        if (!before?.equals(data)) plan.writes.set(p, data);
+    }
+    for (const [p, a] of archives) {
+        const bytes = writeArchive(a);
+        if (!bytes.equals(fs.readFileSync(path.join(game, ...p.split("/"))))) plan.writes.set(p, bytes);
+    }
+    return plan;
+}
+
 // --- the levels' files --------------------------------------------------------------------------------------------
 
 export interface PlannedFile {
@@ -539,7 +717,7 @@ function readState(stateDir: string): State | null {
     const file = path.join(stateDir, STATE_FILE);
     if (!fs.existsSync(file)) return null;
     const state = JSON.parse(fs.readFileSync(file, "utf-8")) as State;
-    if (state.format !== 1 && state.format !== 2)
+    if (state.format !== 1 && state.format !== 2 && state.format !== 3)
         exitWith(`${file}: a state this tool doesn't know (format ${state.format})`);
     return state;
 }
@@ -740,14 +918,11 @@ function applyWith(options: Options, mode: "install" | "uninstall", ns: Scripts)
         if (p.missing.length)
             print(`${p.level}: prop packs not found in ${options.from} (skipped): ${p.missing.join(", ")}`);
         if (p.pieces) print(`${p.level}: ${p.pieces} placed piece(s) baked into ${p.scene}`);
-        if (p.rails)
-            print(
-                `${p.level}: ${p.rails} rail point(s) of the packs not carried (retail: not yet - the level's node array)`,
-            );
     }
     const propLevels = props.filter((p) => p.files.length);
+    const railLevels = props.filter((p) => p.railPoints.length);
     if (mode === "install") {
-        if (!known.length && !propLevels.length)
+        if (!known.length && !propLevels.length && !railLevels.length)
             exitWith(
                 `${options.from}: no converted levels (no thug2-decomp-* staging folder with a levels.json) and no placed prop packs`,
             );
@@ -870,7 +1045,11 @@ function applyWith(options: Options, mode: "install" | "uninstall", ns: Scripts)
         }
         keepFiles.push({ path: f.path, sha256: sha256(f.data), owner: f.owner });
     }
+    // the levels' node arrays: the editor's rail points
+    const nodePlan = planNodeArrays(game, stateDir, state?.nodeArrays ?? [], railLevels);
+    problems.push(...nodePlan.problems);
     if (problems.length) exitWith(`refused - nothing written:\n  ${problems.join("\n  ")}`);
+    for (const line of nodePlan.lines) print(line);
     const wantedPaths = new Set(keepFiles.map((f) => f.path.toLowerCase()));
     const toRemove = (state?.files ?? []).filter((f) => !wantedPaths.has(f.path.toLowerCase()));
 
@@ -881,7 +1060,12 @@ function applyWith(options: Options, mode: "install" | "uninstall", ns: Scripts)
         print(`kept the scripts archive as it was: ${path.join(stateDir, BACKUP)}`);
     }
     for (const [file, data] of planned.baseEntries) writeAtomic(path.join(stateDir, ...file.split("/")), data);
+    for (const [file, data] of nodePlan.baseFiles) {
+        fs.mkdirSync(path.dirname(path.join(stateDir, ...file.split("/"))), { recursive: true });
+        writeAtomic(path.join(stateDir, ...file.split("/")), data);
+    }
     if (!newBytes.equals(currentBytes)) writeAtomic(archiveFile, newBytes);
+    for (const [file, data] of nodePlan.writes) writeAtomic(path.join(game, ...file.split("/")), data);
     for (const f of toWrite) writeAtomic(path.join(game, ...f.path.split("/")), f.data);
     let left = 0;
     for (const f of toRemove) {
@@ -899,10 +1083,10 @@ function applyWith(options: Options, mode: "install" | "uninstall", ns: Scripts)
     for (const line of dllPlan?.lines ?? []) print(line);
     dllPlan?.run();
     if (hadDll && !wantDll) for (const line of limitsDll.uninstall(game, stateDir, hadDll)) print(line);
-    if (wanted.length || propLevels.length || left) {
+    if (wanted.length || propLevels.length || nodePlan.changes.length || left) {
         const limits = wantDll ? (dllPlan?.state ?? hadDll ?? undefined) : undefined;
         const next: State = {
-            format: limits ? 2 : 1,
+            format: nodePlan.changes.length ? 3 : limits ? 2 : 1,
             levels: wanted.map((e) => ({ level: e.level, staging: String(e.staging) })),
             archive: {
                 originalSha256: state?.archive.originalSha256 ?? sha256(currentBytes),
@@ -912,6 +1096,7 @@ function applyWith(options: Options, mode: "install" | "uninstall", ns: Scripts)
             scripts: planned.scripts,
             files: keepFiles,
             ...(limits ? { limits } : {}),
+            ...(nodePlan.changes.length ? { nodeArrays: nodePlan.changes } : {}),
         };
         fs.mkdirSync(stateDir, { recursive: true });
         fs.writeFileSync(path.join(stateDir, STATE_FILE), `${JSON.stringify(next, null, 1)}\n`);
@@ -919,6 +1104,13 @@ function applyWith(options: Options, mode: "install" | "uninstall", ns: Scripts)
         // nothing of ours left: the state goes; the archive's first copy stays (the user's, as it was)
         fs.rmSync(path.join(stateDir, STATE_FILE), { force: true });
         fs.rmSync(path.join(stateDir, "entries"), { recursive: true, force: true });
+        fs.rmSync(path.join(stateDir, "nodes"), { recursive: true, force: true });
+    }
+    const nodesDir = path.join(stateDir, "nodes");
+    if (fs.existsSync(nodesDir)) {
+        const keep = new Set(nodePlan.changes.map((c) => c.baseFile));
+        for (const name of fs.readdirSync(nodesDir))
+            if (!keep.has(`nodes/${name}`)) fs.rmSync(path.join(nodesDir, name));
     }
     // old entries no longer named
     const named = new Set(planned.scripts.map((s) => s.baseEntry));
@@ -932,6 +1124,7 @@ function applyWith(options: Options, mode: "install" | "uninstall", ns: Scripts)
     print(
         `${mode}: ${wanted.length} level(s) in the install (${wanted.map((e) => e.level).join(", ") || "none"}); ` +
             `${propLevels.length ? `prop packs in ${propLevels.map((p) => p.level).join(", ")}; ` : ""}` +
+            `${nodePlan.changes.length ? `rails in ${[...new Set(nodePlan.changes.map((c) => c.level))].join(", ")}; ` : ""}` +
             `${toWrite.length} file(s) written, ${toRemove.length - left} removed; qb_scripts.prx ` +
             (newBytes.equals(currentBytes)
                 ? "unchanged"
@@ -986,6 +1179,23 @@ export function status(game: string): void {
         ...new Set(state.files.filter((f) => f.owner.startsWith("props:")).map((f) => f.owner.slice(6))),
     ];
     if (propLevels.length) print(`prop packs: placed pieces in ${propLevels.join(", ")}`);
+    for (const c of state.nodeArrays ?? []) {
+        const target = path.join(game, ...c.path.split("/"));
+        let now = "";
+        if (fs.existsSync(target)) {
+            const data = fs.readFileSync(target);
+            if (c.entry === null) now = sha256(data);
+            else {
+                const a = readArchive(data);
+                const at = entryIndex(a, c.entry);
+                now = at < 0 ? "" : sha256(entryBytes(a.entries[at]!));
+            }
+        }
+        print(
+            `rails: ${c.nodes.length} node(s) in ${c.path}${c.entry ? ` (${c.entry})` : ""} - ` +
+                (now === c.installedSha256 ? "as the install left it" : now ? "changed since" : "missing"),
+        );
+    }
     if (state.limits) {
         const there = path.join(game, limitsDll.DLL);
         const now = fs.existsSync(there) ? sha256(fs.readFileSync(there)) : "";

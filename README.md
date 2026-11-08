@@ -62,7 +62,9 @@ converter has its own README.
   its collision and the grind rails on it) cut out into a small scene of their own that another level loads beside
   its own (`prop_packs.ts catalogue|thumbs|extract|sync`, run by the level editor's Content Browser; packs in
   `<game>\thug2-decomp-props`, copied into the overlay). The retail export bakes the pieces placed in THUG2's own levels
-  into a `<level>_Props` scene the level loads with two Levels.qb insertions (`retail_props.ts`).
+  into a `<level>_Props` scene the level loads with two Levels.qb insertions (`retail_props.ts`), and appends the rail
+  points the editor added there (the pieces' rails among them) to the level's node array - in its `<level>_scripts.prx`
+  and the loose copy, the bytes from before kept for the uninstall (`retail_rails.ts`).
 - `fonts/` - the new front end's typefaces.
 
 ## With or without the decomp around it

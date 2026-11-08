@@ -10,8 +10,8 @@
 //                                                                  collision, LoadScene / LoadCollision of it.
 //
 // LoadScene and LoadCollision are the original game's commands (skies use the first); every scene's collision is
-// walked by the game's collision tests, so the pieces are solid. Not on retail yet: the packs' grind rails (they would
-// be nodes appended to the level's node array inside its <L>_scripts.prx) - reported.
+// walked by the game's collision tests, so the pieces are solid. Their grind rails - the rail points the editor added
+// in the level (the layout's `point` records) - are appended to the level's node array (retail_rails.ts).
 
 import * as fs from "node:fs";
 import * as path from "node:path";
@@ -37,6 +37,7 @@ import {
     placeSector,
     readManifest,
 } from "./pack.ts";
+import { type RailPoint, readLayoutRails } from "./retail_rails.ts";
 
 export const LAYOUTS_FOLDER = "thug2-decomp-layouts";
 export const PROPS_FOLDER = "thug2-decomp-props";
@@ -113,7 +114,8 @@ export interface BakedProps {
     scene: string; // <L>_Props
     files: { path: string; data: Buffer }[]; // relative to the game folder, "/"-separated
     pieces: number;
-    rails: number; // the packs' rail points (not carried on retail yet)
+    rails: number; // the packs' rail points
+    railPoints: RailPoint[]; // the rail points the editor added in the level (the packs' among them): its node array
     missing: string[]; // packs the layout names that aren't in the props folder
 }
 
@@ -197,15 +199,17 @@ export function bakeLevel(from: string, level: string, layout: LayoutProps): Bak
         ],
         pieces: made,
         rails,
+        railPoints: [],
         missing,
     };
 }
 
 function emptyResult(level: string, missing: string[]): BakedProps {
-    return { level, scene: propsScene(level), files: [], pieces: 0, rails: 0, missing };
+    return { level, scene: propsScene(level), files: [], pieces: 0, rails: 0, railPoints: [], missing };
 }
 
-// Every THUG2 level of `game` with pieces placed by a layout in `from` (the editor's game folder).
+// Every THUG2 level of `game` with pieces placed or rail points added by a layout in `from` (the editor's game
+// folder).
 export function plan(from: string, game: string): BakedProps[] {
     const folder = path.join(from, LAYOUTS_FOLDER);
     if (!fs.existsSync(folder)) return [];
@@ -213,12 +217,15 @@ export function plan(from: string, game: string): BakedProps[] {
     const out: BakedProps[] = [];
     for (const name of fs.readdirSync(folder).sort()) {
         if (!/^[0-9a-f]{8}\.txt$/i.test(name)) continue;
-        const layout = readLayoutProps(fs.readFileSync(path.join(folder, name), "utf8"));
-        if (!layout.packs.length) continue;
+        const text = fs.readFileSync(path.join(folder, name), "utf8");
+        const layout = readLayoutProps(text);
+        const railPoints = readLayoutRails(text);
+        if (!layout.packs.length && !railPoints.length) continue;
         const level = levels.get(layout.scene || Number.parseInt(name.slice(0, 8), 16) >>> 0);
         if (!level) continue; // (a converted level's layout: not THUG2's own - its props come with it later)
-        const baked = bakeLevel(from, level, layout);
-        if (baked) out.push(baked);
+        const baked = bakeLevel(from, level, layout) ?? emptyResult(level, []);
+        baked.railPoints = railPoints;
+        if (baked.files.length || baked.missing.length || railPoints.length) out.push(baked);
     }
     return out;
 }
