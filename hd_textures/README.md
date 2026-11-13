@@ -126,26 +126,40 @@ against its SHA-256; SeedVR2's runner is cloned at its commit.
 
 ### Use
 
-    node tools/qbjs/unpack_game.ts --game C:\Games\THUG2-n --hd-textures pbrify        (unpacking, then the textures)
-    node tools/qbjs/unpack_game.ts --game C:\Games\THUG2-n --hd-textures seedvr2       (an unpacked game: switch sets)
-    node tools/qbjs/unpack_game.ts --game C:\Games\THUG2-n --hd-textures none          (the originals back)
-    node tools/pipeline/hd_textures/base.ts --game C:\Games\THUG2-n --model pbrify [--levels BO,AU,foun] [--build-only]
+    node tools/pipeline/hd_textures/base.ts --game C:\Games\THUG2-n --model pbrify [--levels BO,AU,foun] [--build-only] [--no-select]
+    node tools/pipeline/hd_textures/base.ts --game C:\Games\THUG2-n --model seedvr2 [--levels BO,AU,foun]
+    node tools/pipeline/hd_textures/base.ts --game C:\Games\THUG2-n --remove pbrify      (one set out)
     node tools/pipeline/hd_textures/base.ts --game C:\Games\THUG2-n --restore | --status
+    node tools/qbjs/unpack_game.ts --game C:\Games\THUG2-n --hd-textures pbrify          (unpacking, then a set)
 
-No file the game was installed with is written: a Data dictionary's HD version goes into the data overlay
-(`thug2-decomp-data\levels\bo\BO.tex.xbx` - the game reads the overlay before its archives and Data, so it works on a
-packed game and on an unpacked one alike), our overlays' own dictionaries (the ported levels in
-`thug2-decomp-<x>\levels`, the data overlay's levels) are replaced in place. `--levels` limits it to those levels (each
-with its `_Sky`); `--hd-scope all` / `--scope all` takes every `.tex.xbx` (peds, skaters, vehicles) instead of the
-levels' only. `--build-only` makes a set into its cache without installing it. unpack_game.ts `--restore` takes the
-HD textures out first. make_menu_level.ts empties the data overlay when it runs: install the set again after it.
+Both sets can be installed at once, each in a folder of its own beside the data overlay -
+`thug2-decomp-textures\pbrify\`, `thug2-decomp-textures\seedvr2\` - holding a dictionary's HD version under the name the
+game asks for (`levels\bo\bo.tex.xbx`) and the set's record `set.json` (each file with the SHA-256 of the original it
+was made from). No file the game was installed with or our overlays hold is written. The game picks one with
+**`[Graphics] texture_set=original|pbrify|seedvr2`** (thug2-decomp.ini; default original; a set that isn't installed:
+original, logged) and serves its `.tex.xbx` files before the data overlay and Data, packed or unpacked alike
+(src/engine/gfx/texture_sets.h). Installing a set selects it (`--no-select`: the ini left alone); `--restore` /
+`--model none` takes every set out and the key with them, `--remove <model>` one set.
+
+**Switching while the game runs:** the Options screen's Graphics tab, "Textures" (only the sets installed are listed),
+or the console's `textures <set>` (automation: `console textures <set>`; not saved to the ini). At the next frame the
+level's texture dictionaries (the level, its sky, scenes added to it) are read again from the new set and each
+texture's image swapped in place - the materials keep pointing at the same textures, the old device textures are
+released (their ray-tracing slots freed, unset from the stages). Dictionaries outside `levels\` (skaters, peds,
+vehicles - only in a `--scope all` set) take the new set the next time they load. The log has a line per switch
+(`texture sets: original -> pbrify: 3 dictionaries read again (...) in N ms`) and the memory after it.
+
+Only the dictionaries the game reads go in a set: Data's and the data overlay's (a converter's output folder
+`thug2-decomp-<x>` is copied into the data overlay by make_menu_level.ts - that copy is taken). `--levels` limits it to
+those levels (each with its `_Sky`); `--hd-scope all` / `--scope all` takes every `.tex.xbx` (peds, skaters, vehicles)
+instead of the levels' only. `--build-only` makes a set into its cache without installing it. A level converted again
+or make_menu_level.ts run again since a set was made leaves that set's file for it out of date: `--status` lists such
+files - install the set again. unpack_game.ts `--restore` keeps the sets (they serve a packed game as well).
 
 Each set is cached (`out\hd_textures\base\<model>\`: `texels` the model's output per texture, `files` each finished
-dictionary by the SHA-256 of the original and the settings), so a set made once installs in seconds and switching
-between them is a copy. The record `thug2-decomp-backup\hd_textures\record.json` in the game folder lists every file
-written with the SHA-256 of the one it replaced (none for one added to the data overlay) and of the installed one;
-replaced originals are kept beside it. Restoring removes the added files and puts the replaced ones back, unless a
-file changed or went since (make_menu_level.ts or a converter remade it: theirs is kept).
+dictionary by the SHA-256 of the original and the settings), so a set made once installs in seconds. An install made
+by an earlier version of base.ts (the HD files written into the data overlay and over our overlays' own files, with
+the record `thug2-decomp-backup\hd_textures\record.json`) is put back first by every install and by `--restore`.
 
 ### What happens to each texture
 

@@ -3,6 +3,7 @@
 // install / switch / restore on a made-up game folder.
 
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -257,18 +258,19 @@ test("DXT encode error bounds", () => {
     assert.ok(dxt5Alpha < 3, `DXT5 alpha RMS ${dxt5Alpha.toFixed(2)}`);
 });
 
-test("install, switch and restore: Data's files untouched (the HD ones in the data overlay), an overlay's put back byte for byte, a set made once is copied", () => {
+test("two sets side by side: each in its folder under the game's names, the game's and our overlays' files untouched, restore takes both out", () => {
     const game = temp("hd-base-game-");
     const cacheRoot = temp("hd-base-sets-");
     const shipped = "Data\\levels\\xx\\xx.tex.xbx"; // (installed with the game: never written)
-    const added = "thug2-decomp-data\\levels\\xx\\xx.tex.xbx";
-    const overlay = "thug2-decomp-port\\levels\\zz\\zz.tex.xbx"; // (a ported level's: ours, replaced in place)
+    const port = "thug2-decomp-port\\levels\\zz\\zz.tex.xbx"; // (a converter's output: the game reads its copy in the data overlay)
     const own = "thug2-decomp-data\\levels\\yy\\yy.tex.xbx"; // (the data overlay's own: over Data's yy, which is skipped)
     const original = writeTex({ version: 1, textures: [asTexture(tiling(64, 64), 64, 64, 1)] });
-    for (const rel of [shipped, overlay, own, "Data\\levels\\yy\\yy.tex.xbx"]) {
+    const files = [shipped, port, own, "Data\\levels\\yy\\yy.tex.xbx"];
+    for (const rel of files) {
         fs.mkdirSync(path.dirname(path.join(game, rel)), { recursive: true });
         fs.writeFileSync(path.join(game, rel), original);
     }
+    fs.writeFileSync(path.join(game, base.INI), "[features]\r\nmute_audio=1\r\n");
     let calls = 0;
     const counting: hd.Upscaler = (images) => {
         calls++;
@@ -282,36 +284,116 @@ test("install, switch and restore: Data's files untouched (the HD ones in the da
         vramGb: 1,
         upscaler: counting,
     };
-    // (by the original's path: Data's xx, the data overlay's yy - Data's yy left to it -, the port's zz)
     assert.deepEqual(
-        base.collect(game, "levels", null).map((e) => e.target),
-        [added, own, overlay],
+        base.collect(game, "levels", null).map((e) => base.gameName(e)),
+        ["levels\\xx\\xx.tex.xbx", "levels\\yy\\yy.tex.xbx", null],
     );
     const first = base.install(game, "pbrify", options);
-    assert.equal(first.installed, 3);
-    assert.ok(fs.readFileSync(path.join(game, shipped)).equals(original), "Data's file untouched");
-    for (const rel of [added, overlay, own])
-        assert.equal(readTex(fs.readFileSync(path.join(game, rel))).textures[0]!.width, 256);
+    assert.equal(first.installed, 2);
     assert.equal(calls, 1);
-    // the installed files aren't taken for originals: the same three, the same set again from the cache
-    assert.equal(base.collect(game, "levels", null).length, 3);
+    for (const rel of files) assert.ok(fs.readFileSync(path.join(game, rel)).equals(original), `${rel} untouched`);
+    const inSet = (model: string, name: string): string => path.join(game, base.SETS_DIR, model, ...name.split("\\"));
+    for (const name of ["levels\\xx\\xx.tex.xbx", "levels\\yy\\yy.tex.xbx"])
+        assert.equal(readTex(fs.readFileSync(inSet("pbrify", name))).textures[0]!.width, 256);
+    assert.equal(base.selectedSet(game), "pbrify");
+    // the second set beside the first: neither clobbered, the ini on the last one installed
+    const pbrifyBytes = fs.readFileSync(inSet("pbrify", "levels\\xx\\xx.tex.xbx"));
     base.install(game, "seedvr2", options);
     assert.equal(calls, 2);
-    assert.equal(base.readRecord(game)?.model, "seedvr2");
-    base.install(game, "pbrify", options); // (from its cache: no model call)
+    assert.deepEqual(base.installedSets(game), ["pbrify", "seedvr2"]);
+    assert.ok(fs.readFileSync(inSet("pbrify", "levels\\xx\\xx.tex.xbx")).equals(pbrifyBytes), "pbrify's kept");
+    assert.ok(fs.existsSync(inSet("seedvr2", "levels\\yy\\yy.tex.xbx")));
+    assert.equal(base.selectedSet(game), "seedvr2");
+    assert.equal(base.readSet(game, "seedvr2")?.files.length, 2);
+    // again from the cache (no model call), not selected with select: false
+    base.install(game, "pbrify", { ...options, select: false });
     assert.equal(calls, 2);
-    // an overlay remade since: kept on restore
-    const remade = writeTex({ version: 1, textures: [asTexture(ramp(32, 32), 32, 32, 1)] });
-    fs.writeFileSync(path.join(game, overlay), remade);
+    assert.equal(base.selectedSet(game), "seedvr2");
+    assert.deepEqual(base.staleFiles(game, "pbrify"), []);
+    // an original changed since (a level converted again): out of date
+    fs.writeFileSync(path.join(game, own), writeTex({ version: 1, textures: [asTexture(ramp(32, 32), 32, 32, 1)] }));
+    assert.deepEqual(base.staleFiles(game, "pbrify"), ["levels\\yy\\yy.tex.xbx"]);
+    // one set taken out: the other kept
+    assert.equal(base.removeSet(game, "seedvr2"), 2);
+    assert.deepEqual(base.installedSets(game), ["pbrify"]);
+    // restore: every set and the ini's key gone, the rest of the ini kept
     const r = base.restore(game);
-    assert.deepEqual(r, { restored: 2, kept: 1 });
-    assert.ok(!fs.existsSync(path.join(game, added)), "the added HD file removed");
-    assert.ok(!fs.existsSync(path.dirname(path.join(game, added))), "and the folder made for it");
-    assert.ok(fs.existsSync(path.join(game, "thug2-decomp-data", "levels")), "not the overlay's own");
-    assert.ok(fs.readFileSync(path.join(game, own)).equals(original));
-    assert.ok(fs.readFileSync(path.join(game, overlay)).equals(remade));
+    assert.deepEqual(r, { removed: 2, restored: 0, kept: 0 });
+    assert.ok(!fs.existsSync(path.join(game, base.SETS_DIR)));
+    assert.equal(
+        fs.readFileSync(path.join(game, base.INI), "latin1"),
+        "[features]\r\nmute_audio=1\r\n\r\n[Graphics]\r\n",
+    );
+    assert.equal(base.selectedSet(game), "original");
+    for (const rel of [shipped, port]) assert.ok(fs.readFileSync(path.join(game, rel)).equals(original));
+    fs.rmSync(game, { recursive: true, force: true });
+    fs.rmSync(cacheRoot, { recursive: true, force: true });
+});
+
+test("an earlier version's install (the HD files in the data overlay) put back before a set is installed", () => {
+    const game = temp("hd-base-legacy-");
+    const cacheRoot = temp("hd-base-legacy-sets-");
+    const original = writeTex({ version: 1, textures: [asTexture(tiling(64, 64), 64, 64, 1)] });
+    const hdFile = Buffer.from("an HD file");
+    const put = (rel: string, data: Buffer): void => {
+        const file = path.join(game, ...rel.split("\\"));
+        fs.mkdirSync(path.dirname(file), { recursive: true });
+        fs.writeFileSync(file, data);
+    };
+    const sha = (b: Buffer): string => createHash("sha256").update(b).digest("hex");
+    put("Data\\levels\\xx\\xx.tex.xbx", original);
+    put("thug2-decomp-data\\levels\\xx\\xx.tex.xbx", hdFile); // (added)
+    put("thug2-decomp-data\\levels\\yy\\yy.tex.xbx", hdFile); // (replaced: the original in the backup)
+    put(`${base.HD_BACKUP}\\originals\\thug2-decomp-data\\levels\\yy\\yy.tex.xbx`, original);
+    const target = (name: string): string => path.join("thug2-decomp-data", "levels", name, `${name}.tex.xbx`);
+    put(
+        `${base.HD_BACKUP}\\record.json`,
+        Buffer.from(
+            JSON.stringify({
+                model: "pbrify",
+                files: [
+                    { target: target("xx"), original: null, installed: sha(hdFile) },
+                    { target: target("yy"), original: sha(original), installed: sha(hdFile) },
+                ],
+            }),
+        ),
+    );
+    base.install(game, "pbrify", {
+        scope: "levels",
+        levels: null,
+        buildOnly: false,
+        cacheRoot,
+        vramGb: 1,
+        upscaler: smooth4,
+    });
+    assert.ok(!fs.existsSync(path.join(game, target("xx"))), "the added file removed");
+    assert.ok(fs.readFileSync(path.join(game, target("yy"))).equals(original), "the replaced one put back");
     assert.equal(base.readRecord(game), null);
-    assert.ok(!fs.existsSync(path.join(game, "thug2-decomp-backup")), "the backup folder gone with the record");
+    assert.ok(!fs.existsSync(path.join(game, base.BACKUP)));
+    assert.equal(base.readSet(game, "pbrify")?.files.length, 2);
+    fs.rmSync(game, { recursive: true, force: true });
+    fs.rmSync(cacheRoot, { recursive: true, force: true });
+});
+
+test("iniWith: a key set, replaced and taken out as the game's Options screen writes it", () => {
+    assert.equal(base.iniWith("", "Graphics", "texture_set", "pbrify"), "[Graphics]\r\ntexture_set=pbrify\r\n");
+    assert.equal(
+        base.iniWith("[Graphics]\r\nmsaa=4\r\n\r\n[features]\r\nx=1\r\n", "Graphics", "texture_set", "seedvr2"),
+        "[Graphics]\r\nmsaa=4\r\ntexture_set=seedvr2\r\n\r\n[features]\r\nx=1\r\n",
+    );
+    assert.equal(
+        base.iniWith("[graphics]\nTexture_Set = pbrify\n", "Graphics", "texture_set", "seedvr2"),
+        "[graphics]\nTexture_Set =seedvr2\n",
+    );
+    assert.equal(
+        base.iniWith("[Graphics]\r\ntexture_set=pbrify\r\nmsaa=2", "Graphics", "texture_set", null),
+        "[Graphics]\r\nmsaa=2",
+    );
+    assert.equal(
+        base.iniWith("[a]\r\nb=1", "Graphics", "texture_set", "pbrify"),
+        "[a]\r\nb=1\r\n\r\n[Graphics]\r\ntexture_set=pbrify\r\n",
+    );
+    assert.equal(base.iniWith("[a]\r\nb=1\r\n", "Graphics", "texture_set", null), "[a]\r\nb=1\r\n");
 });
 
 test("buildSet with the meshes' uv rectangles: an atlas upscaled region by region, the others as before, the scenes in the file key", () => {

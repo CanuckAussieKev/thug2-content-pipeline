@@ -13,10 +13,10 @@
 // when a set is installed).
 //
 // --shots (a workspace C:\Games\THUG2-<n> only, unpacked - unpack_game.ts - with [features] ts_scripts=1): under the
-// workspace's lock (taken for the whole run; released at the end, which puts the exe and the ini back) each set is
-// installed in turn - originals, PBRify, SeedVR2 - and the level's spots of the plan (default tools/game/rt_shadows.json:
-// its groups whose level is --level) captured on Vulkan (tools/game/renderer_parity.ts's runs); then the set that was
-// installed before is put back. <out>\shots-<set>\ holds the frames, <out>\<level>-shot-<spot>.png the three side by
+// workspace's lock (taken for the whole run; released at the end, which puts the exe and the ini back) the sets are
+// installed side by side and each picked in turn by [Graphics] texture_set - originals, PBRify, SeedVR2 - and the level's
+// spots of the plan (default tools/game/rt_shadows.json: its groups whose level is --level) captured on Vulkan
+// (tools/game/renderer_parity.ts's runs); then the sets are left as they were before. <out>\shots-<set>\ holds the frames, <out>\<level>-shot-<spot>.png the three side by
 // side (original | PBRify | SeedVR2), a quarter of each (left, below the middle - mostly ground) enlarged x2
 // (-full.png: the whole frames); only the group named for the level when the plan has one. --build copies that build
 // in first (deploy_build.ps1 -Arch x64). Each run's log is kept beside its pictures. --have-lock:
@@ -281,8 +281,8 @@ async function shots(o: ShotOptions): Promise<string[]> {
         o.level,
         MODEL_NAMES.filter((m) => o.sets.includes(m)),
     );
-    const before = base.readRecord(o.root)?.model ?? "none";
-    const beforeMatch = base.readRecord(o.root)?.match ?? true;
+    // (the sets installed before, each with its colours: put back as they were afterwards)
+    const before = base.installedSets(o.root).map((m) => ({ model: m, match: base.readSet(o.root, m)!.match }));
     if (!o.haveLock) {
         const lock = await parity.powershell(
             "game_lock.ps1",
@@ -305,8 +305,10 @@ async function shots(o: ShotOptions): Promise<string[]> {
         }
         const ini = path.join(o.game, "thug2-decomp.ini");
         const baseIni = fs.readFileSync(ini, "utf8");
+        // (every set wanted installed side by side - thug2-decomp-textures\<model> -, each picked by the ini in turn)
         for (const set of o.sets) {
-            const result = base.install(o.root, set === "original" ? "none" : set, {
+            if (set === "original") continue;
+            const result = base.install(o.root, set, {
                 scope: "levels",
                 levels: [o.level],
                 buildOnly: false,
@@ -314,14 +316,21 @@ async function shots(o: ShotOptions): Promise<string[]> {
                 vramGb: 10,
                 log: print,
                 match,
+                select: false,
             });
             print(`${set}: ${result.installed} files installed`);
+        }
+        for (const set of o.sets) {
             for (const group of groups) {
                 fs.writeFileSync(
                     ini,
                     parity.iniFor(
                         baseIni,
-                        [plan.ini ?? {}, group.ini ?? {}, { "features.ts_scripts": tsScripts }],
+                        [
+                            plan.ini ?? {},
+                            group.ini ?? {},
+                            { "features.ts_scripts": tsScripts, "Graphics.texture_set": set },
+                        ],
                         "vulkan",
                     ),
                     "utf8",
@@ -335,14 +344,20 @@ async function shots(o: ShotOptions): Promise<string[]> {
             }
         }
     } finally {
-        base.install(o.root, before, {
-            scope: "levels",
-            levels: [o.level],
-            buildOnly: false,
-            cacheRoot: base.defaultCacheRoot(),
-            vramGb: 10,
-            match: beforeMatch,
-        });
+        for (const model of MODEL_NAMES) {
+            const was = before.find((b) => b.model === model);
+            if (!was) base.removeSet(o.root, model);
+            else if (base.readSet(o.root, model)?.match !== was.match || o.sets.includes(model))
+                base.install(o.root, model, {
+                    scope: "levels",
+                    levels: [o.level],
+                    buildOnly: false,
+                    cacheRoot: base.defaultCacheRoot(),
+                    vramGb: 10,
+                    match: was.match,
+                    select: false,
+                });
+        }
         if (!o.haveLock) {
             const release = await parity.powershell(
                 "game_lock.ps1",
