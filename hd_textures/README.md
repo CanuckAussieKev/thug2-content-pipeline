@@ -174,6 +174,22 @@ default 10); one model at a time. PBRify goes over each image in 192-texel tiles
 both its models loaded between images, its VAE tiled at 512, seed 42 (deterministic: the same files from the same
 input).
 
+### Measurements (2026-11-13, BO + AU + foun, RTX 5070 Ti shared with four running games)
+
+| | PBRify | SeedVR2 |
+|---|---|---|
+| images through the model (colour + soft alpha, padded) | 2011 | 2013 |
+| model time | 3003 s (1.5 s each, slowest 150 s) | 5264 s (2.6 s each, slowest 72 s) |
+| whole pass (decode, analysis, back-projection, DXT, mips) | 55 min | 93 min |
+| peak VRAM | 0.4 GB | 9.5 GB (one out-of-memory at the 10 GB cap, gone on from where it was) |
+
+Textures: 1476 of 1644 upscaled; 83 atlases and 85 under 32 texels left as they were. Texture data 28.1 MB ->
+244.8 MB (BO, AU, their skies, foun; the `_net` copies the same again). A second set of the same files (another
+dictionary holding the same textures, `--no-match`) comes from the texel cache in a minute or two. In the game
+(workspace, unpacked, Vulkan, 1280x720): no errors, every texture loaded (the log's `data overlay: levels\bo\bo.tex.xbx
+read from ...`), loading screen times unchanged (3.0-3.5 s), private memory in the level BO 872 -> 1047 / 1081 MB
+(PBRify / SeedVR2), AU 852 -> 935 / 937 MB, foun 851 -> 1211 / 1209 MB.
+
 ### Comparing the two
 
     node tools/pipeline/hd_textures/compare_models.ts --game C:\Games\THUG2-n --level BO [--count 12] [--shots]

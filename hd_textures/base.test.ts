@@ -306,6 +306,8 @@ test("install, switch and restore: Data's files untouched (the HD ones in the da
     const r = base.restore(game);
     assert.deepEqual(r, { restored: 2, kept: 1 });
     assert.ok(!fs.existsSync(path.join(game, added)), "the added HD file removed");
+    assert.ok(!fs.existsSync(path.dirname(path.join(game, added))), "and the folder made for it");
+    assert.ok(fs.existsSync(path.join(game, "thug2-decomp-data", "levels")), "not the overlay's own");
     assert.ok(fs.readFileSync(path.join(game, own)).equals(original));
     assert.ok(fs.readFileSync(path.join(game, overlay)).equals(remade));
     assert.equal(base.readRecord(game), null);

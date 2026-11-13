@@ -314,8 +314,15 @@ export function restore(root: string): { restored: number; kept: number } {
             kept++;
             continue;
         }
-        if (f.original === null) fs.rmSync(target);
-        else fs.copyFileSync(path.join(root, HD_BACKUP, "originals", f.target), target);
+        if (f.original === null) {
+            fs.rmSync(target);
+            // (the folders it alone needed, up to the overlay's own)
+            for (let dir = path.dirname(target); path.relative(root, dir).split(path.sep).length > 2; ) {
+                if (fs.readdirSync(dir).length) break;
+                fs.rmdirSync(dir);
+                dir = path.dirname(dir);
+            }
+        } else fs.copyFileSync(path.join(root, HD_BACKUP, "originals", f.target), target);
         restored++;
     }
     fs.rmSync(path.join(root, HD_BACKUP), { recursive: true, force: true });
