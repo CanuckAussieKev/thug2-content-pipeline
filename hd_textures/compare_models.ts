@@ -2,7 +2,8 @@
 // for choosing between them by eye.
 //
 //   node tools/pipeline/hd_textures/compare_models.ts --game <folder> --level BO [--out <folder>] [--count 12]
-//        [--shots [--spots <plan.json>] [--build <build folder>] [--owner <name>] [--have-lock] [--no-crops]]
+//        [--shots [--spots <plan.json>] [--build <build folder>] [--owner <name>] [--have-lock] [--no-crops]
+//                 [--sets original,pbrify,seedvr2]]
 //
 // Textures (always; no game run): `count` of the level's textures both models upscaled - the most detailed ones, spread
 // over the dictionary - each as original (texels enlarged x4) | PBRify | SeedVR2, the middle 64 x 64 texels (256 x 256
@@ -19,7 +20,8 @@
 // side (original | PBRify | SeedVR2) over the middle of each enlarged x2 (-full.png: the whole frames). --build
 // copies that build in first (deploy_build.ps1 -Arch x64). Each run's log is kept beside its pictures. --have-lock:
 // the caller holds the lock already (the whole session under one hold: unpack, shots, restore); --no-crops: the
-// shots only.
+// shots only; --sets: only those sets captured (a set must have been made first) - the side-by-sides take every set
+// with a picture of the spot in --out, earlier runs' too.
 
 import * as fs from "node:fs";
 import * as path from "node:path";
@@ -31,7 +33,7 @@ import { exitWith, helpFromHeader, isMain, print, runMain } from "thug2-level-co
 import { decodePng, encodePng, type Image } from "thug2-level-converter-core/lib/frame_diff.ts";
 import * as base from "./base.ts";
 import { crop, sideBySide, zoom } from "./compare_shots.ts";
-import { MODEL_NAMES, MODELS } from "./models.ts";
+import { MODEL_NAMES, MODELS, type ModelName } from "./models.ts";
 
 const SETS = ["original", ...MODEL_NAMES] as const;
 type SetName = (typeof SETS)[number];
@@ -69,7 +71,11 @@ function detail(bgra: Uint8Array): number {
 }
 
 // The level's dictionaries as the game had them (the record's backup when a set is installed) with each model's.
-function levelSets(root: string, level: string): { name: string; sets: Record<SetName, Buffer> }[] {
+function levelSets(
+    root: string,
+    level: string,
+    models: readonly ModelName[] = MODEL_NAMES,
+): { name: string; sets: Record<SetName, Buffer> }[] {
     const record = base.readRecord(root);
     const installed = new Set(record?.files.map((f) => f.rel.toLowerCase()) ?? []);
     const out: { name: string; sets: Record<SetName, Buffer> }[] = [];
@@ -78,7 +84,7 @@ function levelSets(root: string, level: string): { name: string; sets: Record<Se
             ? fs.readFileSync(path.join(root, base.HD_BACKUP, "originals", e.rel))
             : fs.readFileSync(path.join(root, e.rel));
         const sets = { original } as Record<SetName, Buffer>;
-        for (const model of MODEL_NAMES) {
+        for (const model of models) {
             const file = path.join(
                 base.defaultCacheRoot(),
                 model,
@@ -188,6 +194,7 @@ interface ShotOptions {
     build: string | null;
     owner: string;
     haveLock: boolean;
+    sets: readonly SetName[];
 }
 
 async function shots(o: ShotOptions): Promise<string[]> {
@@ -203,6 +210,12 @@ async function shots(o: ShotOptions): Promise<string[]> {
     const plan = parity.readPlan(fs.readFileSync(o.spots, "utf8"));
     const groups = plan.groups.filter((g) => g.level?.toLowerCase() === o.level.toLowerCase() && g.spots?.length);
     if (!groups.length) exitWith(`${o.spots}: no group with spots in level ${o.level}`);
+    // (every set made already: installing one that isn't would run the model for hours under the lock)
+    levelSets(
+        o.root,
+        o.level,
+        MODEL_NAMES.filter((m) => o.sets.includes(m)),
+    );
     const before = base.readRecord(o.root)?.model ?? "none";
     if (!o.haveLock) {
         const lock = await parity.powershell(
@@ -226,7 +239,7 @@ async function shots(o: ShotOptions): Promise<string[]> {
         }
         const ini = path.join(o.game, "thug2-decomp.ini");
         const baseIni = fs.readFileSync(ini, "utf8");
-        for (const set of SETS) {
+        for (const set of o.sets) {
             const result = base.install(o.root, set === "original" ? "none" : set, {
                 scope: "levels",
                 levels: [o.level],
@@ -269,9 +282,12 @@ async function shots(o: ShotOptions): Promise<string[]> {
     }
     for (const group of groups)
         for (const spot of group.spots ?? []) {
-            const pictures = SETS.map((s) => path.join(o.out, `shots-${s}`, `${spot.name}.png`));
-            if (!pictures.every((p) => fs.existsSync(p))) {
-                print(`${spot.name}: not every set has a picture`);
+            // (every set with a picture of the spot - this run's and earlier runs' into the same folder)
+            const pictures = SETS.map((s) => path.join(o.out, `shots-${s}`, `${spot.name}.png`)).filter((p) =>
+                fs.existsSync(p),
+            );
+            if (pictures.length < 2) {
+                print(`${spot.name}: fewer than two sets have a picture`);
                 continue;
             }
             const images = pictures.map((p) => decodePng(fs.readFileSync(p)));
@@ -316,13 +332,27 @@ export async function main(argv: readonly string[] = process.argv.slice(2)): Pro
     const wantShots = flag("--shots");
     const haveLock = flag("--have-lock");
     const noCrops = flag("--no-crops");
+    const sets = (take("--sets", SETS.join(",")) ?? "").split(",");
+    const unknownSet = sets.find((s) => !(SETS as readonly string[]).includes(s));
+    if (unknownSet) exitWith(`--sets: ${unknownSet}? (${SETS.join(", ")})`);
     if (args.length) exitWith(`unknown: ${args.join(" ")}`);
     const root = base.gameRoot(game);
     if (!noCrops) for (const file of textureCrops(root, level, out, count)) print(file);
     if (wantShots) {
         if (!fs.existsSync(spots)) exitWith(`${spots} not found (--spots <plan.json>)`);
         const resolved = build && path.resolve(build);
-        for (const file of await shots({ game, root, level, out, spots, build: resolved, owner, haveLock }))
+        const chosen = sets as SetName[];
+        for (const file of await shots({
+            game,
+            root,
+            level,
+            out,
+            spots,
+            build: resolved,
+            owner,
+            haveLock,
+            sets: chosen,
+        }))
             print(file);
     }
     print(`sets: original | ${MODEL_NAMES.map((m) => MODELS[m].title).join(" | ")}`);

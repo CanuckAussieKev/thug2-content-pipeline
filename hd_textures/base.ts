@@ -365,12 +365,15 @@ export function pythonUpscaler(model: ModelName, cacheRoot: string, vramGb: numb
             fs.mkdirSync(path.dirname(log), { recursive: true });
             const args = ["-I", RUNNER, "--model", model, "--in", inDir, "--out", outDir, "--models", MODELS_DIR];
             args.push("--seedvr2-code", seedvr2Code(), "--vram-gb", String(vramGb), "--times", times);
-            const fd = fs.openSync(log, "w");
-            const result = spawnSync(PYTHON, args, { stdio: ["ignore", fd, fd], windowsHide: true });
-            fs.closeSync(fd);
-            if (result.status !== 0) {
+            // (a run stopped part-way - the GPU driver crashing under other work - goes on from where it was, twice)
+            for (let attempt = 1; ; attempt++) {
+                const fd = fs.openSync(log, attempt === 1 ? "w" : "a");
+                const result = spawnSync(PYTHON, args, { stdio: ["ignore", fd, fd], windowsHide: true });
+                fs.closeSync(fd);
+                if (result.status === 0) break;
                 const tail = fs.readFileSync(log, "utf8").split(/\r?\n/).slice(-15).join("\n");
-                throw Error(`upscale.py ${model} failed (exit ${result.status}; ${log}):\n${tail}`);
+                if (attempt === 3) throw Error(`upscale.py ${model} failed (exit ${result.status}; ${log}):\n${tail}`);
+                print(`  upscale.py ${model} stopped (exit ${result.status}) - going on from where it was`);
             }
             for (const t of Object.values(JSON.parse(fs.readFileSync(times, "utf8")) as Record<string, Timing>))
                 timings.push(t);

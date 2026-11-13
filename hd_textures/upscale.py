@@ -59,6 +59,34 @@ def images(folder):
     return sorted(n for n in os.listdir(folder) if n.lower().endswith(".png"))
 
 
+# The images still to do (a run stopped part-way - a crash in the GPU driver - is run again by the caller and goes on
+# from where it was) and the times so far.
+def pending(args):
+    return [n for n in images(args.inp) if not os.path.isfile(os.path.join(args.out, n))]
+
+
+def load_times(args):
+    if args.times and os.path.isfile(args.times):
+        with open(args.times, encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+
+# One image done: written whole or not at all, its time recorded at once.
+def finish(args, times, name, image, start):
+    target = os.path.join(args.out, name)
+    image.save(target + ".tmp.png")
+    os.replace(target + ".tmp.png", target)
+    times[name] = {
+        "seconds": round(time.perf_counter() - start, 3),
+        "peakVramMB": round(torch.cuda.max_memory_allocated() / 1048576),
+    }
+    if args.times:
+        with open(args.times + ".tmp", "w", encoding="utf-8") as f:
+            json.dump(times, f, indent=1)
+        os.replace(args.times + ".tmp", args.times)
+
+
 # ---- PBRify (spandrel) ----
 
 
@@ -90,8 +118,8 @@ def run_pbrify(args):
     model.cuda().eval()
     dtype = torch.bfloat16 if model.supports_bfloat16 else torch.float32
     model.to(dtype)
-    times = {}
-    for name in images(args.inp):
+    times = load_times(args)
+    for name in pending(args):
         start = time.perf_counter()
         torch.cuda.reset_peak_memory_stats()
         rgb = np.asarray(Image.open(os.path.join(args.inp, name)).convert("RGB"), dtype=np.float32) / 255.0
@@ -114,11 +142,7 @@ def run_pbrify(args):
                 out[ys : ys + th * SCALE, xs : xs + tw * SCALE] += result * f
                 weight[ys : ys + th * SCALE, xs : xs + tw * SCALE] += f
         out = np.clip(out / np.maximum(weight, 1e-6) * 255.0 + 0.5, 0, 255).astype(np.uint8)
-        Image.fromarray(out, "RGB").save(os.path.join(args.out, name))
-        times[name] = {
-            "seconds": round(time.perf_counter() - start, 3),
-            "peakVramMB": round(torch.cuda.max_memory_allocated() / 1048576),
-        }
+        finish(args, times, name, Image.fromarray(out, "RGB"), start)
     return times
 
 
@@ -132,7 +156,9 @@ def run_seedvr2(args):
         raise SystemExit(f"{cli} not found: node tools/pipeline/hd_textures/fetch_models.ts seedvr2")
     saved_argv, saved_cwd = sys.argv, os.getcwd()
     # its own options, parsed by its parser; --resolution (the shorter side wanted) is set per image below
-    sys.argv = [cli, args.inp, "--output", args.out, "--output_format", "png", "--model_dir", args.models]
+    work = os.path.join(args.out, "_seedvr2")
+    os.makedirs(work, exist_ok=True)
+    sys.argv = [cli, args.inp, "--output", work, "--output_format", "png", "--model_dir", args.models]
     sys.argv += ["--dit_model", SEEDVR2_DIT, "--batch_size", "1", "--seed", str(args.seed), "--cache_dit"]
     sys.argv += ["--cache_vae", "--vae_encode_tiled", "--vae_decode_tiled"]
     sys.argv += ["--vae_encode_tile_size", "512", "--vae_encode_tile_overlap", "64"]
@@ -148,13 +174,13 @@ def run_seedvr2(args):
         ):
             raise SystemExit("SeedVR2's model files are missing or don't match their SHA-256")
         cache = {}  # (the runner and both models kept between images)
-        times = {}
-        for name in images(args.inp):
+        times = load_times(args)
+        for name in pending(args):
             source = os.path.join(args.inp, name)
             with Image.open(source) as im:
                 want = (im.size[0] * SCALE, im.size[1] * SCALE)
             options.resolution = min(want)
-            made = os.path.join(args.out, name)
+            made = os.path.join(work, name)
             torch.cuda.reset_peak_memory_stats()
             start = time.perf_counter()
             seedvr2["process_single_file"](source, options, ["0"], made, format_auto_detected=False, runner_cache=cache)
@@ -164,11 +190,8 @@ def run_seedvr2(args):
                 result = im.convert("RGB")
             if result.size != want:  # (its sizes are rounded to its own grid: brought to exactly 4x)
                 result = result.resize(want, Image.Resampling.LANCZOS)
-            result.save(made)
-            times[name] = {
-                "seconds": round(time.perf_counter() - start, 3),
-                "peakVramMB": round(torch.cuda.max_memory_allocated() / 1048576),
-            }
+            finish(args, times, name, result, start)
+            os.remove(made)
         return times
     finally:
         sys.argv = saved_argv
@@ -196,9 +219,6 @@ def main():
     deterministic(args.seed)
     os.makedirs(args.out, exist_ok=True)
     times = run_pbrify(args) if args.model == "pbrify" else run_seedvr2(args)
-    if args.times:
-        with open(args.times, "w", encoding="utf-8") as f:
-            json.dump(times, f, indent=1)
     print(f"upscaled {len(times)} images with {args.model}")
 
 
