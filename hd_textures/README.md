@@ -192,7 +192,12 @@ input).
 | whole pass (decode, analysis, back-projection, DXT, mips) | 55 min | 93 min |
 | peak VRAM | 0.4 GB | 9.5 GB (one out-of-memory at the 10 GB cap, gone on from where it was) |
 
-Textures: 1476 of 1644 upscaled; 83 atlases and 85 under 32 texels left as they were. Texture data 28.1 MB ->
+Atlases since then (the same three levels, only their regions through the model, the rest from the cache): 133
+atlases in 291 regions - PBRify 281 s of model time (0.4 GB), SeedVR2 1451 s (9.5 GB); by the uv rectangles BO has
+20 atlases, AU 38, foun 17, the skies none (the seam heuristic took 29 / 38 / 14 / 2 - 68 of them textures a mesh
+shows whole); no texture is left as it was for being an atlas any more.
+
+Textures (before the atlases were done): 1476 of 1644 upscaled; 83 atlases and 85 under 32 texels left as they were. Texture data 28.1 MB ->
 244.8 MB (BO, AU, their skies, foun; the `_net` copies the same again). A second set of the same files (another
 dictionary holding the same textures, `--no-match`) comes from the texel cache in a minute or two. In the game
 (workspace, unpacked, Vulkan, 1280x720): no errors, every texture loaded (the log's `data overlay: levels\bo\bo.tex.xbx

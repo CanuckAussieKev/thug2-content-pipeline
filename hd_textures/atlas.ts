@@ -777,6 +777,14 @@ export function meshSpots(
 // A camera command looking at a spot from its normal's side, far enough back to see the mesh.
 export function cameraAt(spot: MeshSpot): string {
     const d = Math.min(400, Math.max(60, spot.size * 0.9));
+    // (the game's camera command wants a horizon: a straight up / down view tilted a little)
+    let normal = spot.normal;
+    if (Math.hypot(normal[0], normal[2]) < 0.2) {
+        const n: [number, number, number] = [0.3, normal[1], 0.3];
+        const l = Math.hypot(...n);
+        normal = [n[0] / l, n[1] / l, n[2] / l];
+    }
+    spot = { ...spot, normal };
     const p = spot.centre.map((c, k) => c + spot.normal[k]! * d);
     const f = (n: number): string => n.toFixed(1);
     const g = (n: number): string => n.toFixed(3);
