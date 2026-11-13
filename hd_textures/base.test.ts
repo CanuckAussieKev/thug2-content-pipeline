@@ -313,3 +313,35 @@ test("install, switch and restore: Data's files untouched (the HD ones in the da
     assert.equal(base.readRecord(game), null);
     assert.ok(!fs.existsSync(path.join(game, "thug2-decomp-backup")), "the backup folder gone with the record");
 });
+
+test("buildSet with the meshes' uv rectangles: an atlas upscaled region by region, the others as before, the scenes in the file key", () => {
+    const cacheRoot = temp("hd-base-atlas-");
+    const w = 64;
+    const sheet = texture(w, w, (x) => (x < 32 ? [220, 30, 30, 255] : [30, 30, 220, 255]));
+    const tex = writeTex({
+        version: 1,
+        textures: [
+            asTexture(sheet, w, w, 1, 0xa),
+            asTexture(tiling(w, w), w, w, 1, 0xb),
+            asTexture(ramp(w, w), w, w, 1, 0xc),
+        ],
+    });
+    const cell = (u0: number, u1: number) => ({ u0, u1, v0: 0, v1: 1, clampU: true, clampV: true });
+    const index = new Map([
+        [0xa, [cell(0, 0.5), cell(0.5, 1)]],
+        [0xb, [{ ...cell(0, 3), clampU: false, clampV: false }]],
+    ]);
+    const scenes: base.SceneSource = () => ({ index, signature: "s1", errors: [] });
+    const { report } = base.buildSet([{ name: "x.tex.xbx", bytes: tex }], "pbrify", {
+        cacheRoot,
+        vramGb: 1,
+        upscaler: smooth4,
+        scenes,
+    });
+    assert.deepEqual(report.atlases, ["x.tex.xbx 0000000a: 2 regions"]);
+    assert.equal(report.regions, 2);
+    assert.deepEqual(report.unreferenced, ["x.tex.xbx 0000000c"]);
+    assert.equal(report.upscaled, 3);
+    assert.notEqual(base.fileKey(tex, "pbrify", true, "s1"), base.fileKey(tex, "pbrify", true, "s2"));
+    fs.rmSync(cacheRoot, { recursive: true, force: true });
+});
