@@ -17,8 +17,9 @@
 // installed in turn - originals, PBRify, SeedVR2 - and the level's spots of the plan (default tools/game/rt_shadows.json:
 // its groups whose level is --level) captured on Vulkan (tools/game/renderer_parity.ts's runs); then the set that was
 // installed before is put back. <out>\shots-<set>\ holds the frames, <out>\<level>-shot-<spot>.png the three side by
-// side (original | PBRify | SeedVR2) over the middle of each enlarged x2 (-full.png: the whole frames). --build
-// copies that build in first (deploy_build.ps1 -Arch x64). Each run's log is kept beside its pictures. --have-lock:
+// side (original | PBRify | SeedVR2), a quarter of each (left, below the middle - mostly ground) enlarged x2
+// (-full.png: the whole frames); only the group named for the level when the plan has one. --build copies that build
+// in first (deploy_build.ps1 -Arch x64). Each run's log is kept beside its pictures. --have-lock:
 // the caller holds the lock already (the whole session under one hold: unpack, shots, restore); --no-crops: the
 // shots only; --sets: only those sets captured (a set must have been made first) - the side-by-sides take every set
 // with a picture of the spot in --out, earlier runs' too. --no-match: the sets made with base.ts --no-match.
@@ -206,7 +207,10 @@ async function shots(o: ShotOptions): Promise<string[]> {
     // (an unpacked game runs its TypeScript: ts_scripts=1; a packed one its .qb)
     const tsScripts = fs.existsSync(path.join(o.root, base.BACKUP, "unpacked.json")) ? "1" : "0";
     const plan = parity.readPlan(fs.readFileSync(o.spots, "utf8"));
-    const groups = plan.groups.filter((g) => g.level?.toLowerCase() === o.level.toLowerCase() && g.spots?.length);
+    const ofLevel = plan.groups.filter((g) => g.level?.toLowerCase() === o.level.toLowerCase() && g.spots?.length);
+    // (the group named for the level when there is one: the others at its spots are other views - unlit, wireframe)
+    const named = ofLevel.filter((g) => g.name.toLowerCase() === o.level.toLowerCase());
+    const groups = named.length ? named : ofLevel;
     if (!groups.length) exitWith(`${o.spots}: no group with spots in level ${o.level}`);
     // (every set made already: installing one that isn't would run the model for hours under the lock)
     levelSets(
@@ -299,7 +303,7 @@ async function shots(o: ShotOptions): Promise<string[]> {
             const w = images[0]!.width;
             const h = images[0]!.height;
             const middle = images.map((i) =>
-                zoom(crop(i, Math.floor(w * 0.375), Math.floor(h * 0.375), Math.floor(w / 4), Math.floor(h / 4)), 2),
+                zoom(crop(i, Math.floor(w * 0.125), Math.floor(h * 0.5), Math.floor(w / 4), Math.floor(h / 4)), 2),
             );
             const file = path.join(o.out, `${o.level}-shot-${spot.name}.png`);
             fs.writeFileSync(file, encodePng(sideBySide(middle)));
