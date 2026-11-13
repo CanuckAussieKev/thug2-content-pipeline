@@ -9,9 +9,12 @@
   },
   "commands": [
     "editor_import/import_levels.ts",
+    "hd_textures/base.ts",
+    "hd_textures/compare_models.ts",
     "hd_textures/compare_shots.ts",
     "hd_textures/compare_tex.ts",
     "hd_textures/fetch.ts",
+    "hd_textures/fetch_models.ts",
     "hd_textures/globe/fetch.ts",
     "hd_textures/globe/fit.ts",
     "hd_textures/globe/redraw.ts",
