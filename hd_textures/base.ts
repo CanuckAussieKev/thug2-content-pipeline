@@ -7,14 +7,16 @@
 // dictionary is replaced in place (its original kept).
 //
 //   node tools/pipeline/hd_textures/base.ts --game <folder> --model pbrify|seedvr2|none [--levels BO,AU,foun]
-//        [--scope levels|all] [--build-only] [--vram-gb 10]
+//        [--scope levels|all] [--build-only] [--no-match] [--vram-gb 10]
 //   node tools/pipeline/hd_textures/base.ts --game <folder> --restore | --status
 //
 // --model installs that model's set (made first where its cache doesn't have it yet; the previous set put back
 // first), none only puts the originals back. --levels: only those levels (each with its _Sky); --scope all: every
 // .tex.xbx (peds, skaters, vehicles, props too) - the default is the levels' dictionaries. --build-only fills the
 // model's cache without installing anything (both sets made once, switching is then a copy). unpack_game.ts
-// --hd-textures <model> runs the same after unpacking.
+// --hd-textures <model> runs the same after unpacking. --no-match keeps the model's own colours and contrast (default:
+// every 4 x 4 block pulled back to the original texel - which also brings back a faint trace of the original's DXT
+// blocks); its files are a set of their own in the cache (made from the same model output: no model run).
 //
 // Per texture (thug2-level-converter-core level_port/hd_textures.ts does the per-texture work, as for converted
 // levels; this adds what the base game needs):
@@ -272,6 +274,7 @@ export function collect(root: string, scope: "levels" | "all", levels: readonly 
 
 export interface HdRecord {
     model: ModelName;
+    match?: boolean; // (false: --no-match)
     // target: the file written; original: the SHA-256 of the file it replaced (null: there was none - a Data file's
     // HD version added to the data overlay); installed: the written one's
     files: { target: string; original: string | null; installed: string }[];
@@ -334,15 +337,18 @@ export interface BuildOptions {
     vramGb: number;
     upscaler?: hd.Upscaler; // (tests: a stand-in for the model)
     log?: (line: string) => void;
+    // false: the model's own colours and contrast (default: pulled back to the original's - core's matchOriginal)
+    match?: boolean;
 }
 
 export function defaultCacheRoot(): string {
     return path.join(HD_DIR, "base");
 }
 
-export function hdOptions(model: ModelName, cacheRoot: string): hd.HdOptions {
+export function hdOptions(model: ModelName, cacheRoot: string, match = true): hd.HdOptions {
     return {
         ...hd.defaultOptions(4),
+        match,
         maxSize: MAX_SIZE,
         minSize: MIN_SIZE,
         model: MODELS[model].tag,
@@ -350,11 +356,10 @@ export function hdOptions(model: ModelName, cacheRoot: string): hd.HdOptions {
     };
 }
 
-export function fileKey(original: Uint8Array, model: ModelName): string {
+export function fileKey(original: Uint8Array, model: ModelName, match = true): string {
     const h = createHash("sha256");
-    h.update(
-        JSON.stringify({ base: BASE_VERSION, pass: hd.PASS_VERSION, model: MODELS[model].tag, MIN_SIZE, MAX_SIZE }),
-    );
+    const settings = { base: BASE_VERSION, pass: hd.PASS_VERSION, model: MODELS[model].tag, MIN_SIZE, MAX_SIZE };
+    h.update(JSON.stringify(match ? settings : { ...settings, match }));
     h.update(original);
     return h.digest("hex");
 }
@@ -475,7 +480,8 @@ export function buildSet(
         seconds: 0,
         timings: [],
     };
-    const hdOpts = hdOptions(model, options.cacheRoot);
+    const match = options.match ?? true;
+    const hdOpts = hdOptions(model, options.cacheRoot, match);
     const upscaler = options.upscaler ?? pythonUpscaler(model, options.cacheRoot, options.vramGb, report.timings);
     const files = new Map<string, string>();
     let pending: { name: string; key: string; tex: TexFile }[] = [];
@@ -497,7 +503,7 @@ export function buildSet(
     const seen = new Set<string>();
     for (const o of originals) {
         report.bytesBefore += o.bytes.length;
-        const key = fileKey(o.bytes, model);
+        const key = fileKey(o.bytes, model, match);
         files.set(key, cachedFile(options.cacheRoot, model, key));
         if (fs.existsSync(files.get(key)!) || seen.has(key)) continue;
         seen.add(key);
@@ -507,7 +513,7 @@ export function buildSet(
         if (pendingTextures >= CHUNK) flush();
     }
     flush();
-    for (const o of originals) report.bytesAfter += fs.statSync(files.get(fileKey(o.bytes, model))!).size;
+    for (const o of originals) report.bytesAfter += fs.statSync(files.get(fileKey(o.bytes, model, match))!).size;
     report.seconds = (performance.now() - start) / 1000;
     return { files, report };
 }
@@ -530,11 +536,11 @@ export function install(
     const originals = entries.map((e) => ({ name: e.rel, bytes: originalBytes(root, e) }));
     const { files, report } = buildSet(originals, model, options);
     if (options.buildOnly) return { report, installed: 0 };
-    const record: HdRecord = { model, files: [] };
+    const record: HdRecord = { model, match: options.match ?? true, files: [] };
     writeRecord(root, record); // (first: a stopped run can still be put back)
     entries.forEach((e, k) => {
         const original = originals[k]!.bytes;
-        const hdBytes = fs.readFileSync(files.get(fileKey(original, model))!);
+        const hdBytes = fs.readFileSync(files.get(fileKey(original, model, options.match ?? true))!);
         if (hdBytes.equals(original)) return; // (nothing in it upscaled)
         const target = path.join(root, e.target);
         let before: string | null = null;
@@ -585,6 +591,7 @@ export interface BaseCli {
     scope: "levels" | "all";
     buildOnly: boolean;
     vramGb: number;
+    match: boolean;
 }
 
 // The options unpack_game.ts and this tool share; `args` keeps whatever isn't theirs.
@@ -616,6 +623,7 @@ export function parseBaseArgs(args: string[]): BaseCli {
         scope,
         buildOnly: flag("--build-only"),
         vramGb: vram,
+        match: !(flag("--no-match") || flag("--hd-no-match")),
     };
 }
 
@@ -628,6 +636,7 @@ export function installAndReport(root: string, cli: BaseCli): void {
         buildOnly: cli.buildOnly,
         cacheRoot: defaultCacheRoot(),
         vramGb: cli.vramGb,
+        match: cli.match,
         log: print,
     });
     if (result.report && cli.model !== "none") {

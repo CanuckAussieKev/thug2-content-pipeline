@@ -165,7 +165,9 @@ file changed or went since (make_menu_level.ts or a converter remade it: theirs 
 - the result pulled back so every 4 x 4 block averages to the original texel (colours and contrast stay the game's),
   a full mip chain made again, written as DXT1 / DXT5 as it came (a 32-bit one compressed). Not BC7: the Direct3D 9
   renderer has no BC7 and the game's texture loaders know DXT1 / 3 / 5 only - BC7 would need a second texture format
-  path in both renderers and a decode fallback for Direct3D 9.
+  path in both renderers and a decode fallback for Direct3D 9. The pull-back also brings a faint trace of the
+  original's DXT blocks back (it matches the decoded original); `--no-match` (base.ts, compare_models.ts) keeps the
+  model's own colours and contrast instead - a set of its own, made from the same model output in seconds.
 
 The GPU side (`upscale.py`) runs at below-normal priority and caps its share of the GPU's memory (`--vram-gb`,
 default 10); one model at a time. PBRify goes over each image in 192-texel tiles (feathered overlaps); SeedVR2 keeps

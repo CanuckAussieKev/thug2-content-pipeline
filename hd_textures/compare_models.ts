@@ -21,7 +21,7 @@
 // copies that build in first (deploy_build.ps1 -Arch x64). Each run's log is kept beside its pictures. --have-lock:
 // the caller holds the lock already (the whole session under one hold: unpack, shots, restore); --no-crops: the
 // shots only; --sets: only those sets captured (a set must have been made first) - the side-by-sides take every set
-// with a picture of the spot in --out, earlier runs' too.
+// with a picture of the spot in --out, earlier runs' too. --no-match: the sets made with base.ts --no-match.
 
 import * as fs from "node:fs";
 import * as path from "node:path";
@@ -36,6 +36,8 @@ import { crop, sideBySide, zoom } from "./compare_shots.ts";
 import { MODEL_NAMES, MODELS, type ModelName } from "./models.ts";
 
 const SETS = ["original", ...MODEL_NAMES] as const;
+// --no-match: the sets made with the models' own colours and contrast (base.ts --no-match)
+let match = true;
 type SetName = (typeof SETS)[number];
 
 // BGRA texels over a checkerboard as RGB.
@@ -85,8 +87,8 @@ function levelSets(
                 base.defaultCacheRoot(),
                 model,
                 "files",
-                base.fileKey(original, model).slice(0, 2),
-                `${base.fileKey(original, model)}.tex.xbx`,
+                base.fileKey(original, model, match).slice(0, 2),
+                `${base.fileKey(original, model, match)}.tex.xbx`,
             );
             if (!fs.existsSync(file))
                 exitWith(
@@ -213,6 +215,7 @@ async function shots(o: ShotOptions): Promise<string[]> {
         MODEL_NAMES.filter((m) => o.sets.includes(m)),
     );
     const before = base.readRecord(o.root)?.model ?? "none";
+    const beforeMatch = base.readRecord(o.root)?.match ?? true;
     if (!o.haveLock) {
         const lock = await parity.powershell(
             "game_lock.ps1",
@@ -243,6 +246,7 @@ async function shots(o: ShotOptions): Promise<string[]> {
                 cacheRoot: base.defaultCacheRoot(),
                 vramGb: 10,
                 log: print,
+                match,
             });
             print(`${set}: ${result.installed} files installed`);
             for (const group of groups) {
@@ -270,6 +274,7 @@ async function shots(o: ShotOptions): Promise<string[]> {
             buildOnly: false,
             cacheRoot: base.defaultCacheRoot(),
             vramGb: 10,
+            match: beforeMatch,
         });
         if (!o.haveLock) {
             const release = await parity.powershell(
@@ -332,6 +337,7 @@ export async function main(argv: readonly string[] = process.argv.slice(2)): Pro
     const wantShots = flag("--shots");
     const haveLock = flag("--have-lock");
     const noCrops = flag("--no-crops");
+    match = !flag("--no-match");
     const sets = (take("--sets", SETS.join(",")) ?? "").split(",");
     const unknownSet = sets.find((s) => !(SETS as readonly string[]).includes(s));
     if (unknownSet) exitWith(`--sets: ${unknownSet}? (${SETS.join(", ")})`);
