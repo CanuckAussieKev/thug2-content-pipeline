@@ -80,17 +80,13 @@ function levelSets(
     models: readonly ModelName[] = MODEL_NAMES,
 ): { name: string; sets: Record<SetName, Buffer> }[] {
     const out: { name: string; sets: Record<SetName, Buffer> }[] = [];
+    const scenes = base.scenesOf(root);
     for (const e of base.collect(root, "levels", [level])) {
         const original = base.originalBytes(root, e);
         const sets = { original } as Record<SetName, Buffer>;
         for (const model of models) {
-            const file = path.join(
-                base.defaultCacheRoot(),
-                model,
-                "files",
-                base.fileKey(original, model, match).slice(0, 2),
-                `${base.fileKey(original, model, match)}.tex.xbx`,
-            );
+            const key = base.fileKey(original, model, match, scenes(e.rel).signature);
+            const file = path.join(base.defaultCacheRoot(), model, "files", key.slice(0, 2), `${key}.tex.xbx`);
             if (!fs.existsSync(file))
                 exitWith(
                     `${e.rel}: no ${model} set made yet - node tools/pipeline/hd_textures/base.ts --game <folder> ` +
