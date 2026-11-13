@@ -1,5 +1,5 @@
-// NOT ORIGINAL - the pause menu's DEMOS (the game's src/devtools/demo.h): RECORD DEMO, PLAY DEMO and SAVE AS VIDEO,
-// and STOP RECORDING while a demo records. The game's script commands Demo_Item, Demo_GetEntry, Demo_Record,
+// NOT ORIGINAL - the pause menu's DEMOS (the game's src/devtools/demo.h): RECORD DEMO, PLAY DEMO, WATCH REPLAY (the
+// demo viewer: src/devtools/demo_viewer.h) and SAVE AS VIDEO, and STOP RECORDING while a demo records. The game's script commands Demo_Item, Demo_GetEntry, Demo_Record,
 // Demo_Stop and Demo_Play answer and act; these scripts are the menus (the game's own roundbar menus, which the new
 // front end restyles like the rest).
 //
@@ -23,6 +23,7 @@ export const DEMO_MENU_SCRIPTS = `script demo_menu_create {
         add_roundbar_menu_item text="RECORD DEMO" id=menu_demo_record not_focusable
     }
     add_roundbar_menu_item text="PLAY DEMO" id=menu_demo_play pad_choose_script=demo_list_create pad_choose_params={mode=play}
+    add_roundbar_menu_item text="WATCH REPLAY" id=menu_demo_view pad_choose_script=demo_list_create pad_choose_params={mode=viewer}
     add_roundbar_menu_item text="SAVE AS VIDEO" id=menu_demo_video pad_choose_script=demo_list_create pad_choose_params={mode=video}
     roundbar_menu_finish
 }
@@ -30,7 +31,11 @@ script demo_list_create {
     if (<mode> = video) {
         title = "SAVE AS VIDEO"
     } else {
-        title = "PLAY DEMO"
+        if (<mode> = viewer) {
+            title = "WATCH REPLAY"
+        } else {
+            title = "PLAY DEMO"
+        }
     }
     make_new_roundbar_menu {
         title=<title>
@@ -58,7 +63,11 @@ script demo_list_choose {
     if (<mode> = video) {
         Demo_Play index=<index> video
     } else {
-        Demo_Play index=<index>
+        if (<mode> = viewer) {
+            Demo_Play index=<index> viewer
+        } else {
+            Demo_Play index=<index>
+        }
     }
 }
 script demo_menu_record {
