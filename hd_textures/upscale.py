@@ -27,7 +27,7 @@ import numpy as np
 # PyTorch's own CUDA allocator, fixed before torch is loaded: SeedVR2's command line asks for cudaMallocAsync as it
 # loads (os.environ.setdefault), after this process has allocated with the native one - memory then freed by the
 # other allocator crashed the process (an access violation after the first image's diffusion step, now and then).
-os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "backend:native"
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "backend:native,expandable_segments:True"
 import torch  # noqa: E402
 from PIL import Image  # noqa: E402
 
