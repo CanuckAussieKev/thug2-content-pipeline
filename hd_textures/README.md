@@ -152,10 +152,19 @@ file changed or went since (make_menu_level.ts or a converter remade it: theirs 
 - tiling found by edge continuity: a texture wraps in u (v) when its last column (row) meets its first as smoothly as
   its neighbouring columns (rows) meet; the model then sees the other edge as padding (16 texels), so tiled surfaces
   show no seams. The materials' own addressing isn't read.
-- atlases skipped (listed in the report): a hard straight seam right across, well inside the texture, between two sides
-  that are different pictures, in a texture that doesn't repeat that way - several images packed side by side, which
-  the padding and the model would mix. Borders and trims near an edge, rows of windows and stripes, and cut-out sheets
-  (images apart on transparent texels) aren't atlases. BO: 29 of 788, AU: 38 of 639, foun: 14 of 208.
+- atlases (several pictures packed in one texture) upscaled region by region (`atlas.ts`). The regions come from the
+  meshes, not the texels: every scene / model file beside the dictionary (the level's `.scn.xbx` and its `_net` twin,
+  the sky's, `.mdl.xbx` / `.skin.xbx`) is read and each material pass's triangles give a uv rectangle (pass n reads uv
+  set n; a clamped axis cut to 0..1, a wrapped one moved home by whole tiles - or, spanning more than a tile, the whole
+  axis, wrapped: a trim sheet's row; environment-mapped and scrolling passes the whole texture). Rectangles sharing a
+  texel are one region, regions touching along an edge one when the texels across it are continuous, edges moved out
+  to 4-texel blocks where nothing overlaps. One region over 85 % of the texture, or one covering it all, is no atlas.
+  Each region goes to the model alone, padded with its own edge texels (its own other edge on a wrapped axis), and is
+  put back at its scaled place; texels no region covers are filled bilinearly; the pull-back and the mips are made per
+  region (a smaller texel averages only one region's texels), so no colour crosses a border. A texture no mesh beside
+  it uses falls back to the old seam heuristic (a hard straight seam between two different pictures: left as it was)
+  and is listed. `node tools/pipeline/hd_textures/atlas_report.ts --game <folder> --levels BO [--out <folder>]` lists
+  the atlases with their regions (and outlines them in pictures).
 - colour through the model as RGB (neither model takes alpha); alpha on its own - opaque stays opaque, a cut-out's
   alpha scaled bilinearly and thresholded (sharp, no fringe), soft alpha through the model as grey.
 - left alone: textures under 32 texels on their longer side (decals, lights, gradients: the models invent noise
@@ -183,7 +192,12 @@ input).
 | whole pass (decode, analysis, back-projection, DXT, mips) | 55 min | 93 min |
 | peak VRAM | 0.4 GB | 9.5 GB (one out-of-memory at the 10 GB cap, gone on from where it was) |
 
-Textures: 1476 of 1644 upscaled; 83 atlases and 85 under 32 texels left as they were. Texture data 28.1 MB ->
+Atlases since then (the same three levels, only their regions through the model, the rest from the cache): 133
+atlases in 291 regions - PBRify 281 s of model time (0.4 GB), SeedVR2 1451 s (9.5 GB); by the uv rectangles BO has
+20 atlases, AU 38, foun 17, the skies none (the seam heuristic took 29 / 38 / 14 / 2 - 68 of them textures a mesh
+shows whole); no texture is left as it was for being an atlas any more.
+
+Textures (before the atlases were done): 1476 of 1644 upscaled; 83 atlases and 85 under 32 texels left as they were. Texture data 28.1 MB ->
 244.8 MB (BO, AU, their skies, foun; the `_net` copies the same again). A second set of the same files (another
 dictionary holding the same textures, `--no-match`) comes from the texel cache in a minute or two. In the game
 (workspace, unpacked, Vulkan, 1280x720): no errors, every texture loaded (the log's `data overlay: levels\bo\bo.tex.xbx

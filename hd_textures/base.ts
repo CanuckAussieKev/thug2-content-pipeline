@@ -23,9 +23,11 @@
 // - tiling found by edge continuity (detectWrap): the texture wraps in u (v) when the step from its last column (row)
 //   to its first is no larger than its typical step between neighbouring columns (rows) - the materials' own
 //   addressing isn't read; the model then sees the other edge as padding, so tiled surfaces show no seams;
-// - atlases found and skipped (detectAtlas): a hard straight seam right across, well inside the texture, between
-//   two sides that are different pictures (several images packed side by side) - wrap padding and the model's reach
-//   would mix the neighbouring images; each is listed in the report;
+// - atlases (several pictures packed in one texture) found from the meshes beside the dictionary - the uv rectangles
+//   their material passes use, clustered into regions - and upscaled region by region, each padded with its own
+//   edges, with region-aware mips (atlas.ts): wrap padding and the model's reach would mix neighbouring pictures;
+//   a texture no mesh uses falls back to the seam heuristic (detectAtlas: a hard straight seam right across, well
+//   inside, between two sides that are different pictures) and such an atlas is left as it was; both listed;
 // - colour through the model (RGB: neither model takes alpha), alpha on its own: cut-outs scaled bilinearly and
 //   thresholded, soft alpha through the model as grey, opaque stays opaque (core);
 // - textures under 32 texels on their longer side left alone (decals, lights, gradients - the models invent
@@ -50,6 +52,7 @@ import * as hd from "thug2-level-converter-core/level_port/hd_textures.ts";
 import { readTex, type TexFile, type Texture, writeTex } from "thug2-level-converter-core/level_port/tex.ts";
 import { exitWith, helpFromHeader, isMain, print, runMain } from "thug2-level-converter-core/lib/cli.ts";
 import { decodePng, encodePng, type Image } from "thug2-level-converter-core/lib/frame_diff.ts";
+import * as atlas from "./atlas.ts";
 import {
     HD_DIR,
     isModelName,
@@ -63,7 +66,7 @@ import {
 } from "./models.ts";
 
 // bumped whenever this pass makes different files from the same input (the files cache keys on it)
-export const BASE_VERSION = 1;
+export const BASE_VERSION = 2;
 export const MIN_SIZE = 32;
 export const MAX_SIZE = 1024;
 // textures per call of the model (one model load each; bounds the memory the upscaled texels take)
@@ -208,6 +211,12 @@ export function detectAtlas(bgra: Uint8Array, w: number, h: number): string | nu
     return null;
 }
 
+// A texture this pass may upscale: a format core handles, its longer side within MIN_SIZE .. MAX_SIZE.
+export function handledTexture(t: Texture): boolean {
+    const format = !t.palette.length && [0, 1, 2, 5].includes(t.dxt) && (t.dxt !== 0 || t.texelDepth === 32);
+    return format && Math.max(t.width, t.height) >= MIN_SIZE && Math.max(t.width, t.height) < MAX_SIZE;
+}
+
 // ---- the files ----
 
 export const OVERLAY = "thug2-decomp-data";
@@ -346,6 +355,9 @@ export interface BuildOptions {
     log?: (line: string) => void;
     // false: the model's own colours and contrast (default: pulled back to the original's - core's matchOriginal)
     match?: boolean;
+    // the uv rectangles of the meshes beside each dictionary (atlases' regions); absent: no mesh is known - every
+    // texture goes to the seam heuristic
+    scenes?: SceneSource;
 }
 
 export function defaultCacheRoot(): string {
@@ -363,13 +375,30 @@ export function hdOptions(model: ModelName, cacheRoot: string, match = true): hd
     };
 }
 
-export function fileKey(original: Uint8Array, model: ModelName, match = true): string {
+// `scenes`: the signature of the scene files beside the dictionary (atlas.ts UvIndexes - its atlases' regions come
+// from them).
+export function fileKey(original: Uint8Array, model: ModelName, match = true, scenes = ""): string {
     const h = createHash("sha256");
-    const settings = { base: BASE_VERSION, pass: hd.PASS_VERSION, model: MODELS[model].tag, MIN_SIZE, MAX_SIZE };
+    const settings = {
+        base: BASE_VERSION,
+        pass: hd.PASS_VERSION,
+        model: MODELS[model].tag,
+        MIN_SIZE,
+        MAX_SIZE,
+        scenes,
+    };
     h.update(JSON.stringify(match ? settings : { ...settings, match }));
     h.update(original);
     return h.digest("hex");
 }
+
+// The scene files' uv rectangles beside the game's dictionaries (names relative to the game's root).
+export function scenesOf(root: string): SceneSource {
+    const indexes = new atlas.UvIndexes();
+    return (name) => indexes.of(path.join(root, name));
+}
+
+export type SceneSource = (name: string) => { index: atlas.UvIndex; signature: string; errors: string[] };
 
 const cachedFile = (cacheRoot: string, model: ModelName, key: string): string =>
     path.join(cacheRoot, model, "files", key.slice(0, 2), `${key}.tex.xbx`);
@@ -419,7 +448,10 @@ export interface BuildReport {
     made: number; // files made now (the rest from the cache)
     textures: number;
     upscaled: number;
-    atlases: string[]; // "<file> <checksum>: <reason>"
+    atlases: string[]; // upscaled region by region: "<file> <checksum>: <n> regions"
+    regions: number; // their regions
+    unreferenced: string[]; // textures no mesh beside them uses: "<file> <checksum>" (+ the seam heuristic's verdict)
+    skippedAtlases: string[]; // left as they were (no mesh uses them, the seam heuristic took them for atlases)
     skipped: Map<string, number>;
     bytesBefore: number;
     bytesAfter: number;
@@ -427,29 +459,54 @@ export interface BuildReport {
     timings: Timing[];
 }
 
-// One dictionary's HD version: its textures with their atlas / wrap found, the rest through core's pass. Several
-// dictionaries go through one call of the model (their textures given unique numbers for the call).
+// A texture's atlas regions from the meshes beside its dictionary (atlas.ts), or why it has none: "unreferenced"
+// (no mesh uses it - the seam heuristic decides), "whole" (not an atlas).
+export function atlasRegionsOf(t: Texture, bgra: Uint8Array, uses: readonly atlas.UvUse[] | null): atlas.RegionResult {
+    if (uses === null) return { kind: "unreferenced" };
+    // (one colour: core leaves it as it is)
+    if (bgra.every((v, i) => v === bgra[i & 3])) return { kind: "whole", why: "one colour" };
+    return atlas.findRegions(uses, bgra, t.width, t.height);
+}
+
+// One dictionary's HD version: its textures with their atlas regions / wrap found; atlases region by region
+// (atlas.ts), the rest through core's pass. Several dictionaries go through one call of the model (their textures
+// given unique numbers for the call).
 function upscaleDictionaries(
     files: { name: string; tex: TexFile }[],
     options: hd.HdOptions,
     upscaler: hd.Upscaler,
     report: BuildReport,
+    scenes: SceneSource | undefined,
 ): void {
     const combined: TexFile = { version: 1, textures: [] };
     const addressing = new Map<number, hd.Addressing>();
     const checksums = new Map<Texture, number>();
+    const atlases: atlas.AtlasItem[] = [];
     let n = 0;
     for (const { name, tex } of files) {
+        const index = scenes?.(name).index ?? null;
         for (const t of tex.textures) {
             report.textures++;
-            const handled = !t.palette.length && [0, 1, 2, 5].includes(t.dxt) && (t.dxt !== 0 || t.texelDepth === 32);
-            if (handled && Math.max(t.width, t.height) >= MIN_SIZE && Math.max(t.width, t.height) < MAX_SIZE) {
+            if (handledTexture(t)) {
                 const bgra = hd.topLevel(t);
-                const atlas = detectAtlas(bgra, t.width, t.height);
-                if (atlas) {
-                    report.atlases.push(`${name} ${t.checksum.toString(16).padStart(8, "0")}: ${atlas}`);
-                    report.skipped.set("atlas", (report.skipped.get("atlas") ?? 0) + 1);
+                const id = `${name} ${t.checksum.toString(16).padStart(8, "0")}`;
+                const found = atlasRegionsOf(t, bgra, index ? (index.get(t.checksum) ?? []) : null);
+                if (found.kind === "atlas") {
+                    atlases.push({ texture: t, regions: found.regions });
+                    report.atlases.push(`${id}: ${found.regions.length} regions`);
                     continue;
+                }
+                if (found.kind === "unreferenced") {
+                    // (no mesh says where its pictures are: the seam heuristic's atlases are left as they are)
+                    const seam = detectAtlas(bgra, t.width, t.height);
+                    report.unreferenced.push(
+                        `${id}${seam ? `: seam heuristic - atlas (${seam}), left as it was` : ""}`,
+                    );
+                    if (seam) {
+                        report.skippedAtlases.push(`${id}: ${seam}`);
+                        report.skipped.set("atlas", (report.skipped.get("atlas") ?? 0) + 1);
+                        continue;
+                    }
                 }
                 addressing.set(n, detectWrap(bgra, t.width, t.height));
             }
@@ -466,6 +523,11 @@ function upscaleDictionaries(
     }
     report.upscaled += stats.upscaled;
     for (const [why, count] of stats.skipped) report.skipped.set(why, (report.skipped.get(why) ?? 0) + count);
+    if (atlases.length) {
+        const done = atlas.upscaleAtlases(atlases, options, upscaler);
+        report.upscaled += done.upscaled;
+        report.regions += done.regions;
+    }
 }
 
 // Every file's HD version into the model's cache (the ones not there yet). Returns the cached file per original key.
@@ -481,6 +543,9 @@ export function buildSet(
         textures: 0,
         upscaled: 0,
         atlases: [],
+        regions: 0,
+        unreferenced: [],
+        skippedAtlases: [],
         skipped: new Map(),
         bytesBefore: 0,
         bytesAfter: 0,
@@ -495,7 +560,7 @@ export function buildSet(
     let pendingTextures = 0;
     const flush = (): void => {
         if (!pending.length) return;
-        upscaleDictionaries(pending, hdOpts, upscaler, report);
+        upscaleDictionaries(pending, hdOpts, upscaler, report, options.scenes);
         for (const p of pending) {
             const file = cachedFile(options.cacheRoot, model, p.key);
             fs.mkdirSync(path.dirname(file), { recursive: true });
@@ -508,9 +573,13 @@ export function buildSet(
         pendingTextures = 0;
     };
     const seen = new Set<string>();
+    const keyOf = (o: { name: string; bytes: Buffer }): string =>
+        fileKey(o.bytes, model, match, options.scenes?.(o.name).signature ?? "");
     for (const o of originals) {
         report.bytesBefore += o.bytes.length;
-        const key = fileKey(o.bytes, model, match);
+        for (const error of options.scenes?.(o.name).errors ?? [])
+            options.log?.(`  ${o.name}: scene not read: ${error}`);
+        const key = keyOf(o);
         files.set(key, cachedFile(options.cacheRoot, model, key));
         if (fs.existsSync(files.get(key)!) || seen.has(key)) continue;
         seen.add(key);
@@ -520,7 +589,7 @@ export function buildSet(
         if (pendingTextures >= CHUNK) flush();
     }
     flush();
-    for (const o of originals) report.bytesAfter += fs.statSync(files.get(fileKey(o.bytes, model, match))!).size;
+    for (const o of originals) report.bytesAfter += fs.statSync(files.get(keyOf(o))!).size;
     report.seconds = (performance.now() - start) / 1000;
     return { files, report };
 }
@@ -541,13 +610,15 @@ export function install(
     if (model === "none") return { report: null, installed: 0 };
     const entries = collect(root, options.scope, options.levels);
     const originals = entries.map((e) => ({ name: e.rel, bytes: originalBytes(root, e) }));
-    const { files, report } = buildSet(originals, model, options);
+    const scenes = options.scenes ?? scenesOf(root);
+    const { files, report } = buildSet(originals, model, { ...options, scenes });
     if (options.buildOnly) return { report, installed: 0 };
     const record: HdRecord = { model, match: options.match ?? true, files: [] };
     writeRecord(root, record); // (first: a stopped run can still be put back)
     entries.forEach((e, k) => {
         const original = originals[k]!.bytes;
-        const hdBytes = fs.readFileSync(files.get(fileKey(original, model, options.match ?? true))!);
+        const key = fileKey(original, model, options.match ?? true, scenes(e.rel).signature);
+        const hdBytes = fs.readFileSync(files.get(key)!);
         if (hdBytes.equals(original)) return; // (nothing in it upscaled)
         const target = path.join(root, e.target);
         let before: string | null = null;
@@ -582,7 +653,9 @@ export function reportLines(model: ModelName, r: BuildReport): string[] {
                 `slowest ${slowest.toFixed(1)} s), peak VRAM ${peak} MB`,
         );
     }
-    for (const a of r.atlases) lines.push(`  atlas, left as it was: ${a}`);
+    if (r.atlases.length) lines.push(`  ${r.atlases.length} atlases upscaled region by region (${r.regions} regions)`);
+    for (const a of r.atlases) lines.push(`  atlas: ${a}`);
+    for (const u of r.unreferenced) lines.push(`  no mesh uses: ${u}`);
     return lines;
 }
 

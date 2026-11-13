@@ -2,13 +2,13 @@
 // for choosing between them by eye.
 //
 //   node tools/pipeline/hd_textures/compare_models.ts --game <folder> --level BO [--out <folder>] [--count 12]
-//        [--shots [--spots <plan.json>] [--build <build folder>] [--owner <name>] [--have-lock] [--no-crops]
+//        [--atlases N] [--shots [--spots <plan.json>] [--build <build folder>] [--owner <name>] [--have-lock] [--no-crops] [--centre]
 //                 [--sets original,pbrify,seedvr2]]
 //
 // Textures (always; no game run): `count` of the level's textures both models upscaled - the most detailed ones, spread
 // over the dictionary - each as original (texels enlarged x4) | PBRify | SeedVR2, the middle 64 x 64 texels (256 x 256
 // at x4) shown twice the size, alpha over a checkerboard: <out>\<level>-tex-<checksum>.png, and all of them smaller in
-// <out>\<level>-textures.png (one row each). Both sets must have been made (base.ts --model <m> --levels <level>
+// <out>\<level>-textures.png (one row each). --atlases N: the level's N atlases with the most regions (atlasCrops). Both sets must have been made (base.ts --model <m> --levels <level>
 // [--build-only]); they're read from the models' caches, the originals from the game (or from the record's backup
 // when a set is installed).
 //
@@ -32,6 +32,7 @@ import * as dxt from "thug2-level-converter-core/level_port/dxt.ts";
 import { readTex, type Texture } from "thug2-level-converter-core/level_port/tex.ts";
 import { exitWith, helpFromHeader, isMain, print, runMain } from "thug2-level-converter-core/lib/cli.ts";
 import { decodePng, encodePng, type Image } from "thug2-level-converter-core/lib/frame_diff.ts";
+import * as atlas from "./atlas.ts";
 import * as base from "./base.ts";
 import { crop, sideBySide, zoom } from "./compare_shots.ts";
 import { MODEL_NAMES, MODELS, type ModelName } from "./models.ts";
@@ -80,17 +81,13 @@ function levelSets(
     models: readonly ModelName[] = MODEL_NAMES,
 ): { name: string; sets: Record<SetName, Buffer> }[] {
     const out: { name: string; sets: Record<SetName, Buffer> }[] = [];
+    const scenes = base.scenesOf(root);
     for (const e of base.collect(root, "levels", [level])) {
         const original = base.originalBytes(root, e);
         const sets = { original } as Record<SetName, Buffer>;
         for (const model of models) {
-            const file = path.join(
-                base.defaultCacheRoot(),
-                model,
-                "files",
-                base.fileKey(original, model, match).slice(0, 2),
-                `${base.fileKey(original, model, match)}.tex.xbx`,
-            );
+            const key = base.fileKey(original, model, match, scenes(e.rel).signature);
+            const file = path.join(base.defaultCacheRoot(), model, "files", key.slice(0, 2), `${key}.tex.xbx`);
             if (!fs.existsSync(file))
                 exitWith(
                     `${e.rel}: no ${model} set made yet - node tools/pipeline/hd_textures/base.ts --game <folder> ` +
@@ -163,6 +160,71 @@ export function textureCrops(root: string, level: string, outDir: string, count:
     return written;
 }
 
+// The level's atlases (atlas.ts: regions from the meshes), the `count` with the most regions: each whole as original
+// (its regions outlined, enlarged to the upscaled size) | PBRify | SeedVR2 (<out>\<level>-atlas-<checksum>.png), and
+// a border between two regions close up - 24 texels round the middle of the first shared edge, at twice the upscaled
+// size (-border.png).
+export function atlasCrops(root: string, level: string, outDir: string, count: number): string[] {
+    const scenes = base.scenesOf(root);
+    const found: { name: string; regions: atlas.Region[]; t: Record<SetName, Texture> }[] = [];
+    const seen = new Set<number>();
+    for (const { name, sets } of levelSets(root, level)) {
+        const index = scenes(name).index;
+        const files = Object.fromEntries(SETS.map((s) => [s, readTex(sets[s], `${name} ${s}`)])) as Record<
+            SetName,
+            ReturnType<typeof readTex>
+        >;
+        files.original.textures.forEach((t, k) => {
+            if (seen.has(t.checksum) || !base.handledTexture(t)) return;
+            const result = base.atlasRegionsOf(t, texels(t), index.get(t.checksum) ?? []);
+            if (result.kind !== "atlas") return;
+            seen.add(t.checksum);
+            const t3 = { original: t, pbrify: files.pbrify.textures[k]!, seedvr2: files.seedvr2.textures[k]! };
+            found.push({ name, regions: result.regions, t: t3 });
+        });
+    }
+    found.sort((a, b) => b.regions.length - a.regions.length || b.t.original.width - a.t.original.width);
+    fs.mkdirSync(outDir, { recursive: true });
+    const written: string[] = [];
+    for (const a of found.slice(0, count)) {
+        const o = a.t.original;
+        const scale = a.t.pbrify.width / o.width;
+        const panels = [
+            atlas.outlinePicture(texels(o), o.width, o.height, a.regions, scale),
+            ...MODEL_NAMES.map((m) => flatten(texels(a.t[m]), a.t[m].width, a.t[m].height)),
+        ];
+        const id = `${level}-atlas-${o.checksum.toString(16).padStart(8, "0")}`;
+        const file = path.join(outDir, `${id}.png`);
+        fs.writeFileSync(file, encodePng(sideBySide(panels)));
+        written.push(file);
+        // the first edge two regions share (or the first region's own edge)
+        const edge = sharedEdge(a.regions) ?? { x: a.regions[0]!.x1, y: (a.regions[0]!.y0 + a.regions[0]!.y1) >> 1 };
+        const side = Math.min(24, o.width, o.height);
+        const x0 = Math.max(0, Math.min(o.width - side, edge.x - (side >> 1)));
+        const y0 = Math.max(0, Math.min(o.height - side, edge.y - (side >> 1)));
+        const close = panels.map((p) => zoom(crop(p, x0 * scale, y0 * scale, side * scale, side * scale), 2));
+        const borderFile = path.join(outDir, `${id}-border.png`);
+        fs.writeFileSync(borderFile, encodePng(sideBySide(close)));
+        written.push(borderFile);
+    }
+    return written;
+}
+
+// The middle of the first edge two regions share (texels), or null.
+function sharedEdge(regions: readonly atlas.Region[]): { x: number; y: number } | null {
+    for (const a of regions)
+        for (const b of regions) {
+            if (a === b) continue;
+            const yFrom = Math.max(a.y0, b.y0);
+            const yTo = Math.min(a.y1, b.y1);
+            if (a.x1 === b.x0 && yTo > yFrom) return { x: a.x1, y: (yFrom + yTo) >> 1 };
+            const xFrom = Math.max(a.x0, b.x0);
+            const xTo = Math.min(a.x1, b.x1);
+            if (a.y1 === b.y0 && xTo > xFrom) return { x: (xFrom + xTo) >> 1, y: a.y1 };
+        }
+    return null;
+}
+
 // What --shots uses of the decomp's tools/game/renderer_parity.ts.
 interface PlanGroup {
     name: string;
@@ -194,6 +256,7 @@ interface ShotOptions {
     owner: string;
     haveLock: boolean;
     sets: readonly SetName[];
+    centre: boolean; // the close-up from the middle of the frame (default: left, below the middle - mostly ground)
 }
 
 async function shots(o: ShotOptions): Promise<string[]> {
@@ -302,8 +365,9 @@ async function shots(o: ShotOptions): Promise<string[]> {
             const images = pictures.map((p) => decodePng(fs.readFileSync(p)));
             const w = images[0]!.width;
             const h = images[0]!.height;
+            const [cx, cy] = o.centre ? [0.375, 0.375] : [0.125, 0.5];
             const middle = images.map((i) =>
-                zoom(crop(i, Math.floor(w * 0.125), Math.floor(h * 0.5), Math.floor(w / 4), Math.floor(h / 4)), 2),
+                zoom(crop(i, Math.floor(w * cx), Math.floor(h * cy), Math.floor(w / 4), Math.floor(h / 4)), 2),
             );
             const file = path.join(o.out, `${o.level}-shot-${spot.name}.png`);
             fs.writeFileSync(file, encodePng(sideBySide(middle)));
@@ -341,6 +405,8 @@ export async function main(argv: readonly string[] = process.argv.slice(2)): Pro
     const wantShots = flag("--shots");
     const haveLock = flag("--have-lock");
     const noCrops = flag("--no-crops");
+    const centre = flag("--centre");
+    const atlasCount = Number(take("--atlases", "0"));
     match = !flag("--no-match");
     const sets = (take("--sets", SETS.join(",")) ?? "").split(",");
     const unknownSet = sets.find((s) => !(SETS as readonly string[]).includes(s));
@@ -348,6 +414,7 @@ export async function main(argv: readonly string[] = process.argv.slice(2)): Pro
     if (args.length) exitWith(`unknown: ${args.join(" ")}`);
     const root = base.gameRoot(game);
     if (!noCrops) for (const file of textureCrops(root, level, out, count)) print(file);
+    if (atlasCount > 0) for (const file of atlasCrops(root, level, out, atlasCount)) print(file);
     if (wantShots) {
         if (!fs.existsSync(spots)) exitWith(`${spots} not found (--spots <plan.json>)`);
         const resolved = build && path.resolve(build);
@@ -362,6 +429,7 @@ export async function main(argv: readonly string[] = process.argv.slice(2)): Pro
             owner,
             haveLock,
             sets: chosen,
+            centre,
         }))
             print(file);
     }
