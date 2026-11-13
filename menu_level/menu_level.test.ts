@@ -7,6 +7,7 @@ import type { Manifest } from "thug2-level-converter-core/level_port/ported_leve
 import { unswizzleOrder } from "thug2-level-converter-core/level_port/tex.ts";
 import * as compat from "thug2-thugpro-compat/profile.ts";
 import { nsString } from "./career_complete.ts";
+import { addDemoMenu } from "./demo_menu.ts";
 import {
     type Level,
     mapPosition,
@@ -201,4 +202,21 @@ test("another converter's levels get a section of their own, after this project'
         list[1]![3]!.map((lv) => [lv.text, lv.levelNum, lv.load]),
         [["Warehouse", 900, "Load_thps1_ware"]],
     );
+});
+
+test("addDemoMenu: DEMOS / STOP RECORDING before DEBUG OPTIONS, the menus' scripts before the checksums", () => {
+    const pause =
+        "script create_pause_menu {\n    if ! InNetGame {\n" +
+        '        add_roundbar_menu_item text="YOUR OPTIONS" id=menu_your_options pad_choose_script=create_your_options_menu \n' +
+        "        if ! CD {\n" +
+        '            add_roundbar_menu_item text="DEBUG OPTIONS" id=menu_debug_options pad_choose_script=create_debug_options_menu \n' +
+        "        } \n    } \n} \n__register_checksums__ a b\n";
+    const out = addDemoMenu(pause);
+    const demos = out.indexOf('text="DEMOS"');
+    const stop = out.indexOf('text="STOP RECORDING"');
+    const debug = out.indexOf('text="DEBUG OPTIONS"');
+    assert.ok(out.indexOf('text="YOUR OPTIONS"') < stop && stop < demos && demos < debug);
+    assert.match(out, /if Demo_Item item=recording \{/);
+    assert.ok(out.indexOf("script demo_list_create {") > out.indexOf("script create_pause_menu {"));
+    assert.ok(out.indexOf("script demo_menu_create {") < out.indexOf("__register_checksums__"));
 });

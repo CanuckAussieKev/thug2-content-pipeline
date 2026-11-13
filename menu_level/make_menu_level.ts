@@ -82,6 +82,7 @@ import * as thug2Levels from "../thug2_levels/thugpro_apply.ts"; // (THUGPRO's c
 import * as artPicksFile from "./art_picks.ts"; // (the user's decided pictures and the shared placeholder)
 import * as careerComplete from "./career_complete.ts"; // (GAME OPTIONS' CREATE 100% CAS)
 import { reEscape } from "./career_complete.ts";
+import { addDemoMenu } from "./demo_menu.ts"; // (the pause menu's DEMOS: the game's src/devtools/demo.h)
 import * as frontendArt from "./frontend_art.ts"; // (the new front end's text-free versions of them)
 import * as frontendLevels from "./frontend_levels.ts"; // (the game's new front end: frontend\levels.json)
 import { partyModKeyboard, partyModScripts, qwertyKeyboard } from "./keyboard_qwerty.ts"; // (the on-screen keyboard's QWERTY layout)
@@ -1200,10 +1201,13 @@ async function main(): Promise<number> {
         );
         write(testlevelNodes(testlevel), "levels/TestLevel/TestLevel.qb");
         // Always: the level editor's scripts (the game's editor mode runs them), DEBUG OPTIONS and the
-        // new front end's items (its [features] new_frontend).
+        // new front end's items (its [features] new_frontend), the DEMOS menu (demo_menu.ts).
         // (and THAW's BMX's RIDE BMX when its staging folder is there - tools/pipeline/thaw_bmx/install.ts)
         write(
-            thawBmxInstall.addPauseItem(addEditorModePause(addNewFrontendPause(addLevelEditor(pause))), game),
+            thawBmxInstall.addPauseItem(
+                addEditorModePause(addNewFrontendPause(addDemoMenu(addLevelEditor(pause)))),
+                game,
+            ),
             "scripts/game/menu/gamemenu_pause.qb",
         );
         // Always: the skate shop's menu with the new front end's Play Level (its [features] new_frontend).
@@ -1308,7 +1312,8 @@ async function main(): Promise<number> {
                         ["scripts\\game\\menu\\sprites.qb", overlaySprites],
                         [
                             "scripts\\game\\menu\\gamemenu_pause.qb",
-                            (text: string) => addEditorModePause(addNewFrontendPause(addLevelEditor(text))),
+                            (text: string) =>
+                                addEditorModePause(addNewFrontendPause(addDemoMenu(addLevelEditor(text)))),
                         ],
                         ["scripts\\game\\menu\\skateshop.qb", addNewFrontendSkateshop],
                         ...(keyboardEdit ? [[KEYBOARD_QB, keyboardEdit] as const] : []),
