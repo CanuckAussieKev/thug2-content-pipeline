@@ -1,7 +1,10 @@
-// NOT ORIGINAL - HD textures for the base game: every level texture dictionary (.tex.xbx) of an unpacked game
-// (tools/qbjs/unpack_game.ts: the archives' files loose in Data) and of our overlays (thug2-decomp-<x>\levels: the
-// ported levels) upscaled by 4 with one of two AI models (models.ts: PBRify UpscalerV4 or SeedVR2-3B, run by
-// upscale.py on the local NVIDIA GPU), installed in place, and put back as they were on --restore.
+// NOT ORIGINAL - HD textures for the base game: every level texture dictionary (.tex.xbx) of the game (Data's - loose
+// in every install, packed or unpacked by tools/qbjs/unpack_game.ts) and of our overlays (thug2-decomp-<x>\levels:
+// the ported levels, the data overlay's own) upscaled by 4 with one of two AI models (models.ts: PBRify UpscalerV4 or
+// SeedVR2-3B, run by upscale.py on the local NVIDIA GPU), installed, and taken out again on --restore. No file the
+// game was installed with is written: a Data dictionary's HD version goes into the data overlay (thug2-decomp-data, at
+// the same path - the game reads it before its archives and Data: src/engine/file/data_overlay.h), an overlay's own
+// dictionary is replaced in place (its original kept).
 //
 //   node tools/pipeline/hd_textures/base.ts --game <folder> --model pbrify|seedvr2|none [--levels BO,AU,foun]
 //        [--scope levels|all] [--build-only] [--vram-gb 10]
@@ -32,11 +35,10 @@
 //
 // Caches (out\hd_textures\base\<model>\, git-ignored): `texels` the model's output per texture (core's cache), `files`
 // each finished dictionary by the SHA-256 of the original's bytes and the settings - installing a set that was made
-// once is a copy. The record (<game>\thug2-decomp-backup\hd_textures\record.json) lists every file replaced, the
-// original's and the installed one's SHA-256; the originals are kept beside it (originals\<path>). --restore puts each
-// back unless the file changed since (a converter or make_menu_level.ts rewrote it: the new file is kept).
-// Only files we made are replaced: the unpacked archives' files (unpack_game.ts's record) and the overlays' - never a
-// file the game was installed with.
+// once is a copy. The record (<game>\thug2-decomp-backup\hd_textures\record.json) lists every file written, the
+// SHA-256 of the file it replaced (none for one added to the data overlay) and of the installed one; replaced
+// originals are kept beside it (originals\<path>). --restore removes each added file and puts each replaced one back,
+// unless it changed or went since (make_menu_level.ts remade the data overlay, a converter its level: theirs is kept).
 
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -206,8 +208,11 @@ export function detectAtlas(bgra: Uint8Array, w: number, h: number): string | nu
 
 // ---- the files ----
 
+export const OVERLAY = "thug2-decomp-data";
+
 export interface TexEntry {
-    rel: string; // under the game's root
+    rel: string; // the original, under the game's root
+    target: string; // where its HD version goes, under the game's root: Data's in the data overlay, an overlay's in place
     level: string; // the level folder's name (lower case; "" outside levels)
 }
 
@@ -233,42 +238,43 @@ export function dataFolders(root: string): string[] {
     return ["Data", ...overlays];
 }
 
+// The texture dictionaries and where each one's HD version goes. A Data file's goes into the data overlay at the
+// same path (the game reads the overlay before its archives and Data: src/engine/file/data_overlay.h) - no file the
+// game was installed with is ever written; one the overlay has already (make_menu_level.ts's) is taken from there.
 export function collect(root: string, scope: "levels" | "all", levels: readonly string[] | null): TexEntry[] {
     const wanted = levels ? new Set(levels.flatMap((l) => [l.toLowerCase(), `${l.toLowerCase()}_sky`])) : null;
     const out: TexEntry[] = [];
-    for (const folder of dataFolders(root)) {
+    const taken = new Set<string>();
+    // (an HD set's files added to the data overlay are Data's: not originals)
+    const added = new Set(
+        (readRecord(root)?.files ?? []).filter((f) => f.original === null).map((f) => f.target.toLowerCase()),
+    );
+    // (the overlays first: a Data file the data overlay holds already is the overlay's)
+    for (const folder of [...dataFolders(root).slice(1), "Data"]) {
         for (const file of walk(path.join(root, folder))) {
-            if (!/\.tex\.xbx$/i.test(file)) continue;
-            const parts = path.relative(path.join(root, folder), file).split(path.sep);
+            if (!/\.tex\.xbx$/i.test(file) || added.has(path.relative(root, file).toLowerCase())) continue;
+            const inFolder = path.relative(path.join(root, folder), file);
+            const parts = inFolder.split(path.sep);
             const inLevels = parts.length >= 3 && parts[0]!.toLowerCase() === "levels";
             const level = inLevels ? parts[1]!.toLowerCase() : "";
             if (scope === "levels" && !inLevels) continue;
             if (wanted && !wanted.has(level)) continue;
-            out.push({ rel: path.relative(root, file), level });
+            const target = folder === "Data" ? path.join(OVERLAY, inFolder) : path.relative(root, file);
+            if (taken.has(target.toLowerCase())) continue;
+            taken.add(target.toLowerCase());
+            out.push({ rel: path.relative(root, file), target, level });
         }
     }
     return out.sort((a, b) => a.rel.localeCompare(b.rel));
-}
-
-// Data's files unpack_game.ts made (lower case), or null when the game isn't unpacked.
-function unpackedFiles(root: string): Set<string> | null {
-    const file = path.join(root, BACKUP, "unpacked.json");
-    if (!fs.existsSync(file)) return null;
-    const record = JSON.parse(fs.readFileSync(file, "utf8")) as { made: string[] };
-    return new Set(record.made.map((m) => m.toLowerCase()));
-}
-
-// Whether a file may be replaced: an overlay's (ours), or one unpack_game.ts made loose.
-export function replaceable(rel: string, made: Set<string> | null): boolean {
-    if (!/^Data[\\/]/i.test(rel)) return true;
-    return made?.has(rel.toLowerCase()) ?? false;
 }
 
 // ---- the record ----
 
 export interface HdRecord {
     model: ModelName;
-    files: { rel: string; original: string; installed: string }[];
+    // target: the file written; original: the SHA-256 of the file it replaced (null: there was none - a Data file's
+    // HD version added to the data overlay); installed: the written one's
+    files: { target: string; original: string | null; installed: string }[];
 }
 
 const sha256 = (data: Uint8Array): string => createHash("sha256").update(data).digest("hex");
@@ -283,22 +289,31 @@ function writeRecord(root: string, record: HdRecord): void {
     fs.writeFileSync(path.join(root, HD_BACKUP, "record.json"), `${JSON.stringify(record, null, 1)}\n`);
 }
 
-// Every replaced file put back (unless it changed since it was installed); the record and the originals removed.
+// A dictionary's original bytes: the record's copy while an HD set has replaced it, else the file itself.
+export function originalBytes(root: string, e: TexEntry): Buffer {
+    const f = readRecord(root)?.files.find((r) => r.target.toLowerCase() === e.target.toLowerCase());
+    const current = fs.readFileSync(path.join(root, e.rel));
+    if (f && f.original !== null && sha256(current) === f.installed)
+        return fs.readFileSync(path.join(root, HD_BACKUP, "originals", f.target));
+    return current;
+}
+
+// Every file written taken back - an added one removed, a replaced one's original put back - unless it changed or
+// went since it was installed (make_menu_level.ts or a converter remade it: theirs is kept); the record and the
+// originals removed.
 export function restore(root: string): { restored: number; kept: number } {
     const record = readRecord(root);
     let restored = 0;
     let kept = 0;
-    if (record) {
-        for (const f of record.files) {
-            const original = path.join(root, HD_BACKUP, "originals", f.rel);
-            const target = path.join(root, f.rel);
-            if (!fs.existsSync(original)) continue;
-            if (!fs.existsSync(target) || sha256(fs.readFileSync(target)) === f.installed) {
-                fs.mkdirSync(path.dirname(target), { recursive: true });
-                fs.copyFileSync(original, target);
-                restored++;
-            } else kept++;
+    for (const f of record?.files ?? []) {
+        const target = path.join(root, f.target);
+        if (!fs.existsSync(target) || sha256(fs.readFileSync(target)) !== f.installed) {
+            kept++;
+            continue;
         }
+        if (f.original === null) fs.rmSync(target);
+        else fs.copyFileSync(path.join(root, HD_BACKUP, "originals", f.target), target);
+        restored++;
     }
     fs.rmSync(path.join(root, HD_BACKUP), { recursive: true, force: true });
     // (thug2-decomp-backup made only for this: removed again)
@@ -508,29 +523,33 @@ export function install(
     root: string,
     model: ModelName | "none",
     options: InstallOptions,
-): { report: BuildReport | null; installed: number; notOurs: string[] } {
+): { report: BuildReport | null; installed: number } {
     if (!options.buildOnly) restore(root);
-    if (model === "none") return { report: null, installed: 0, notOurs: [] };
-    const made = unpackedFiles(root);
+    if (model === "none") return { report: null, installed: 0 };
     const entries = collect(root, options.scope, options.levels);
-    const notOurs = entries.filter((e) => !replaceable(e.rel, made)).map((e) => e.rel);
-    const ours = entries.filter((e) => replaceable(e.rel, made));
-    const originals = ours.map((e) => ({ name: e.rel, bytes: fs.readFileSync(path.join(root, e.rel)) }));
+    const originals = entries.map((e) => ({ name: e.rel, bytes: originalBytes(root, e) }));
     const { files, report } = buildSet(originals, model, options);
-    if (options.buildOnly) return { report, installed: 0, notOurs };
+    if (options.buildOnly) return { report, installed: 0 };
     const record: HdRecord = { model, files: [] };
     writeRecord(root, record); // (first: a stopped run can still be put back)
-    for (const o of originals) {
-        const hdBytes = fs.readFileSync(files.get(fileKey(o.bytes, model))!);
-        if (hdBytes.equals(o.bytes)) continue; // (nothing in it upscaled)
-        const backup = path.join(root, HD_BACKUP, "originals", o.name);
-        fs.mkdirSync(path.dirname(backup), { recursive: true });
-        fs.writeFileSync(backup, o.bytes);
-        fs.writeFileSync(path.join(root, o.name), hdBytes);
-        record.files.push({ rel: o.name, original: sha256(o.bytes), installed: sha256(hdBytes) });
+    entries.forEach((e, k) => {
+        const original = originals[k]!.bytes;
+        const hdBytes = fs.readFileSync(files.get(fileKey(original, model))!);
+        if (hdBytes.equals(original)) return; // (nothing in it upscaled)
+        const target = path.join(root, e.target);
+        let before: string | null = null;
+        if (fs.existsSync(target)) {
+            const backup = path.join(root, HD_BACKUP, "originals", e.target);
+            fs.mkdirSync(path.dirname(backup), { recursive: true });
+            fs.copyFileSync(target, backup);
+            before = sha256(fs.readFileSync(target));
+        }
+        fs.mkdirSync(path.dirname(target), { recursive: true });
+        fs.writeFileSync(target, hdBytes);
+        record.files.push({ target: e.target, original: before, installed: sha256(hdBytes) });
         writeRecord(root, record);
-    }
-    return { report, installed: record.files.length, notOurs };
+    });
+    return { report, installed: record.files.length };
 }
 
 export function reportLines(model: ModelName, r: BuildReport): string[] {
@@ -617,11 +636,6 @@ export function installAndReport(root: string, cli: BaseCli): void {
         const file = path.join(defaultCacheRoot(), cli.model, "report.txt");
         fs.writeFileSync(file, `${lines.join("\n")}\n`);
     }
-    if (result.notOurs.length)
-        print(
-            `${result.notOurs.length} files left alone - installed with the game, not unpacked (unpack_game.ts first): ` +
-                `${result.notOurs.slice(0, 5).join(", ")}${result.notOurs.length > 5 ? ", ..." : ""}`,
-        );
     if (cli.model === "none") print("HD textures: the originals are in place");
     else if (!cli.buildOnly) print(`HD textures (${cli.model}): ${result.installed} files installed`);
 }

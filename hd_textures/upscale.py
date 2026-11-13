@@ -23,8 +23,13 @@ import sys
 import time
 
 import numpy as np
-import torch
-from PIL import Image
+
+# PyTorch's own CUDA allocator, fixed before torch is loaded: SeedVR2's command line asks for cudaMallocAsync as it
+# loads (os.environ.setdefault), after this process has allocated with the native one - memory then freed by the
+# other allocator crashed the process (an access violation after the first image's diffusion step, now and then).
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "backend:native"
+import torch  # noqa: E402
+from PIL import Image  # noqa: E402
 
 PBRIFY_FILE = "4x-PBRify_UpscalerV4.pth"
 SEEDVR2_DIT = "seedvr2_ema_3b_fp16.safetensors"
@@ -211,6 +216,7 @@ def main():
     parser.add_argument("--times", default=None)
     args = parser.parse_args()
     args.inp, args.out, args.models = (os.path.abspath(p) for p in (args.inp, args.out, args.models))
+    args.times = args.times and os.path.abspath(args.times)
     # (SeedVR2's log prints emoji: a cp1252 console can't encode them)
     for stream in (sys.stdout, sys.stderr):
         stream.reconfigure(encoding="utf-8", errors="replace")

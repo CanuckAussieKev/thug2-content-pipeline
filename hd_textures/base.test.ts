@@ -257,20 +257,18 @@ test("DXT encode error bounds", () => {
     assert.ok(dxt5Alpha < 3, `DXT5 alpha RMS ${dxt5Alpha.toFixed(2)}`);
 });
 
-test("install, switch and restore on an unpacked game: the originals back byte for byte, a set made once is copied", () => {
+test("install, switch and restore: Data's files untouched (the HD ones in the data overlay), an overlay's put back byte for byte, a set made once is copied", () => {
     const game = temp("hd-base-game-");
     const cacheRoot = temp("hd-base-sets-");
-    const made = "Data\\levels\\xx\\xx.tex.xbx";
-    const shipped = "Data\\levels\\yy\\yy.tex.xbx"; // (installed with the game: never replaced)
-    const overlay = "thug2-decomp-port\\levels\\zz\\zz.tex.xbx";
+    const shipped = "Data\\levels\\xx\\xx.tex.xbx"; // (installed with the game: never written)
+    const added = "thug2-decomp-data\\levels\\xx\\xx.tex.xbx";
+    const overlay = "thug2-decomp-port\\levels\\zz\\zz.tex.xbx"; // (a ported level's: ours, replaced in place)
+    const own = "thug2-decomp-data\\levels\\yy\\yy.tex.xbx"; // (the data overlay's own: over Data's yy, which is skipped)
     const original = writeTex({ version: 1, textures: [asTexture(tiling(64, 64), 64, 64, 1)] });
-    for (const rel of [made, shipped, overlay]) {
+    for (const rel of [shipped, overlay, own, "Data\\levels\\yy\\yy.tex.xbx"]) {
         fs.mkdirSync(path.dirname(path.join(game, rel)), { recursive: true });
         fs.writeFileSync(path.join(game, rel), original);
     }
-    fs.mkdirSync(path.join(game, "thug2-decomp-backup"));
-    const unpacked = { moved: [], made: [made], folders: [] };
-    fs.writeFileSync(path.join(game, "thug2-decomp-backup", "unpacked.json"), JSON.stringify(unpacked));
     let calls = 0;
     const counting: hd.Upscaler = (images) => {
         calls++;
@@ -284,12 +282,19 @@ test("install, switch and restore on an unpacked game: the originals back byte f
         vramGb: 1,
         upscaler: counting,
     };
+    // (by the original's path: Data's xx, the data overlay's yy - Data's yy left to it -, the port's zz)
+    assert.deepEqual(
+        base.collect(game, "levels", null).map((e) => e.target),
+        [added, own, overlay],
+    );
     const first = base.install(game, "pbrify", options);
-    assert.equal(first.installed, 2);
-    assert.deepEqual(first.notOurs, [shipped]);
-    assert.ok(fs.readFileSync(path.join(game, shipped)).equals(original));
-    assert.equal(readTex(fs.readFileSync(path.join(game, made))).textures[0]!.width, 256);
+    assert.equal(first.installed, 3);
+    assert.ok(fs.readFileSync(path.join(game, shipped)).equals(original), "Data's file untouched");
+    for (const rel of [added, overlay, own])
+        assert.equal(readTex(fs.readFileSync(path.join(game, rel))).textures[0]!.width, 256);
     assert.equal(calls, 1);
+    // the installed files aren't taken for originals: the same three, the same set again from the cache
+    assert.equal(base.collect(game, "levels", null).length, 3);
     base.install(game, "seedvr2", options);
     assert.equal(calls, 2);
     assert.equal(base.readRecord(game)?.model, "seedvr2");
@@ -299,9 +304,10 @@ test("install, switch and restore on an unpacked game: the originals back byte f
     const remade = writeTex({ version: 1, textures: [asTexture(ramp(32, 32), 32, 32, 1)] });
     fs.writeFileSync(path.join(game, overlay), remade);
     const r = base.restore(game);
-    assert.deepEqual(r, { restored: 1, kept: 1 });
-    assert.ok(fs.readFileSync(path.join(game, made)).equals(original));
+    assert.deepEqual(r, { restored: 2, kept: 1 });
+    assert.ok(!fs.existsSync(path.join(game, added)), "the added HD file removed");
+    assert.ok(fs.readFileSync(path.join(game, own)).equals(original));
     assert.ok(fs.readFileSync(path.join(game, overlay)).equals(remade));
     assert.equal(base.readRecord(game), null);
-    assert.ok(fs.existsSync(path.join(game, "thug2-decomp-backup", "unpacked.json")), "unpack's record untouched");
+    assert.ok(!fs.existsSync(path.join(game, "thug2-decomp-backup")), "the backup folder gone with the record");
 });

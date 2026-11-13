@@ -132,17 +132,20 @@ against its SHA-256; SeedVR2's runner is cloned at its commit.
     node tools/pipeline/hd_textures/base.ts --game C:\Games\THUG2-n --model pbrify [--levels BO,AU,foun] [--build-only]
     node tools/pipeline/hd_textures/base.ts --game C:\Games\THUG2-n --restore | --status
 
-The game must be unpacked (`[features] ts_scripts=1`): only files we made are replaced - the archives' files
-unpack_game.ts made loose, and our overlays' (the ported levels in `thug2-decomp-<x>\levels`) - never a file the game
-was installed with. `--levels` limits it to those levels (each with its `_Sky`); `--hd-scope all` / `--scope all`
-takes every `.tex.xbx` (peds, skaters, vehicles) instead of the levels' only. `--build-only` makes a set into its cache
-without installing it. unpack_game.ts `--restore` puts the original textures back first.
+No file the game was installed with is written: a Data dictionary's HD version goes into the data overlay
+(`thug2-decomp-data\levels\bo\BO.tex.xbx` - the game reads the overlay before its archives and Data, so it works on a
+packed game and on an unpacked one alike), our overlays' own dictionaries (the ported levels in
+`thug2-decomp-<x>\levels`, the data overlay's levels) are replaced in place. `--levels` limits it to those levels (each
+with its `_Sky`); `--hd-scope all` / `--scope all` takes every `.tex.xbx` (peds, skaters, vehicles) instead of the
+levels' only. `--build-only` makes a set into its cache without installing it. unpack_game.ts `--restore` takes the
+HD textures out first. make_menu_level.ts empties the data overlay when it runs: install the set again after it.
 
 Each set is cached (`out\hd_textures\base\<model>\`: `texels` the model's output per texture, `files` each finished
 dictionary by the SHA-256 of the original and the settings), so a set made once installs in seconds and switching
 between them is a copy. The record `thug2-decomp-backup\hd_textures\record.json` in the game folder lists every file
-replaced with the original's and the installed one's SHA-256; the originals are kept beside it. Restoring puts each
-back unless the file changed since (make_menu_level.ts or a converter rewrote an overlay: the new one is kept).
+written with the SHA-256 of the one it replaced (none for one added to the data overlay) and of the installed one;
+replaced originals are kept beside it. Restoring removes the added files and puts the replaced ones back, unless a
+file changed or went since (make_menu_level.ts or a converter remade it: theirs is kept).
 
 ### What happens to each texture
 

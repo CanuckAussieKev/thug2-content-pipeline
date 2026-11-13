@@ -76,13 +76,9 @@ function levelSets(
     level: string,
     models: readonly ModelName[] = MODEL_NAMES,
 ): { name: string; sets: Record<SetName, Buffer> }[] {
-    const record = base.readRecord(root);
-    const installed = new Set(record?.files.map((f) => f.rel.toLowerCase()) ?? []);
     const out: { name: string; sets: Record<SetName, Buffer> }[] = [];
     for (const e of base.collect(root, "levels", [level])) {
-        const original = installed.has(e.rel.toLowerCase())
-            ? fs.readFileSync(path.join(root, base.HD_BACKUP, "originals", e.rel))
-            : fs.readFileSync(path.join(root, e.rel));
+        const original = base.originalBytes(root, e);
         const sets = { original } as Record<SetName, Buffer>;
         for (const model of models) {
             const file = path.join(
@@ -205,8 +201,8 @@ async function shots(o: ShotOptions): Promise<string[]> {
         ensureWorkspaceMuted(game: string): void;
     };
     if (!workspaceIni.isWorkspace(o.game)) exitWith(`${o.game} isn't a workspace (C:\\Games\\THUG2-<n>)`);
-    if (!fs.existsSync(path.join(o.root, base.BACKUP, "unpacked.json")))
-        exitWith(`${o.game} isn't unpacked: node tools/qbjs/unpack_game.ts --game ${o.game}`);
+    // (an unpacked game runs its TypeScript: ts_scripts=1; a packed one its .qb)
+    const tsScripts = fs.existsSync(path.join(o.root, base.BACKUP, "unpacked.json")) ? "1" : "0";
     const plan = parity.readPlan(fs.readFileSync(o.spots, "utf8"));
     const groups = plan.groups.filter((g) => g.level?.toLowerCase() === o.level.toLowerCase() && g.spots?.length);
     if (!groups.length) exitWith(`${o.spots}: no group with spots in level ${o.level}`);
@@ -252,7 +248,11 @@ async function shots(o: ShotOptions): Promise<string[]> {
             for (const group of groups) {
                 fs.writeFileSync(
                     ini,
-                    parity.iniFor(baseIni, [plan.ini ?? {}, group.ini ?? {}, { "features.ts_scripts": "1" }], "vulkan"),
+                    parity.iniFor(
+                        baseIni,
+                        [plan.ini ?? {}, group.ini ?? {}, { "features.ts_scripts": tsScripts }],
+                        "vulkan",
+                    ),
                     "utf8",
                 );
                 workspaceIni.ensureWorkspaceMuted(o.game);
