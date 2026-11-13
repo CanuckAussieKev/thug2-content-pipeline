@@ -1,10 +1,6 @@
 // NOT ORIGINAL - texture atlases for the base-game HD textures (base.ts): a texture with several unrelated pictures
 // packed in it is upscaled one picture (region) at a time, so the model never sees - and never bleeds - a neighbour.
-//
-//   node tools/pipeline/hd_textures/atlas.ts --game <folder> [--levels BO,AU,foun] [--out <folder>]
-//
-// prints every dictionary's atlases (their regions, and what the old seam heuristic - base.detectAtlas - said of the
-// same textures) and, with --out, a picture of each atlas with its regions outlined (<out>\<file>-<checksum>.png).
+// atlas_report.ts lists a game's atlases and their regions.
 //
 // How the regions are found: from the meshes, not the texels. Every scene / model file beside a dictionary (the
 // level's .scn.xbx and its _net twin, the sky's, a model's .mdl.xbx / .skin.xbx) is read, and for every material pass
@@ -37,10 +33,9 @@ import * as path from "node:path";
 import * as zlib from "node:zlib";
 import * as dxt from "thug2-level-converter-core/level_port/dxt.ts";
 import * as hd from "thug2-level-converter-core/level_port/hd_textures.ts";
-import { readTex, type Texture } from "thug2-level-converter-core/level_port/tex.ts";
+import type { Texture } from "thug2-level-converter-core/level_port/tex.ts";
 import * as scn from "thug2-level-converter-core/level_port/thug2_scene.ts";
-import { exitWith, helpFromHeader, isMain, print, runMain } from "thug2-level-converter-core/lib/cli.ts";
-import { encodePng, type Image } from "thug2-level-converter-core/lib/frame_diff.ts";
+import type { Image } from "thug2-level-converter-core/lib/frame_diff.ts";
 
 // bumped whenever the regions or the atlas pass change for the same input (base.ts's file cache keys on it)
 export const ATLAS_VERSION = 1;
@@ -675,15 +670,14 @@ export function upscaleAtlases(
 
 // ---- the report tool ----
 
-// The regions outlined on the texture (x4, nearest): each region's border in a colour of its own.
-export function outlinePicture(bgra: Uint8Array, w: number, h: number, regions: readonly Region[]): Image {
-    const s = 4;
+// The regions outlined on the texture (enlarged `s` times, nearest): each region's border in a colour of its own.
+export function outlinePicture(bgra: Uint8Array, w: number, h: number, regions: readonly Region[], s = 4): Image {
     const ow = w * s;
     const oh = h * s;
     const rgb = new Uint8Array(ow * oh * 3);
     for (let y = 0; y < oh; y++)
         for (let x = 0; x < ow; x++) {
-            const i = ((y >> 2) * w + (x >> 2)) * 4;
+            const i = (Math.floor(y / s) * w + Math.floor(x / s)) * 4;
             const a = bgra[i + 3]! / 255;
             const check = ((x >> 4) + (y >> 4)) & 1 ? 200 : 150;
             const o = (y * ow + x) * 3;
@@ -717,67 +711,74 @@ export function outlinePicture(bgra: Uint8Array, w: number, h: number, regions: 
     return { width: ow, height: oh, rgb };
 }
 
-export async function main(argv: readonly string[] = process.argv.slice(2)): Promise<number> {
-    const args = [...argv];
-    const take = (name: string): string | undefined => {
-        const at = args.indexOf(name);
-        if (at < 0) return undefined;
-        const value = args[at + 1];
-        args.splice(at, 2);
-        return value;
-    };
-    const game = take("--game");
-    if (!game) exitWith("usage: atlas.ts --game <folder> [--levels BO,AU,foun] [--out <folder>]");
-    const levels = take("--levels");
-    const out = take("--out");
-    // (imported here: base.ts imports this module)
-    const base = await import("./base.ts");
-    const root = base.gameRoot(game);
-    const entries = base.collect(root, "levels", levels ? levels.split(",") : null);
-    const indexes = new UvIndexes();
-    if (out) fs.mkdirSync(out, { recursive: true });
-    let atlases = 0;
-    let heuristic = 0;
-    let unreferenced = 0;
-    for (const e of entries) {
-        const tex = readTex(base.originalBytes(root, e), e.rel);
-        const { index, errors } = indexes.of(path.join(root, e.rel));
-        for (const err of errors) print(`  ${e.rel}: scene not read: ${err}`);
-        for (const t of tex.textures) {
-            if (!base.handledTexture(t)) continue;
-            const bgra = hd.topLevel(t);
-            const old = base.detectAtlas(bgra, t.width, t.height);
-            if (old) heuristic++;
-            const found = findRegions(index.get(t.checksum) ?? [], bgra, t.width, t.height);
-            const name = `${e.rel} ${t.checksum.toString(16).padStart(8, "0")} ${t.width}x${t.height}`;
-            if (found.kind === "unreferenced") {
-                unreferenced++;
-                print(`${name}: no mesh uses it${old ? ` (heuristic: atlas, ${old})` : ""}`);
-                continue;
-            }
-            if (found.kind === "whole") {
-                if (old) print(`${name}: not an atlas - ${found.why} (heuristic said: ${old})`);
-                continue;
-            }
-            atlases++;
-            const list = found.regions
-                .map((r) => `${r.x0},${r.y0}-${r.x1},${r.y1}${r.wrapU ? " wu" : ""}${r.wrapV ? " wv" : ""}`)
-                .join("; ");
-            print(
-                `${name}: ${found.regions.length} regions [${list}]${old ? ` (heuristic: ${old})` : " (heuristic: none)"}`,
-            );
-            if (out) {
-                const file = `${path.basename(e.rel).replace(/\.tex\.xbx$/i, "")}-${t.checksum.toString(16).padStart(8, "0")}.png`;
-                fs.writeFileSync(
-                    path.join(out, file),
-                    encodePng(outlinePicture(bgra, t.width, t.height, found.regions)),
-                );
-            }
-        }
-    }
-    print(`atlases by uv: ${atlases}; by the seam heuristic: ${heuristic}; textures no mesh uses: ${unreferenced}`);
-    return 0;
+// Where a texture is seen: the biggest mesh (by its box's diagonal) using it, its box's middle and its mean vertex
+// normal (the side a camera should look from).
+export interface MeshSpot {
+    centre: [number, number, number];
+    normal: [number, number, number];
+    size: number;
 }
 
-if (isMain(import.meta.url)) helpFromHeader(import.meta.url);
-if (isMain(import.meta.url)) await runMain(() => main());
+export function meshSpots(
+    scene: scn.Scene,
+    wanted: ReadonlySet<number>,
+    spots = new Map<number, MeshSpot>(),
+): Map<number, MeshSpot> {
+    const materials = new Map(scene.materials.map((m) => [m.checksum, m]));
+    for (const sector of scene.sectors)
+        for (const mesh of sector.meshes) {
+            const textures = materials.get(mesh.material)?.passes.map((p) => p.texture) ?? [];
+            const hits = textures.filter((t) => wanted.has(t));
+            if (!hits.length) continue;
+            const [x0, y0, z0, x1, y1, z1] = mesh.bbox as [number, number, number, number, number, number];
+            const size = Math.hypot(x1 - x0, y1 - y0, z1 - z0);
+            const normal: [number, number, number] = [0, 0, 0];
+            const buffer = mesh.buffers[0]?.[1];
+            const shader = mesh.vertexShader[0] ?? 0;
+            const at = mesh.offsets[0] ?? 0;
+            if (buffer && shader > 6 && shader & scn.FVF_NORMAL && at + 12 <= mesh.stride)
+                for (let i = 0; i < mesh.vertexCount && (i + 1) * mesh.stride <= buffer.length; i++)
+                    for (let k = 0; k < 3; k++) normal[k]! += buffer.readFloatLE(i * mesh.stride + at + 4 * k);
+            else if (buffer) {
+                // (no vertex normals: the strip's triangles' own, every other one turned round as a strip winds)
+                const p = (i: number): number[] => [0, 4, 8].map((o) => buffer.readFloatLE(i * mesh.stride + o));
+                const strip = mesh.strips[0] ?? [];
+                for (let k = 0; k + 2 < strip.length; k++) {
+                    const [a, b, c] = [strip[k]!, strip[k + 1]!, strip[k + 2]!];
+                    if (a === b || b === c || a === c || (Math.max(a, b, c) + 1) * mesh.stride > buffer.length)
+                        continue;
+                    const [pa, pb, pc] = [p(a), p(b), p(c)];
+                    const e1 = [0, 1, 2].map((q) => pb[q]! - pa[q]!);
+                    const e2 = [0, 1, 2].map((q) => pc[q]! - pa[q]!);
+                    const n = [
+                        e1[1]! * e2[2]! - e1[2]! * e2[1]!,
+                        e1[2]! * e2[0]! - e1[0]! * e2[2]!,
+                        e1[0]! * e2[1]! - e1[1]! * e2[0]!,
+                    ];
+                    const sign = k % 2 ? -1 : 1;
+                    for (let q = 0; q < 3; q++) normal[q]! += sign * n[q]!;
+                }
+            }
+            const length = Math.hypot(...normal);
+            if (length < 1e-6) continue;
+            for (const t of hits) {
+                const had = spots.get(t);
+                if (had && had.size >= size) continue;
+                spots.set(t, {
+                    centre: [(x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2],
+                    normal: [normal[0] / length, normal[1] / length, normal[2] / length],
+                    size,
+                });
+            }
+        }
+    return spots;
+}
+
+// A camera command looking at a spot from its normal's side, far enough back to see the mesh.
+export function cameraAt(spot: MeshSpot): string {
+    const d = Math.min(400, Math.max(60, spot.size * 0.9));
+    const p = spot.centre.map((c, k) => c + spot.normal[k]! * d);
+    const f = (n: number): string => n.toFixed(1);
+    const g = (n: number): string => n.toFixed(3);
+    return `camera ${p.map(f).join(" ")} ${spot.normal.map((n) => g(-n)).join(" ")}`;
+}
