@@ -193,7 +193,10 @@ the record `thug2-decomp-backup\hd_textures\record.json`) is put back first by e
   model's own colours and contrast instead - a set of its own, made from the same model output in seconds.
 
 The GPU side (`upscale.py`) runs at below-normal priority and caps its share of the GPU's memory (`--vram-gb`,
-default 10); one model at a time. PBRify goes over each image in 192-texel tiles (feathered overlaps); SeedVR2 keeps
+default 10, never more than leaves `--keep-free-vram-gb` free); one model at a time. It also keeps RAM free
+(`--keep-free-ram-gb`): a Windows job object caps the process's committed memory at what was available less that, and
+before each image it waits (up to 10 minutes) while either RAM or VRAM is short of the floor - a game started meanwhile.
+Both floors default to 1 GB; a process stopped by the cap is started again and goes on from its last finished image. PBRify goes over each image in 192-texel tiles (feathered overlaps); SeedVR2 keeps
 both its models loaded between images, its VAE tiled at 512, seed 42 (deterministic: the same files from the same
 input).
 

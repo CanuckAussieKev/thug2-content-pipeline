@@ -11,9 +11,12 @@
 #
 #   python -I upscale.py --model pbrify|seedvr2 --in <folder> --out <folder> --models <folder>
 #                        [--seedvr2-code <folder>] [--tile 192] [--vram-gb 10] [--seed 42] [--times <json>]
+#                        [--keep-free-ram-gb 1] [--keep-free-vram-gb 1]
 #
 # Deterministic: fixed seeds, cuDNN deterministic, no autotuning. The process runs at below-normal priority and caps
-# its share of the GPU's memory (--vram-gb) so games and other work on the machine keep theirs. --times writes the
+# its share of the GPU's memory (--vram-gb, never more than what leaves --keep-free-vram-gb free) and of RAM (all but
+# --keep-free-ram-gb of what was available), and waits before an image while either is short, so games and other work
+# on the machine keep theirs. --times writes the
 # seconds and peak VRAM per image.
 import argparse
 import json
@@ -46,11 +49,125 @@ def lower_priority():
         pass
 
 
-def cap_vram(gb):
+GB = 1024**3
+# the least a budget is cut to: below it the models can't run at all - better to wait for memory than fail
+MIN_VRAM_BUDGET_GB = 3.0
+# how long one wait for memory lasts before the image is tried anyway (the hard RAM cap still holds)
+WAIT_LIMIT_S = 600
+
+
+def ram_available():
+    import psutil
+
+    return psutil.virtual_memory().available
+
+
+# The VRAM budget: --vram-gb, or what is free on the card now less --keep-free-vram-gb, whichever is smaller (waiting
+# for room while less than the models' least is free). The budget caps PyTorch's allocator, so this process never
+# takes the card's last gigabyte - nor spills into system RAM through the driver's fallback.
+def cap_vram(args):
     if not torch.cuda.is_available():
-        raise SystemExit("no CUDA device: the HD texture models need an NVIDIA GPU")
+        raise SystemExit("no CUDA device (or the RAM cap left no room to start it): the models need an NVIDIA GPU")
     total = torch.cuda.get_device_properties(0).total_memory
-    torch.cuda.set_per_process_memory_fraction(min(1.0, gb * 1024**3 / total), 0)
+    waited = 0.0
+    while True:
+        free, _ = torch.cuda.mem_get_info(0)
+        budget = min(args.vram_gb, free / GB - args.keep_free_vram_gb)
+        if budget >= MIN_VRAM_BUDGET_GB or waited >= WAIT_LIMIT_S:
+            break
+        if waited == 0:
+            print(f"memory: {free / GB:.1f} GB free on the card - waiting for {MIN_VRAM_BUDGET_GB + args.keep_free_vram_gb:.1f}")
+        time.sleep(5)
+        waited += 5
+    budget = max(budget, MIN_VRAM_BUDGET_GB)
+    torch.cuda.set_per_process_memory_fraction(min(1.0, budget * GB / total), 0)
+    print(f"memory: VRAM budget {budget:.1f} GB ({free / GB:.1f} GB free of {total / GB:.1f}), keeping "
+          f"{args.keep_free_vram_gb:g} GB of VRAM and {args.keep_free_ram_gb:g} GB of RAM free")
+
+
+# A hard cap on this process's committed memory (Windows: a job object): what it has now plus what is available less
+# --keep-free-ram-gb. Going over it fails an allocation here - the process stops, the caller (base.ts) starts it again
+# and it goes on from the last finished image - instead of the machine running out.
+def cap_ram(args):
+    if os.name != "nt":
+        return
+    import ctypes
+    from ctypes import wintypes
+
+    import psutil
+
+    class IoCounters(ctypes.Structure):
+        _fields_ = [(n, ctypes.c_ulonglong) for n in ("r", "w", "o", "rb", "wb", "ob")]
+
+    class BasicLimits(ctypes.Structure):
+        _fields_ = [
+            ("PerProcessUserTimeLimit", ctypes.c_longlong),
+            ("PerJobUserTimeLimit", ctypes.c_longlong),
+            ("LimitFlags", wintypes.DWORD),
+            ("MinimumWorkingSetSize", ctypes.c_size_t),
+            ("MaximumWorkingSetSize", ctypes.c_size_t),
+            ("ActiveProcessLimit", wintypes.DWORD),
+            ("Affinity", ctypes.c_size_t),
+            ("PriorityClass", wintypes.DWORD),
+            ("SchedulingClass", wintypes.DWORD),
+        ]
+
+    class ExtendedLimits(ctypes.Structure):
+        _fields_ = [
+            ("BasicLimitInformation", BasicLimits),
+            ("IoInfo", IoCounters),
+            ("ProcessMemoryLimit", ctypes.c_size_t),
+            ("JobMemoryLimit", ctypes.c_size_t),
+            ("PeakProcessMemoryUsed", ctypes.c_size_t),
+            ("PeakJobMemoryUsed", ctypes.c_size_t),
+        ]
+
+    JOB_OBJECT_LIMIT_PROCESS_MEMORY = 0x100
+    JOB_OBJECT_EXTENDED_LIMIT_INFORMATION = 9
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.CreateJobObjectW.restype = wintypes.HANDLE
+    kernel32.GetCurrentProcess.restype = wintypes.HANDLE
+    kernel32.SetInformationJobObject.argtypes = [wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD]
+    kernel32.AssignProcessToJobObject.argtypes = [wintypes.HANDLE, wintypes.HANDLE]
+    committed = psutil.Process().memory_info().private
+    limit = committed + max(0, ram_available() - int(args.keep_free_ram_gb * GB))
+    job = kernel32.CreateJobObjectW(None, None)
+    info = ExtendedLimits()
+    info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_PROCESS_MEMORY
+    info.ProcessMemoryLimit = limit
+    ok = job and kernel32.SetInformationJobObject(
+        job, JOB_OBJECT_EXTENDED_LIMIT_INFORMATION, ctypes.byref(info), ctypes.sizeof(info)
+    )
+    ok = ok and kernel32.AssignProcessToJobObject(job, kernel32.GetCurrentProcess())
+    if ok:
+        print(f"memory: this process capped at {limit / GB:.1f} GB committed ({committed / GB:.1f} GB now)")
+    else:
+        print(f"memory: no RAM cap (Windows error {ctypes.get_last_error()}) - waiting between images only")
+
+
+# Before each image: room for it - --keep-free-ram-gb of RAM and --keep-free-vram-gb on the card left over once this
+# process's cached blocks are handed back - or wait (a game started meanwhile), at most WAIT_LIMIT_S.
+def wait_for_memory(args):
+    import psutil
+
+    waited = 0.0
+    while True:
+        torch.cuda.empty_cache()
+        ram = ram_available()
+        vram, _ = torch.cuda.mem_get_info(0)
+        # (this process's own allocations stay: only what others hold or nobody does can be waited for)
+        mine = torch.cuda.memory_allocated(0)
+        short_ram = ram < args.keep_free_ram_gb * GB
+        short_vram = vram + mine < (args.keep_free_vram_gb + MIN_VRAM_BUDGET_GB) * GB
+        if not (short_ram or short_vram) or waited >= WAIT_LIMIT_S:
+            if waited:
+                print(f"memory: going on after {waited:.0f} s ({ram / GB:.1f} GB RAM, {vram / GB:.1f} GB VRAM free)")
+            return
+        if waited == 0:
+            print(f"memory: {ram / GB:.1f} GB RAM, {vram / GB:.1f} GB VRAM free - waiting "
+                  f"(this process: {psutil.Process().memory_info().rss / GB:.1f} GB RAM)")
+        time.sleep(5)
+        waited += 5
 
 
 def deterministic(seed):
@@ -125,6 +242,7 @@ def run_pbrify(args):
     model.to(dtype)
     times = load_times(args)
     for name in pending(args):
+        wait_for_memory(args)
         start = time.perf_counter()
         torch.cuda.reset_peak_memory_stats()
         rgb = np.asarray(Image.open(os.path.join(args.inp, name)).convert("RGB"), dtype=np.float32) / 255.0
@@ -185,6 +303,7 @@ def run_seedvr2(args):
             with Image.open(source) as im:
                 want = (im.size[0] * SCALE, im.size[1] * SCALE)
             options.resolution = min(want)
+            wait_for_memory(args)
             made = os.path.join(work, name)
             torch.cuda.reset_peak_memory_stats()
             start = time.perf_counter()
@@ -212,6 +331,8 @@ def main():
     parser.add_argument("--seedvr2-code", default=None)
     parser.add_argument("--tile", type=int, default=192)
     parser.add_argument("--vram-gb", type=float, default=10)
+    parser.add_argument("--keep-free-ram-gb", type=float, default=1)
+    parser.add_argument("--keep-free-vram-gb", type=float, default=1)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--times", default=None)
     args = parser.parse_args()
@@ -221,7 +342,8 @@ def main():
     for stream in (sys.stdout, sys.stderr):
         stream.reconfigure(encoding="utf-8", errors="replace")
     lower_priority()
-    cap_vram(args.vram_gb)
+    cap_ram(args)
+    cap_vram(args)
     deterministic(args.seed)
     os.makedirs(args.out, exist_ok=True)
     times = run_pbrify(args) if args.model == "pbrify" else run_seedvr2(args)

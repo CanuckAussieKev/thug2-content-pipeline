@@ -11,6 +11,7 @@
 //
 //   node tools/pipeline/hd_textures/base.ts --game <folder> --model pbrify|seedvr2|none [--levels BO,AU,foun]
 //        [--scope levels|all] [--build-only] [--no-match] [--no-select] [--vram-gb 10]
+//        [--keep-free-ram-gb 1] [--keep-free-vram-gb 1]
 //   node tools/pipeline/hd_textures/base.ts --game <folder> --remove pbrify|seedvr2
 //   node tools/pipeline/hd_textures/base.ts --game <folder> --restore | --status
 //
@@ -518,6 +519,9 @@ export interface Timing {
 export interface BuildOptions {
     cacheRoot: string; // <cache>\<model>\files, \texels
     vramGb: number;
+    // the RAM and VRAM the model leaves free (upscale.py --keep-free-ram-gb / --keep-free-vram-gb; default 1 GB each)
+    keepFreeRamGb?: number;
+    keepFreeVramGb?: number;
     upscaler?: hd.Upscaler; // (tests: a stand-in for the model)
     log?: (line: string) => void;
     // false: the model's own colours and contrast (default: pulled back to the original's - core's matchOriginal)
@@ -572,7 +576,13 @@ const cachedFile = (cacheRoot: string, model: ModelName, key: string): string =>
 
 // The model run over a set of images by upscale.py (one process: the model loads once). Timings per image added to
 // `timings`; its output in <cache>\<model>\last-run.log.
-export function pythonUpscaler(model: ModelName, cacheRoot: string, vramGb: number, timings: Timing[]): hd.Upscaler {
+export function pythonUpscaler(
+    model: ModelName,
+    cacheRoot: string,
+    vramGb: number,
+    timings: Timing[],
+    keepFree: { ramGb?: number | undefined; vramGb?: number | undefined } = {},
+): hd.Upscaler {
     return (images) => {
         if (!fs.existsSync(PYTHON))
             throw Error(`${PYTHON} not found: node tools/pipeline/hd_textures/fetch_models.ts ${model}`);
@@ -588,6 +598,8 @@ export function pythonUpscaler(model: ModelName, cacheRoot: string, vramGb: numb
             fs.mkdirSync(path.dirname(log), { recursive: true });
             const args = ["-I", RUNNER, "--model", model, "--in", inDir, "--out", outDir, "--models", MODELS_DIR];
             args.push("--seedvr2-code", seedvr2Code(), "--vram-gb", String(vramGb), "--times", times);
+            args.push("--keep-free-ram-gb", String(keepFree.ramGb ?? 1));
+            args.push("--keep-free-vram-gb", String(keepFree.vramGb ?? 1));
             // (a run stopped part-way - the GPU driver crashing under other work - goes on from where it was, twice)
             for (let attempt = 1; ; attempt++) {
                 const fd = fs.openSync(log, attempt === 1 ? "w" : "a");
@@ -721,7 +733,9 @@ export function buildSet(
     };
     const match = options.match ?? true;
     const hdOpts = hdOptions(model, options.cacheRoot, match);
-    const upscaler = options.upscaler ?? pythonUpscaler(model, options.cacheRoot, options.vramGb, report.timings);
+    const keepFree = { ramGb: options.keepFreeRamGb, vramGb: options.keepFreeVramGb };
+    const upscaler =
+        options.upscaler ?? pythonUpscaler(model, options.cacheRoot, options.vramGb, report.timings, keepFree);
     const files = new Map<string, string>();
     let pending: { name: string; key: string; tex: TexFile }[] = [];
     let pendingTextures = 0;
@@ -845,6 +859,8 @@ export interface BaseCli {
     scope: "levels" | "all";
     buildOnly: boolean;
     vramGb: number;
+    keepFreeRamGb: number;
+    keepFreeVramGb: number;
     match: boolean;
     select: boolean;
 }
@@ -872,12 +888,17 @@ export function parseBaseArgs(args: string[]): BaseCli {
     if (scope !== "levels" && scope !== "all") exitWith(`--scope levels|all, not ${scope}`);
     const vram = Number(take("--vram-gb") ?? "10");
     if (!(vram > 0)) exitWith("--vram-gb: a number of GB");
+    const keepRam = Number(take("--keep-free-ram-gb") ?? "1");
+    const keepVram = Number(take("--keep-free-vram-gb") ?? "1");
+    if (!(keepRam >= 0 && keepVram >= 0)) exitWith("--keep-free-ram-gb / --keep-free-vram-gb: a number of GB");
     return {
         model: (model as ModelName | "none" | undefined) ?? null,
         levels: levels ? levels.split(",").filter(Boolean) : null,
         scope,
         buildOnly: flag("--build-only"),
         vramGb: vram,
+        keepFreeRamGb: keepRam,
+        keepFreeVramGb: keepVram,
         match: !(flag("--no-match") || flag("--hd-no-match")),
         select: !(flag("--no-select") || flag("--hd-no-select")),
     };
@@ -892,6 +913,8 @@ export function installAndReport(root: string, cli: BaseCli): void {
         buildOnly: cli.buildOnly,
         cacheRoot: defaultCacheRoot(),
         vramGb: cli.vramGb,
+        keepFreeRamGb: cli.keepFreeRamGb,
+        keepFreeVramGb: cli.keepFreeVramGb,
         match: cli.match,
         select: cli.select,
         log: print,
