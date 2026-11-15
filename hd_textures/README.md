@@ -199,6 +199,40 @@ object's commit limit made SeedVR2 crash (an access violation) as it loaded its 
 both its models loaded between images, its VAE tiled at 512, seed 42 (deterministic: the same files from the same
 input).
 
+### De-lighting first (`--delight`, experimental, off by default)
+
+    node tools/pipeline/hd_textures/base.ts --game C:\Games\THUG2-n --model pbrify --delight [--levels BO] [--build-only]
+
+The 2004 colour maps have light painted into them (broad shading across a wall, darker corners, a gradient across a
+tile) that the Vulkan renderer's own lighting then lights again. With `--delight` each texture is de-lit at its
+original size before the model sees it (`delight.ts`), and the pull-back matches the model's output to the **de-lit**
+texels - light the model paints back goes with the rest of the low frequencies. The order is original -> de-light ->
+upscale -> match.
+
+- **How** (classical, no model, deterministic): the log luminance's broad part is rebuilt from its soft steps only
+  (gradient-domain Retinex): a step between neighbouring texels counts as light when it is small (|d ln L| < 0.1, the
+  chromaticity changing < 0.06) or no larger than three times the steps round it (grain); a hard step - a colour edge,
+  paint, letters, mortar - is surface. The soft steps are summed between the centres of a coarse grid (a sixteenth of
+  the shorter side) and solved in least squares, spread back bilinearly. Each texel is divided by that shading (a
+  luminance factor: chroma kept, at most x2 either way), scaled by a strength k.
+- **Strength**: k = 0.5 + 0.35 x the faces' coherence (|sum of area x normal| / area of the faces using the texture: a
+  floor or one wall 1, a crate's six sides 0) - one direction can hold baked sun, many directions only painted
+  occlusion and wear; 0.65 when unknown. Then times a reliability (a Wiener shrink: the shading's variance against the
+  chance wander of the grid's cell means - speckle, grates and random tiles are left nearly alone).
+- **Left as they are**: skies' and models' dictionaries (skaters, peds - for a later stage), soft alpha (glass,
+  smoke, glows), textures no mesh beside them draws as a solid surface (added / modulated light, billboards - a flat
+  stand-in's painted shading is its form - and effects). Cut-outs' transparent texels and every alpha are untouched;
+  tiling textures stay seamless (the grid wraps); atlases are de-lit region by region.
+- **Recorded**: the files cache keys on the de-light version; `set.json` gets `"delight": <version>` and per file the
+  textures de-lit (`delit`); the game takes `[Graphics] rt_delight` (the same light flattened at draw time) out of
+  effect while such a set is chosen ("Off - these textures are already flat"), and keeps it for sets made without.
+- **Surface maps**: `node tools/pbr_maps/pbr_maps.ts make --game <folder> --delight` makes the classical maps from the
+  de-lit colour (still keyed to the original texels).
+- **Review**: `node tools/pipeline/hd_textures/delight_review.ts --game <folder> --out <folder> [--pbrify 10]
+  [--hd-dir <decomp>\out\hd_textures]` writes a contact sheet (`index.html`, self-contained; `strips\*.png`;
+  `numbers.tsv`) of ~65 textures across the levels, skies and characters - original | de-lit | shading removed (| PBRify
+  from each) - with the risky ones listed first.
+
 ### Measurements (2026-11-13, BO + AU + foun, RTX 5070 Ti shared with four running games)
 
 | | PBRify | SeedVR2 |

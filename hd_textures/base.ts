@@ -10,7 +10,7 @@
 // src/engine/gfx/texture_sets.h).
 //
 //   node tools/pipeline/hd_textures/base.ts --game <folder> --model pbrify|seedvr2|none [--levels BO,AU,foun]
-//        [--scope levels|all] [--build-only] [--no-match] [--no-select] [--vram-gb 10]
+//        [--scope levels|all] [--build-only] [--no-match] [--no-select] [--delight] [--vram-gb 10]
 //        [--keep-free-ram-gb 1] [--keep-free-vram-gb 1]
 //   node tools/pipeline/hd_textures/base.ts --game <folder> --remove pbrify|seedvr2
 //   node tools/pipeline/hd_textures/base.ts --game <folder> --restore | --status
@@ -25,7 +25,10 @@
 // block pulled back to the original texel - which also brings back a faint trace of the original's DXT blocks); its
 // files are a set of their own in the cache (made from the same model output: no model run). --status lists the
 // installed sets, the one selected and any file whose original changed since its set was made (a level converted
-// again: install the set again).
+// again: install the set again). --delight: every texture de-lit at its original size before upscaling (delight.ts:
+// the painted light taken out, atlases region by region, cut-outs' transparent texels untouched); the pull-back then
+// matches the model's output to the de-lit texels, so light the model paints back goes too; the set's record says so
+// (set.json delight, per file the textures de-lit) and the game takes [Graphics] rt_delight out of effect for it.
 //
 // Per texture (thug2-level-converter-core level_port/hd_textures.ts does the per-texture work, as for converted
 // levels; this adds what the base game needs):
@@ -66,6 +69,7 @@ import { readTex, type TexFile, type Texture, writeTex } from "thug2-level-conve
 import { exitWith, helpFromHeader, isMain, print, runMain } from "thug2-level-converter-core/lib/cli.ts";
 import { decodePng, encodePng, type Image } from "thug2-level-converter-core/lib/frame_diff.ts";
 import * as atlas from "./atlas.ts";
+import * as delit from "./delight.ts";
 import {
     HD_DIR,
     isModelName,
@@ -300,10 +304,14 @@ const SEARCH_FOLDERS = ["anteara\\front_end\\", "anteara\\", "front_end\\", "hd_
 
 // A set's record: name - the game's name for the file (relative to Data or the data overlay, lower case, '\'), as
 // the set's folder holds it; original - the SHA-256 of the dictionary it was made from; installed - the HD file's.
+// delight (--delight): delight.ts's version the set's textures were de-lit with (absent: not de-lit - the game keeps
+// its draw-time de-lighting, [Graphics] rt_delight, for such a set); a file's delit: its textures de-lit (checksums,
+// hex) - the ones left out (too small, too large, one colour) keep the original's colour.
 export interface SetRecord {
     model: ModelName;
     match: boolean; // (false: --no-match)
-    files: { name: string; original: string; installed: string }[];
+    delight?: number;
+    files: { name: string; original: string; installed: string; delit?: string[] }[];
 }
 
 const sha256 = (data: Uint8Array): string => createHash("sha256").update(data).digest("hex");
@@ -529,6 +537,9 @@ export interface BuildOptions {
     // the uv rectangles of the meshes beside each dictionary (atlases' regions); absent: no mesh is known - every
     // texture goes to the seam heuristic
     scenes?: SceneSource;
+    // (--delight) each texture de-lit at its original size before the model sees it (delight.ts); the pull-back then
+    // matches the model's output to the de-lit texels
+    delight?: boolean;
 }
 
 export function defaultCacheRoot(): string {
@@ -547,8 +558,8 @@ export function hdOptions(model: ModelName, cacheRoot: string, match = true): hd
 }
 
 // `scenes`: the signature of the scene files beside the dictionary (atlas.ts UvIndexes - its atlases' regions come
-// from them).
-export function fileKey(original: Uint8Array, model: ModelName, match = true, scenes = ""): string {
+// from them); `delight`: the textures de-lit first (delight.ts's version keys the file).
+export function fileKey(original: Uint8Array, model: ModelName, match = true, scenes = "", delight = false): string {
     const h = createHash("sha256");
     const settings = {
         base: BASE_VERSION,
@@ -558,7 +569,8 @@ export function fileKey(original: Uint8Array, model: ModelName, match = true, sc
         MAX_SIZE,
         scenes,
     };
-    h.update(JSON.stringify(match ? settings : { ...settings, match }));
+    const keyed = match ? settings : { ...settings, match };
+    h.update(JSON.stringify(delight ? { ...keyed, delight: delit.DELIGHT_VERSION } : keyed));
     h.update(original);
     return h.digest("hex");
 }
@@ -566,13 +578,69 @@ export function fileKey(original: Uint8Array, model: ModelName, match = true, sc
 // The scene files' uv rectangles beside the game's dictionaries (names relative to the game's root).
 export function scenesOf(root: string): SceneSource {
     const indexes = new atlas.UvIndexes();
-    return (name) => indexes.of(path.join(root, name));
+    const orientations = new delit.Orientations();
+    return (name) => ({
+        ...indexes.of(path.join(root, name)),
+        orientations: orientations.of(path.join(root, name)),
+    });
 }
 
-export type SceneSource = (name: string) => { index: atlas.UvIndex; signature: string; errors: string[] };
+// (orientations: the faces using each texture - delight.ts's strength; absent: unknown)
+export type SceneSource = (name: string) => {
+    index: atlas.UvIndex;
+    signature: string;
+    errors: string[];
+    orientations?: Map<number, delit.Orientation>;
+};
+
+// A texture's top level replaced by `bgra` (32-bit; its smaller levels made from it, as many as it had): what core's
+// pass and the atlas pass then read as the texture's own texels (hd.topLevel), upscale and pull back to.
+export function replaceTopLevel(t: Texture, bgra: Buffer): void {
+    const levels: Buffer[] = [bgra];
+    let level = bgra;
+    let lw = t.width;
+    let lh = t.height;
+    for (let n = 1; n < t.levels.length; n++) {
+        level = hd.mipDown(level, lw, lh);
+        lw = Math.max(1, Math.floor(lw / 2));
+        lh = Math.max(1, Math.floor(lh / 2));
+        levels.push(level);
+    }
+    t.levels = levels;
+    t.dxt = 0;
+    t.texelDepth = 32;
+}
+
+// The texture de-lit before upscaling (an atlas region by region, each with its own wrap): its stats when its texels
+// changed (its top level then replaced), else null. `wrap`: its tiling as found on the original texels.
+export function delightTexture(
+    t: Texture,
+    bgra: Buffer,
+    regions: readonly atlas.Region[] | null,
+    wrap: hd.Addressing,
+    coherence: number | null,
+): delit.DelightStats | null {
+    const result = regions
+        ? delit.delightRegions(bgra, t.width, t.height, regions, { coherence })
+        : delit.delight(bgra, t.width, t.height, { wrapU: wrap.wrapU, wrapV: wrap.wrapV, coherence });
+    if (result.bgra.equals(bgra)) return null;
+    replaceTopLevel(t, result.bgra);
+    return result.stats;
+}
 
 const cachedFile = (cacheRoot: string, model: ModelName, key: string): string =>
     path.join(cacheRoot, model, "files", key.slice(0, 2), `${key}.tex.xbx`);
+
+// A cached file's de-light record beside it (made with --delight): the version and the textures de-lit.
+export interface DelitRecord {
+    delight: number;
+    textures: string[];
+}
+export const delitRecordFile = (file: string): string => `${file}.delight.json`;
+export function readDelitRecord(file: string): DelitRecord | null {
+    const record = delitRecordFile(file);
+    return fs.existsSync(record) ? (JSON.parse(fs.readFileSync(record, "utf8")) as DelitRecord) : null;
+}
 
 // The model run over a set of images by upscale.py (one process: the model loads once). Timings per image added to
 // `timings`; its output in <cache>\<model>\last-run.log.
@@ -632,6 +700,8 @@ export interface BuildReport {
     unreferenced: string[]; // textures no mesh beside them uses: "<file> <checksum>" (+ the seam heuristic's verdict)
     skippedAtlases: string[]; // left as they were (no mesh uses them, the seam heuristic took them for atlases)
     skipped: Map<string, number>;
+    delit: number; // textures de-lit before upscaling (--delight)
+    delitLeft: Map<string, number>; // ... left as they were, by why (delight.ts leftAsItIs)
     bytesBefore: number;
     bytesAfter: number;
     seconds: number;
@@ -656,21 +726,35 @@ function upscaleDictionaries(
     upscaler: hd.Upscaler,
     report: BuildReport,
     scenes: SceneSource | undefined,
-): void {
+    delight = false,
+): Map<string, string[]> {
+    const delitBy = new Map<string, string[]>(); // (each file's de-lit textures, checksums in hex)
     const combined: TexFile = { version: 1, textures: [] };
     const addressing = new Map<number, hd.Addressing>();
     const checksums = new Map<Texture, number>();
     const atlases: atlas.AtlasItem[] = [];
     let n = 0;
     for (const { name, tex } of files) {
-        const index = scenes?.(name).index ?? null;
+        const source = scenes?.(name);
+        const index = source?.index ?? null;
+        const delitHere: string[] = [];
+        delitBy.set(name, delitHere);
         for (const t of tex.textures) {
             report.textures++;
             if (handledTexture(t)) {
                 const bgra = hd.topLevel(t);
                 const id = `${name} ${t.checksum.toString(16).padStart(8, "0")}`;
                 const found = atlasRegionsOf(t, bgra, index ? (index.get(t.checksum) ?? []) : null);
+                const orientation = source?.orientations?.get(t.checksum);
+                const coherence = orientation?.coherence ?? null;
+                // (--delight: the level's surfaces only - delight.ts leftAsItIs)
+                const left = delight ? delit.leftAsItIs(name, hd.alphaKind(bgra), orientation) : "off";
+                if (delight && left) report.delitLeft.set(left, (report.delitLeft.get(left) ?? 0) + 1);
                 if (found.kind === "atlas") {
+                    if (!left && delightTexture(t, bgra, found.regions, { wrapU: false, wrapV: false }, coherence)) {
+                        delitHere.push(t.checksum.toString(16).padStart(8, "0"));
+                        report.delit++;
+                    }
                     atlases.push({ texture: t, regions: found.regions });
                     report.atlases.push(`${id}: ${found.regions.length} regions`);
                     continue;
@@ -687,7 +771,12 @@ function upscaleDictionaries(
                         continue;
                     }
                 }
-                addressing.set(n, detectWrap(bgra, t.width, t.height));
+                const wrap = detectWrap(bgra, t.width, t.height);
+                addressing.set(n, wrap);
+                if (!left && delightTexture(t, bgra, null, wrap, coherence)) {
+                    delitHere.push(t.checksum.toString(16).padStart(8, "0"));
+                    report.delit++;
+                }
             }
             checksums.set(t, t.checksum);
             t.checksum = n++;
@@ -707,6 +796,7 @@ function upscaleDictionaries(
         report.upscaled += done.upscaled;
         report.regions += done.regions;
     }
+    return delitBy;
 }
 
 // Every file's HD version into the model's cache (the ones not there yet). Returns the cached file per original key.
@@ -726,12 +816,15 @@ export function buildSet(
         unreferenced: [],
         skippedAtlases: [],
         skipped: new Map(),
+        delit: 0,
+        delitLeft: new Map(),
         bytesBefore: 0,
         bytesAfter: 0,
         seconds: 0,
         timings: [],
     };
     const match = options.match ?? true;
+    const delight = options.delight ?? false;
     const hdOpts = hdOptions(model, options.cacheRoot, match);
     const keepFree = { ramGb: options.keepFreeRamGb, vramGb: options.keepFreeVramGb };
     const upscaler =
@@ -741,10 +834,14 @@ export function buildSet(
     let pendingTextures = 0;
     const flush = (): void => {
         if (!pending.length) return;
-        upscaleDictionaries(pending, hdOpts, upscaler, report, options.scenes);
+        const delitBy = upscaleDictionaries(pending, hdOpts, upscaler, report, options.scenes, delight);
         for (const p of pending) {
             const file = cachedFile(options.cacheRoot, model, p.key);
             fs.mkdirSync(path.dirname(file), { recursive: true });
+            if (delight) {
+                const record: DelitRecord = { delight: delit.DELIGHT_VERSION, textures: delitBy.get(p.name) ?? [] };
+                fs.writeFileSync(delitRecordFile(file), `${JSON.stringify(record)}\n`);
+            }
             fs.writeFileSync(`${file}.tmp`, writeTex(p.tex));
             fs.renameSync(`${file}.tmp`, file);
             report.made++;
@@ -755,7 +852,7 @@ export function buildSet(
     };
     const seen = new Set<string>();
     const keyOf = (o: { name: string; bytes: Buffer }): string =>
-        fileKey(o.bytes, model, match, options.scenes?.(o.name).signature ?? "");
+        fileKey(o.bytes, model, match, options.scenes?.(o.name).signature ?? "", delight);
     for (const o of originals) {
         report.bytesBefore += o.bytes.length;
         for (const error of options.scenes?.(o.name).errors ?? [])
@@ -803,20 +900,24 @@ export function install(
     if (options.buildOnly) return { report, installed: 0 };
     removeSet(root, model);
     const folder = setFolder(root, model);
+    const delight = options.delight ?? false;
     const record: SetRecord = { model, match: options.match ?? true, files: [] };
+    if (delight) record.delight = delit.DELIGHT_VERSION;
     const taken = new Set<string>();
     entries.forEach((e, k) => {
         const name = gameName(e)!;
         if (taken.has(name)) return; // (the first one the game finds: the data overlay's - collect's order)
         taken.add(name);
         const original = originals[k]!.bytes;
-        const key = fileKey(original, model, options.match ?? true, scenes(e.rel).signature);
+        const key = fileKey(original, model, options.match ?? true, scenes(e.rel).signature, delight);
         const hdBytes = fs.readFileSync(files.get(key)!);
         if (hdBytes.equals(original)) return; // (nothing in it upscaled)
         const target = path.join(folder, ...name.split("\\"));
         fs.mkdirSync(path.dirname(target), { recursive: true });
         fs.writeFileSync(target, hdBytes);
-        record.files.push({ name, original: sha256(original), installed: sha256(hdBytes) });
+        const entry: SetRecord["files"][number] = { name, original: sha256(original), installed: sha256(hdBytes) };
+        if (delight) entry.delit = readDelitRecord(files.get(key)!)?.textures ?? [];
+        record.files.push(entry);
     });
     fs.mkdirSync(folder, { recursive: true });
     fs.writeFileSync(path.join(folder, SET_RECORD), `${JSON.stringify(record, null, 1)}\n`);
@@ -841,6 +942,11 @@ export function reportLines(model: ModelName, r: BuildReport): string[] {
                 `slowest ${slowest.toFixed(1)} s), peak VRAM ${peak} MB`,
         );
     }
+    if (r.delit || r.delitLeft.size)
+        lines.push(
+            `  ${r.delit} textures de-lit before upscaling (delight.ts v${delit.DELIGHT_VERSION}); left as they were: ` +
+                ([...r.delitLeft].map(([why, n]) => `${n} ${why}`).join(", ") || "none"),
+        );
     if (r.atlases.length) lines.push(`  ${r.atlases.length} atlases upscaled region by region (${r.regions} regions)`);
     for (const a of r.atlases) lines.push(`  atlas: ${a}`);
     for (const u of r.unreferenced) lines.push(`  no mesh uses: ${u}`);
@@ -863,6 +969,7 @@ export interface BaseCli {
     keepFreeVramGb: number;
     match: boolean;
     select: boolean;
+    delight: boolean;
 }
 
 // The options unpack_game.ts and this tool share; `args` keeps whatever isn't theirs.
@@ -901,6 +1008,7 @@ export function parseBaseArgs(args: string[]): BaseCli {
         keepFreeVramGb: keepVram,
         match: !(flag("--no-match") || flag("--hd-no-match")),
         select: !(flag("--no-select") || flag("--hd-no-select")),
+        delight: flag("--delight") || flag("--hd-delight"),
     };
 }
 
@@ -917,6 +1025,7 @@ export function installAndReport(root: string, cli: BaseCli): void {
         keepFreeVramGb: cli.keepFreeVramGb,
         match: cli.match,
         select: cli.select,
+        delight: cli.delight,
         log: print,
     });
     if (result.report && cli.model !== "none") {
@@ -941,6 +1050,7 @@ export function statusLines(root: string): string[] {
         const stale = staleFiles(root, model);
         lines.push(
             `${model}: ${record.files.length} files${record.match ? "" : " (--no-match)"}` +
+                (record.delight ? ` (de-lit, v${record.delight})` : "") +
                 (stale.length ? `; ${stale.length} out of date (their originals changed): ${stale.join(", ")}` : ""),
         );
     }

@@ -13,6 +13,7 @@ import * as hd from "thug2-level-converter-core/level_port/hd_textures.ts";
 import { readTex, type TexFile, type Texture, writeTex } from "thug2-level-converter-core/level_port/tex.ts";
 import type { Image } from "thug2-level-converter-core/lib/frame_diff.ts";
 import * as base from "./base.ts";
+import * as delit from "./delight.ts";
 
 // ---- made-up textures ----
 
@@ -425,5 +426,66 @@ test("buildSet with the meshes' uv rectangles: an atlas upscaled region by regio
     assert.deepEqual(report.unreferenced, ["x.tex.xbx 0000000c"]);
     assert.equal(report.upscaled, 3);
     assert.notEqual(base.fileKey(tex, "pbrify", true, "s1"), base.fileKey(tex, "pbrify", true, "s2"));
+    fs.rmSync(cacheRoot, { recursive: true, force: true });
+});
+
+test("buildSet --delight: the texture de-lit before the model, the result pulled back to the de-lit texels, recorded", () => {
+    const cacheRoot = temp("hd-base-delight-");
+    const w = 64;
+    // grain on a paint, lit by a broad periodic light (x 0.55 - x 1.8)
+    const lit = texture(w, w, (x, y) => {
+        const light = Math.exp(0.6 * Math.cos((2 * Math.PI * x) / w) * Math.cos((2 * Math.PI * y) / w));
+        const grain = 1 + 0.1 * Math.sin(x * 2.1 + y * 1.3);
+        return [110 * light * grain, 100 * light * grain, 90 * light * grain, 255];
+    });
+    const flat = texture(w, w, () => [90, 90, 90, 255]);
+    // (0xf: the same picture, but only drawn as added light - a glow: left as it is)
+    const tex = writeTex({
+        version: 1,
+        textures: [asTexture(lit, w, w, 0, 0xd), asTexture(flat, w, w, 0, 0xe), asTexture(lit, w, w, 0, 0xf)],
+    });
+    const floor = { area: 10, coherence: 1, surface: true };
+    const orientations = new Map([
+        [0xd, floor],
+        [0xe, floor],
+        [0xf, { ...floor, surface: false }],
+    ]);
+    const scenes: base.SceneSource = () => ({ index: new Map(), signature: "", errors: [], orientations });
+    const name = "Data/levels/xx/xx.tex.xbx";
+    const { files, report } = base.buildSet([{ name, bytes: tex }], "pbrify", {
+        cacheRoot,
+        vramGb: 1,
+        upscaler: smooth4,
+        scenes,
+        delight: true,
+    });
+    assert.equal(report.delit, 1);
+    assert.deepEqual([...report.delitLeft], [["only drawn as light (added, modulated) or on billboards", 1]]);
+    // (a sky's or a model's dictionary: nothing de-lit)
+    assert.equal(delit.leftAsItIs("Data/levels/xx_sky/xx_sky.tex.xbx", "opaque", floor), "a sky's");
+    assert.match(delit.leftAsItIs("Data/models/skater/a.tex.xbx", "opaque", floor) ?? "", /not a level/);
+    assert.match(delit.leftAsItIs(name, "smooth", floor) ?? "", /soft alpha/);
+    assert.equal(delit.leftAsItIs(name, "binary", floor), null);
+    const file = [...files.values()][0]!;
+    assert.deepEqual(base.readDelitRecord(file), { delight: delit.DELIGHT_VERSION, textures: ["0000000d"] });
+    const out = readTex(fs.readFileSync(file)).textures.find((t) => t.checksum === 0xd)!;
+    assert.equal(out.width, w * 4);
+    const top = hd.topLevel(out);
+    const expected = delit.delight(lit, w, w, { wrapU: true, wrapV: true }).bgra;
+    // every 4 x 4 block averages to the de-lit texel (DXT's error aside), far from the lit original
+    let toDelit = 0;
+    let toLit = 0;
+    for (let y = 0; y < w; y++)
+        for (let x = 0; x < w; x++)
+            for (let c = 0; c < 3; c++) {
+                let sum = 0;
+                for (let by = 0; by < 4; by++)
+                    for (let bx = 0; bx < 4; bx++) sum += top[((y * 4 + by) * w * 4 + x * 4 + bx) * 4 + c]!;
+                toDelit += Math.abs(sum / 16 - expected[(y * w + x) * 4 + c]!);
+                toLit += Math.abs(sum / 16 - lit[(y * w + x) * 4 + c]!);
+            }
+    const n = w * w * 3;
+    assert.ok(toDelit / n < 4 && toLit / n > 3 * (toDelit / n), `to de-lit ${toDelit / n}, to lit ${toLit / n}`);
+    assert.notEqual(base.fileKey(tex, "pbrify", true, ""), base.fileKey(tex, "pbrify", true, "", true));
     fs.rmSync(cacheRoot, { recursive: true, force: true });
 });
