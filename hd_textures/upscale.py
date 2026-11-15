@@ -14,8 +14,10 @@
 #                        [--keep-free-ram-gb 1] [--keep-free-vram-gb 1]
 #
 # Deterministic: fixed seeds, cuDNN deterministic, no autotuning. The process runs at below-normal priority and caps
-# its share of the GPU's memory (--vram-gb, never more than what leaves --keep-free-vram-gb free) and of RAM (all but
-# --keep-free-ram-gb of what was available), and waits before an image while either is short, so games and other work
+# its share of the GPU's memory (--vram-gb, never more than what leaves --keep-free-vram-gb free), and waits before an
+# image while RAM is under --keep-free-ram-gb or the card under --keep-free-vram-gb (no hard RAM cap: a job object's
+# commit limit made SeedVR2 crash with an access violation as it loaded its 3B model - native code doesn't survive a
+# refused allocation), so games and other work
 # on the machine keep theirs. --times writes the
 # seconds and peak VRAM per image.
 import argparse
@@ -81,68 +83,8 @@ def cap_vram(args):
         waited += 5
     budget = max(budget, MIN_VRAM_BUDGET_GB)
     torch.cuda.set_per_process_memory_fraction(min(1.0, budget * GB / total), 0)
-    print(f"memory: VRAM budget {budget:.1f} GB ({free / GB:.1f} GB free of {total / GB:.1f}), keeping "
+    print(f"memory: {ram_available() / GB:.1f} GB RAM available; VRAM budget {budget:.1f} GB ({free / GB:.1f} GB free of {total / GB:.1f}), keeping "
           f"{args.keep_free_vram_gb:g} GB of VRAM and {args.keep_free_ram_gb:g} GB of RAM free")
-
-
-# A hard cap on this process's committed memory (Windows: a job object): what it has now plus what is available less
-# --keep-free-ram-gb. Going over it fails an allocation here - the process stops, the caller (base.ts) starts it again
-# and it goes on from the last finished image - instead of the machine running out.
-def cap_ram(args):
-    if os.name != "nt":
-        return
-    import ctypes
-    from ctypes import wintypes
-
-    import psutil
-
-    class IoCounters(ctypes.Structure):
-        _fields_ = [(n, ctypes.c_ulonglong) for n in ("r", "w", "o", "rb", "wb", "ob")]
-
-    class BasicLimits(ctypes.Structure):
-        _fields_ = [
-            ("PerProcessUserTimeLimit", ctypes.c_longlong),
-            ("PerJobUserTimeLimit", ctypes.c_longlong),
-            ("LimitFlags", wintypes.DWORD),
-            ("MinimumWorkingSetSize", ctypes.c_size_t),
-            ("MaximumWorkingSetSize", ctypes.c_size_t),
-            ("ActiveProcessLimit", wintypes.DWORD),
-            ("Affinity", ctypes.c_size_t),
-            ("PriorityClass", wintypes.DWORD),
-            ("SchedulingClass", wintypes.DWORD),
-        ]
-
-    class ExtendedLimits(ctypes.Structure):
-        _fields_ = [
-            ("BasicLimitInformation", BasicLimits),
-            ("IoInfo", IoCounters),
-            ("ProcessMemoryLimit", ctypes.c_size_t),
-            ("JobMemoryLimit", ctypes.c_size_t),
-            ("PeakProcessMemoryUsed", ctypes.c_size_t),
-            ("PeakJobMemoryUsed", ctypes.c_size_t),
-        ]
-
-    JOB_OBJECT_LIMIT_PROCESS_MEMORY = 0x100
-    JOB_OBJECT_EXTENDED_LIMIT_INFORMATION = 9
-    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-    kernel32.CreateJobObjectW.restype = wintypes.HANDLE
-    kernel32.GetCurrentProcess.restype = wintypes.HANDLE
-    kernel32.SetInformationJobObject.argtypes = [wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD]
-    kernel32.AssignProcessToJobObject.argtypes = [wintypes.HANDLE, wintypes.HANDLE]
-    committed = psutil.Process().memory_info().private
-    limit = committed + max(0, ram_available() - int(args.keep_free_ram_gb * GB))
-    job = kernel32.CreateJobObjectW(None, None)
-    info = ExtendedLimits()
-    info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_PROCESS_MEMORY
-    info.ProcessMemoryLimit = limit
-    ok = job and kernel32.SetInformationJobObject(
-        job, JOB_OBJECT_EXTENDED_LIMIT_INFORMATION, ctypes.byref(info), ctypes.sizeof(info)
-    )
-    ok = ok and kernel32.AssignProcessToJobObject(job, kernel32.GetCurrentProcess())
-    if ok:
-        print(f"memory: this process capped at {limit / GB:.1f} GB committed ({committed / GB:.1f} GB now)")
-    else:
-        print(f"memory: no RAM cap (Windows error {ctypes.get_last_error()}) - waiting between images only")
 
 
 # Before each image: room for it - --keep-free-ram-gb of RAM and --keep-free-vram-gb on the card left over once this
@@ -342,7 +284,6 @@ def main():
     for stream in (sys.stdout, sys.stderr):
         stream.reconfigure(encoding="utf-8", errors="replace")
     lower_priority()
-    cap_ram(args)
     cap_vram(args)
     deterministic(args.seed)
     os.makedirs(args.out, exist_ok=True)
