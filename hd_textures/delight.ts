@@ -1,83 +1,105 @@
-// NOT ORIGINAL - de-lighting the base game's textures before they are upscaled (base.ts --delight): the 2004 colour
-// maps have light painted into them - broad shading across a wall, a darker floor round its edges, highlights, a
-// gradient across a tile - which the Vulkan renderer's own lighting (ray-traced sun, occlusion, bounce, per-pixel
-// shading) then lights a second time. This takes the painted light out at the original resolution, per texture,
-// before the model sees it: the HD set is made from clean surface colour, and core's matchOriginal pulls the model's
-// output back to the DE-LIT texels (any shading the model puts back is removed with the rest of the low frequencies).
+// NOT ORIGINAL - de-lighting the base game's textures before they are upscaled (base.ts --delight): some of the 2004
+// colour maps have light painted into them - a facade darker toward its foot, a gradient down a wall, a shadow band
+// under a ledge - which the Vulkan renderer's own lighting (ray-traced sun, occlusion, bounce) then lights a second
+// time. This takes that painted light out at the original resolution, per texture, before the model sees it: the HD
+// set is made from clean surface colour, and core's matchOriginal pulls the model's output back to the DE-LIT texels.
 //
-// The method - a classical intrinsic decomposition (no model, deterministic: the same texels give the same bytes):
-// - the luminance of the linearised colour (sRGB as 2.2, Rec. 709) in log space, l = ln(L + 0.01) (the
-//   0.01: near-black texels' noise doesn't swamp the steps);
-// - shading = the broad part of l rebuilt from its small gradients only (gradient-domain Retinex, Horn 1974 / Blake
-//   1985): each step between neighbouring texels is kept when it is soft - |d l| under 0.1 and the log chromaticity
-//   (ln R/L, ln B/L) changing under 0.06, or no more than three times the typical step round it (the mean over 9 x 9
-//   texels: a grainy surface's steps are all large and add up to nothing) - and taken as 0 when it is hard (a colour
-//   edge, paint, a sign's letters, mortar, a plank's gap: surface, never shading); the kept steps are summed along the lines between the centres of
-//   a coarse grid's cells (a sixteenth of the shorter side each) and the cells' values solved for in least squares
-//   (conjugate gradients on the grid's weighted Laplacian), then spread back bilinearly. A plateau with a sharp border
-//   is surface colour; a soft change of brightness at the same colour is light. Fine grain integrates to nothing at the
-//   cells' scale and stays in the colour;
-// - transparent texels (alpha <= 8) take no part and their bytes are left exactly as they were - a cut-out's alpha and colour under the holes untouched; a step touching
-//   one counts for nothing;
-// - a wrapped axis makes the grid periodic (the step from the last texel to the first is one of its steps; the cells'
-//   values and their bilinear spread wrap round), so the shading - and the de-lit texture - stays seamless; a clamped
-//   axis (an atlas region's) uses its own texels only;
-// - the shading made zero-mean (over the visible texels) and scaled by the strength k times its reliability (a Wiener
-//   shrink: its variance against the chance wander of a cell's mean - the residual's variance over a cell's texels,
-//   x4 - so a speckled, grated or randomly tiled texture's cell means aren't taken for light), bounded to a factor of
-//   `limit` (2) either way - real surface variation at the scale of the whole texture (a two-tone wall) is mostly
-//   kept: only k of it goes, never more than a factor of two;
-// - each texel's linear RGB divided by exp(k s) - a luminance factor, so the chroma is kept - and clipped back into
-//   range by its largest channel (hue kept); back to sRGB.
-// The strength k comes from the meshes using the texture (faceOrientations): a texture on faces of one direction
-// (a floor, one wall) can hold that direction's baked light - removed at 0.85; one on faces of many directions (a
-// crate, a pillar's sides, a prop) can't hold a consistent baked sun - its broad shading is painted occlusion and wear,
-// partly the material's own character - removed at 0.5 (k = 0.5 + 0.35 x coherence, coherence = |sum of area x
-// normal| / sum of area); a texture no mesh uses (or unknown) 0.65.
+// Version 2 - light is removed only where there is evidence for it, in the shapes light takes. (Version 1 took any soft
+// broad variation for light and removed it: the material's own tone - water's ripples, stains, weathering, grime -
+// went with it and the textures came out flat. Most of THUG2's baked light is in its vertex colours; most tiling
+// materials have little painted light.)
 //
-// What comes out: the de-lit texels and the shading layer (the natural log of the factor removed, per texel, 0 for
-// the transparent ones) - kept as data: base.ts writes nothing of it into a set; the surface maps
-// (tools/pbr_maps --delight) are made from the de-lit colour.
+// The method - deterministic, no model (the same texels and level give the same bytes):
+// - the broad part of the log luminance, l = ln(L + 0.01) of the linearised colour (sRGB as 2.2, Rec. 709): its
+//   steps integrated on a grid of a 32nd of the shorter side, colour edges left out (gradient-domain Retinex, Horn
+//   1974 / Blake 1985 - retinexShading: a step where the chromaticity changes hard is paint and counts for nothing; a
+//   step of brightness alone stays - a shadow under a ledge starts with one). The log chromaticity (ln R/L, ln B/L)
+//   blurred to the same scale: light changes brightness, paint changes colour;
+// - a structured lighting model fitted to it (least squares over the visible texels; x, y the picture's coordinates,
+//   0 - 1) - three kinds of term, each the shape one kind of light takes:
+//   gradient: a plane in l (x - 1/2, y - 1/2) - a smooth directional falloff of light across the picture. Only along
+//     an axis that doesn't tile: a tiled picture meets its own other edge, so it can't hold a gradient across itself;
+//   edge: darkening toward a border, exp(-d / s) for s = 0.05 and 0.15 (d the distance from it) - occlusion where the
+//     picture's edge meets another surface (a wall's foot, a facade's corner). Only on a border that doesn't tile;
+//   band: the same falloff from a line inside the picture where the level has surfaces meeting this one (a ledge, a
+//     sill, a floor slab - delight_geometry.ts's lines), on the side the face lies (both when it lies on both);
+// - the evidence gate - a term is taken only when all of these hold, and is then removed at strength 0.9:
+//   its share: it explains at least a tenth of the broad variance (a gradient 15%) and moves l by 8% somewhere (a
+//     gradient no more than 50%: light falling off across one face is gentle - a steeper one is the picture's content);
+//   its sign: an edge or band darkens toward its line (light doesn't brighten a corner), a gradient brightens toward
+//     the sky - up the face, in the picture (delight_geometry.ts: the faces' uv frames turn world up into the
+//     picture's coordinates; at least 0.3 consistent and within 53 degrees of it - a floor has no up across it);
+//   its texels: the dip at a line, the rise along a gradient, shows in the texels' own means across the picture, and
+//     stands three times clear of their variation elsewhere (a dark plank at the border of planks is the pattern);
+//   its geometry: an edge's border, a band's line, is where the level has another surface meeting this one in a
+//     concave corner along at least 30% of its length;
+//   its colour: the term moves the chromaticity by less than a fifth of what it moves l (paint changes hue: a two-tone
+//     wall's soft border is surface, not shadow);
+//   then the taken terms refitted together must explain at least 35% of the broad variance, and the broad variance
+//   must be there at all (its standard deviation 5%). Otherwise the texture is left exactly as it is;
+// - the removed shading: the gradient made zero-mean (the picture's level is its colour), the edges and bands as they
+//   are (zero away from their lines: the unshadowed texels keep their bytes), bounded to a factor of `limit` (2);
+//   each visible texel's linear RGB divided by exp of it (a luminance factor: chroma kept, clipped back by its largest
+//   channel), back to sRGB. Transparent texels (alpha <= 8) take no part and keep their bytes; alpha untouched.
 //
-// What base.ts leaves as it is (leftAsItIs): skies' and models' dictionaries, soft alpha, textures no mesh beside them
-// draws as a solid surface (added or modulated light, billboards).
+// What comes out: the de-lit texels, the shading layer (the natural log of the factor removed, per texel) and the
+// model's report - each term's share, its agreement with the geometry and why it was taken or not (the review page).
+//
+// What base.ts leaves as it is (skipReason): skies' and models' dictionaries, soft alpha (glass, smoke, glows),
+// cut-outs (a tree's, a fence's painted shading is its form), textures no mesh draws as a solid surface (added or
+// modulated light, billboards), moving materials (the water system's: water, lava, scrolling signs), backdrops far
+// outside the play area, and glowing pictures (bright, saturated, clipped: fire, neon, lit windows).
 //
 // Atlases (atlas.ts' regions) are de-lit region by region (delightRegions): each region on its own texels, with its own
-// wrap, so no picture's light reaches its neighbour; texels outside every region are left as they were.
+// wrap and its own evidence (the triangles mapped into it), so no picture's light reaches its neighbour.
 
 import { createHash } from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as zlib from "node:zlib";
 import * as scn from "thug2-level-converter-core/level_port/thug2_scene.ts";
-import { sceneFiles } from "./atlas.ts";
+import { sceneFiles, type UvUse } from "./atlas.ts";
+import { type Evidence, type Line, type SceneGeometry, solve, type TextureFacts } from "./delight_geometry.ts";
+
+export type { Evidence, Line, TextureFacts };
 
 // bumped whenever the step makes different texels from the same input (set.json records it per texture; base.ts's
 // file cache and the game's settings key on it)
-export const DELIGHT_VERSION = 1;
+export const DELIGHT_VERSION = 2;
 
 export interface DelightOptions {
     wrapU: boolean;
     wrapV: boolean;
-    // the face-orientation coherence of the meshes using the texture (0: every direction - 1: one); null: unknown
-    coherence?: number | null;
-    strength?: number; // k itself (overrides the coherence's)
-    cellFraction?: number; // the coarse grid's cell as a fraction of the shorter side (default 1/16)
-    edgeLuma?: number; // a step of log luminance this large or more is surface, not light (default 0.1)
-    edgeChroma?: number; // ... of log chromaticity (default 0.06)
+    // the level's evidence for this picture (delight_geometry.ts); null / absent: none - nothing is removed
+    evidence?: Evidence | null;
+    strength?: number; // how much of a taken term is removed (default 0.9)
     limit?: number; // the largest factor removed either way (default 2)
 }
 
+export type TermKind = "gradient" | "edge" | "band";
+
+// One term of the lighting model as fitted and judged.
+export interface TermReport {
+    kind: TermKind;
+    name: string; // "gradient", "edge left", "band y=0.58 below"...
+    share: number; // the share of the broad variance it explains on its own (fitted alone)
+    amplitude: number; // the largest |change of l| it makes
+    agreement: number | null; // gradient: cos to the way up; edge / band: the share of its line where surfaces meet
+    chroma: number; // |its move of the chromaticity| / |its move of l|
+    taken: boolean;
+    why: string; // why taken or not
+}
+
 export interface DelightStats {
-    strength: number; // k used (the coherence's, times the reliability)
-    reliability: number; // how far the shading stands above chance (0 - 1)
+    changed: boolean;
+    verdict: string; // "de-lit: ..." or why untouched
+    terms: TermReport[];
+    broadVariance: number; // the variance of the broad log luminance
+    structure: number; // the share of it every candidate term together explains
+    explained: number; // ... the taken terms (refitted) explain
     visible: number; // texels taking part
-    shadingVariance: number; // the variance of the low-pass (log luminance) before
-    shadingRemoved: number; // the fraction of it removed (0 - 1)
-    lumaVariance: number; // the log luminance's variance before
-    lumaVarianceAfter: number; // ... after
     meanChange: number; // the mean |byte change| over R, G, B of the visible texels (0 - 255)
-    maxFactor: number; // the largest factor applied (>= 1: brightened or darkened by it)
+    maxFactor: number; // the largest factor applied (>= 1)
     clipped: number; // the share of the visible texels whose factor reached the limit
     chromaShift: number; // the mean change of the chromaticity (r / (r+g+b), b / (r+g+b)), x 255
 }
@@ -88,14 +110,28 @@ export interface DelightResult {
     stats: DelightStats;
 }
 
+// the gate (see the header)
+export const GATE = {
+    strength: 0.9,
+    minBroadStd: 0.05,
+    minShare: 0.1,
+    minGradientShare: 0.15,
+    minAmplitude: 0.08,
+    maxGradient: 0.5,
+    minLight: 0.3,
+    minAgreement: 0.6,
+    minMeets: 0.3,
+    maxChroma: 0.2,
+    minExplained: 0.35,
+    cellFraction: 1 / 32,
+    edgeWidths: [0.05, 0.15],
+    bandWidths: [0.04, 0.12],
+    maxBands: 6,
+};
+
 const EPS = 0.01;
 const LUT = new Float32Array(256).map((_, i) => (i / 255) ** 2.2);
 const toByte = (v: number): number => Math.max(0, Math.min(255, Math.round(Math.max(0, v) ** (1 / 2.2) * 255)));
-
-export function strengthFor(coherence: number | null | undefined): number {
-    if (coherence === null || coherence === undefined || !Number.isFinite(coherence)) return 0.65;
-    return 0.5 + 0.35 * Math.max(0, Math.min(1, coherence));
-}
 
 // A box mean of radius r (separable; wrapping or clamped per axis).
 function boxMean(src: Float32Array, w: number, h: number, r: number, wrapU: boolean, wrapV: boolean): Float32Array {
@@ -293,30 +329,15 @@ export function retinexShading(
     return out;
 }
 
-const variance = (v: Float32Array, mask: Uint8Array): number => {
-    let n = 0;
-    let s = 0;
-    for (let i = 0; i < v.length; i++)
-        if (mask[i]) {
-            s += v[i]!;
-            n++;
-        }
-    if (!n) return 0;
-    const mean = s / n;
-    let q = 0;
-    for (let i = 0; i < v.length; i++) if (mask[i]) q += (v[i]! - mean) ** 2;
-    return q / n;
-};
-
-function emptyStats(strength: number): DelightStats {
+function emptyStats(verdict: string, visible = 0): DelightStats {
     return {
-        strength,
-        reliability: 0,
-        visible: 0,
-        shadingVariance: 0,
-        shadingRemoved: 0,
-        lumaVariance: 0,
-        lumaVarianceAfter: 0,
+        changed: false,
+        verdict,
+        terms: [],
+        broadVariance: 0,
+        structure: 0,
+        explained: 0,
+        visible,
         meanChange: 0,
         maxFactor: 1,
         clipped: 0,
@@ -324,9 +345,375 @@ function emptyStats(strength: number): DelightStats {
     };
 }
 
+// ---- the lighting model ----
+
+type Basis = (x: number, y: number) => number;
+
+interface Candidate {
+    kind: TermKind;
+    name: string;
+    basis: Basis[];
+    line?: Line;
+}
+
+// exp(-d / s) on the face's side of the line (both sides when `side` is 0), 0 on the other
+function falloff(line: { axis: "x" | "y"; at: number; side: number }, s: number): Basis {
+    return (x, y) => {
+        const d = (line.axis === "x" ? x : y) - line.at;
+        if ((line.side > 0 && d < 0) || (line.side < 0 && d > 0)) return 0;
+        return Math.exp(-Math.abs(d) / s);
+    };
+}
+
+const SIDES: [string, "x" | "y", number][] = [
+    ["left", "x", 0],
+    ["right", "x", 1],
+    ["top", "y", 0],
+    ["bottom", "y", 1],
+];
+
+// The model's candidate terms for a picture of this wrap and evidence.
+function candidatesFor(wrapU: boolean, wrapV: boolean, evidence: Evidence | null | undefined): Candidate[] {
+    const out: Candidate[] = [];
+    const gradient: Basis[] = [];
+    if (!wrapU) gradient.push((x) => x - 0.5);
+    if (!wrapV) gradient.push((_x, y) => y - 0.5);
+    if (gradient.length) out.push({ kind: "gradient", name: "gradient", basis: gradient });
+    for (const [name, axis, at] of SIDES) {
+        if ((axis === "x" && wrapU) || (axis === "y" && wrapV)) continue;
+        const side = at === 0 ? 1 : -1;
+        const found = evidence?.lines.find((l) => l.axis === axis && l.at === at);
+        const line: Line = { axis, at, side, meets: found?.meets ?? 0, length: found?.length ?? 0 };
+        out.push({ kind: "edge", name: `edge ${name}`, basis: GATE.edgeWidths.map((s) => falloff(line, s)), line });
+    }
+    const bands = (evidence?.lines ?? []).filter(
+        (l) =>
+            l.at > 0 &&
+            l.at < 1 &&
+            l.meets >= GATE.minMeets &&
+            l.length * l.meets >= 0.25 &&
+            !(l.axis === "x" && wrapU) &&
+            !(l.axis === "y" && wrapV),
+    );
+    for (const line of bands.slice(0, GATE.maxBands)) {
+        const where =
+            line.side === 0
+                ? "both sides"
+                : line.axis === "x"
+                  ? line.side > 0
+                      ? "right"
+                      : "left"
+                  : line.side > 0
+                    ? "below"
+                    : "above";
+        out.push({
+            kind: "band",
+            name: `band ${line.axis}=${line.at.toFixed(2)} ${where}`,
+            basis: GATE.bandWidths.map((s) => falloff(line, s)),
+            line,
+        });
+    }
+    return out;
+}
+
+interface Samples {
+    x: Float64Array;
+    y: Float64Array;
+    l: Float64Array; // the broad log luminance (retinexShading)
+    raw: Float64Array; // the texel's own log luminance
+    cr: Float64Array;
+    cb: Float64Array;
+    n: number;
+}
+
+interface Fit {
+    coef: number[]; // per column (column 0 the intercept)
+    columns: number[][]; // each candidate's column indexes
+}
+
+// Least squares of the targets on the candidates' bases (+ an intercept), over the samples.
+function fit(samples: Samples, terms: readonly Candidate[], target: Float64Array): Fit | null {
+    const columns: number[][] = [];
+    const basis: Basis[] = [];
+    for (const t of terms) {
+        columns.push(t.basis.map((_, k) => basis.length + 1 + k));
+        basis.push(...t.basis);
+    }
+    const m = basis.length + 1;
+    const ata = Array.from({ length: m }, () => new Array<number>(m).fill(0));
+    const atb = new Array<number>(m).fill(0);
+    const row = new Array<number>(m);
+    for (let i = 0; i < samples.n; i++) {
+        row[0] = 1;
+        for (let k = 0; k < basis.length; k++) row[k + 1] = basis[k]!(samples.x[i]!, samples.y[i]!);
+        for (let a = 0; a < m; a++) {
+            atb[a]! += row[a]! * target[i]!;
+            for (let b = a; b < m; b++) ata[a]![b]! += row[a]! * row[b]!;
+        }
+    }
+    for (let a = 0; a < m; a++) {
+        for (let b = 0; b < a; b++) ata[a]![b] = ata[b]![a]!;
+        ata[a]![a]! += 1e-6 * samples.n;
+    }
+    const coef = solve(ata, atb);
+    return coef ? { coef, columns } : null;
+}
+
+// A candidate's part of a fit at a point.
+function partAt(term: Candidate, f: Fit, index: number, x: number, y: number): number {
+    let s = 0;
+    term.basis.forEach((b, k) => {
+        s += f.coef[f.columns[index]![k]!]! * b(x, y);
+    });
+    return s;
+}
+
+function sampleVariance(v: Float64Array, n: number): number {
+    let s = 0;
+    for (let i = 0; i < n; i++) s += v[i]!;
+    const mean = s / Math.max(1, n);
+    let q = 0;
+    for (let i = 0; i < n; i++) q += (v[i]! - mean) ** 2;
+    return q / Math.max(1, n);
+}
+
+// The texels' own log luminance along t (0 - 1): its mean per bin (NaN where no sample falls).
+function profileAlong(samples: Samples, t: (x: number, y: number) => number, bins: number): Float64Array {
+    const sum = new Float64Array(bins);
+    const count = new Float64Array(bins);
+    for (let i = 0; i < samples.n; i++) {
+        const b = Math.min(bins - 1, Math.max(0, Math.floor(t(samples.x[i]!, samples.y[i]!) * bins)));
+        sum[b]! += samples.raw[i]!;
+        count[b]!++;
+    }
+    return sum.map((v, b) => (count[b] ? v / count[b]! : Number.NaN));
+}
+
+const meanStd = (v: readonly number[]): [number, number] => {
+    const m = v.reduce((a, b) => a + b, 0) / Math.max(1, v.length);
+    return [m, Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / Math.max(1, v.length))];
+};
+
+// Whether an edge's / band's darkening stands out in the texels themselves: across the line (the texels' mean per
+// 32nd of the picture) they are darker near it - by at least half the fitted depth - and that dip is at least three
+// times deeper than the picture's own variation farther than a quarter away (a dark plank at the border of a picture
+// of planks is its pattern; occlusion is the one dip). Null when it does, else why not.
+function distinctDip(samples: Samples, line: Line, depth: number): string | null {
+    const bins = 32;
+    const profile = profileAlong(samples, (x, y) => (line.axis === "x" ? x : y), bins);
+    const near: number[] = [];
+    const far: number[] = [];
+    profile.forEach((v, b) => {
+        if (Number.isNaN(v)) return;
+        const d = (b + 0.5) / bins - line.at;
+        if ((line.side > 0 && d < -0.5 / bins) || (line.side < 0 && d > 0.5 / bins)) return;
+        if (Math.abs(d) <= 0.07) near.push(v);
+        else if (Math.abs(d) >= 0.25) far.push(v);
+    });
+    if (near.length < 1 || far.length < 3) return "too little of the picture beyond it to compare";
+    const [nearMean] = meanStd(near);
+    const [farMean, farStd] = meanStd(far);
+    const dip = farMean - nearMean;
+    if (dip < 0.5 * depth) return `the texels aren't darker there (${pct(dip)} against ${pct(depth)} fitted)`;
+    if (dip < 3 * farStd) return `the picture varies as much away from it (${pct(farStd)}): its own pattern`;
+    return null;
+}
+
+// Whether a gradient stands out in the texels: their means along its direction (16 steps) rise that way, by at least
+// half the fitted slope and three times their scatter about the straight line (rows of windows, a pattern's bands
+// don't make a gradient).
+function distinctSlope(samples: Samples, g: readonly number[]): string | null {
+    const length = Math.hypot(g[0]!, g[1]!);
+    if (length <= 0) return "no slope";
+    const ux = g[0]! / length;
+    const uy = g[1]! / length;
+    const span = Math.abs(ux) + Math.abs(uy);
+    const bins = 16;
+    const profile = profileAlong(samples, (x, y) => 0.5 + ((x - 0.5) * ux + (y - 0.5) * uy) / span, bins);
+    const ts: number[] = [];
+    const vs: number[] = [];
+    profile.forEach((v, b) => {
+        if (!Number.isNaN(v)) {
+            ts.push((b + 0.5) / bins);
+            vs.push(v);
+        }
+    });
+    if (ts.length < 4) return "too few steps along it";
+    const [tm] = meanStd(ts);
+    const [vm] = meanStd(vs);
+    let num = 0;
+    let den = 0;
+    ts.forEach((t, k) => {
+        num += (t - tm) * (vs[k]! - vm);
+        den += (t - tm) ** 2;
+    });
+    const slope = num / den; // (per the whole run of t: the rise across the picture)
+    const [, scatter] = meanStd(ts.map((t, k) => vs[k]! - (vm + slope * (t - tm))));
+    const fitted = length * span; // (the model's rise over the same run)
+    if (slope < 0.5 * fitted) return `the texels don't rise that way (${pct(slope)} against ${pct(fitted)} fitted)`;
+    if (slope < 3 * scatter) return `the picture varies as much across it (${pct(scatter)}): its own pattern`;
+    return null;
+}
+
+// Each candidate fitted and judged against the gate; the taken ones refitted together.
+function judge(
+    samples: Samples,
+    candidates: readonly Candidate[],
+    evidence: Evidence | null | undefined,
+    wrapU: boolean,
+    wrapV: boolean,
+): { reports: TermReport[]; taken: Candidate[]; fit: Fit | null; structure: number; explained: number; broad: number } {
+    const n = samples.n;
+    const broad = sampleVariance(samples.l, n);
+    const explainedBy = (terms: readonly Candidate[], f: Fit): number => {
+        const resid = new Float64Array(n);
+        for (let i = 0; i < n; i++) {
+            let m = f.coef[0]!;
+            terms.forEach((t, k) => {
+                m += partAt(t, f, k, samples.x[i]!, samples.y[i]!);
+            });
+            resid[i] = samples.l[i]! - m;
+        }
+        return broad > 0 ? 1 - sampleVariance(resid, n) / broad : 0;
+    };
+    const full = fit(samples, candidates, samples.l);
+    if (!full) return { reports: [], taken: [], fit: null, structure: 0, explained: 0, broad };
+    const structure = explainedBy(candidates, full);
+    const light = evidence?.light ? [wrapU ? 0 : evidence.light[0], wrapV ? 0 : evidence.light[1]] : null;
+    const reports: TermReport[] = [];
+    const takenIdx: number[] = [];
+    candidates.forEach((term, k) => {
+        // (judged on its own: the term alone fitted - correlated terms fitted together trade their parts off)
+        const alone = fit(samples, [term], samples.l);
+        const aloneCr = fit(samples, [term], samples.cr);
+        const aloneCb = fit(samples, [term], samples.cb);
+        if (!alone) {
+            reports.push({
+                kind: term.kind,
+                name: term.name,
+                share: 0,
+                amplitude: 0,
+                agreement: null,
+                chroma: 0,
+                taken: false,
+                why: "no fit",
+            });
+            return;
+        }
+        const part = new Float64Array(n);
+        const pr = new Float64Array(n);
+        const pb = new Float64Array(n);
+        for (let i = 0; i < n; i++) {
+            part[i] = partAt(term, alone, 0, samples.x[i]!, samples.y[i]!);
+            pr[i] = aloneCr ? partAt(term, aloneCr, 0, samples.x[i]!, samples.y[i]!) : 0;
+            pb[i] = aloneCb ? partAt(term, aloneCb, 0, samples.x[i]!, samples.y[i]!) : 0;
+        }
+        const v = sampleVariance(part, n);
+        const share = broad > 0 ? v / broad : 0;
+        let mean = 0;
+        for (let i = 0; i < n; i++) mean += part[i]!;
+        mean /= Math.max(1, n);
+        let amplitude = 0;
+        for (let i = 0; i < n; i++)
+            amplitude = Math.max(amplitude, Math.abs(part[i]! - (term.kind === "gradient" ? mean : 0)));
+        const chroma = v > 1e-12 ? Math.sqrt((sampleVariance(pr, n) + sampleVariance(pb, n)) / v) : 0;
+        let agreement: number | null = null;
+        let why = "";
+        if (term.kind === "gradient") {
+            const gx = wrapU ? 0 : alone.coef[1]!;
+            const gy = wrapV ? 0 : alone.coef[wrapU ? 1 : 2]!;
+            const g = wrapU ? [0, gy] : wrapV ? [gx, 0] : [gx, gy];
+            const consistency = light ? Math.hypot(light[0]!, light[1]!) : 0;
+            const length = Math.hypot(g[0]!, g[1]!);
+            agreement =
+                light && consistency > 0 && length > 0
+                    ? (g[0]! * light[0]! + g[1]! * light[1]!) / (consistency * length)
+                    : null;
+            if (share < GATE.minGradientShare) why = `explains ${pct(share)} (< ${pct(GATE.minGradientShare)})`;
+            else if (amplitude < GATE.minAmplitude) why = `too faint (${pct(amplitude)})`;
+            else if (!light || consistency < GATE.minLight)
+                why = `the faces don't say which way is up in the picture (consistency ${consistency.toFixed(2)}): a floor, mixed mapping`;
+            else if ((agreement ?? -1) < GATE.minAgreement)
+                why = `doesn't brighten toward the sky (cos ${(agreement ?? 0).toFixed(2)}): the picture's own tone`;
+            else if (amplitude > GATE.maxGradient)
+                why = `too steep for light across one face (${pct(amplitude)}): the picture's own content`;
+            else why = distinctSlope(samples, g) ?? "";
+        } else {
+            const line = term.line!;
+            agreement = line.meets;
+            // its profile from the line outward: darker at the line, never lighter
+            const profile = [0, 0.02, 0.05, 0.1, 0.2, 0.3].map((d) => {
+                const at = line.at + (line.side === 0 ? 1 : line.side) * d;
+                const x = line.axis === "x" ? at : 0.5;
+                const y = line.axis === "y" ? at : 0.5;
+                return partAt(term, alone, 0, x, y);
+            });
+            const peak = profile[0]!;
+            if (peak >= 0 || Math.max(...profile) > 0.25 * Math.abs(peak))
+                why = "brightens toward its line: not occlusion";
+            else if (share < GATE.minShare) why = `explains ${pct(share)} (< ${pct(GATE.minShare)})`;
+            else if (amplitude < GATE.minAmplitude) why = `too faint (${pct(amplitude)})`;
+            else if (line.meets < GATE.minMeets)
+                why = `nothing meets the surface there in the level (${pct(line.meets)} of the line)`;
+            else why = distinctDip(samples, line, -peak) ?? "";
+        }
+        if (!why && chroma > GATE.maxChroma)
+            why = `the colour changes with it (${chroma.toFixed(2)} of its brightness change): paint, not light`;
+        if (!why) {
+            why =
+                term.kind === "gradient"
+                    ? `brightens toward the sky (cos ${(agreement ?? 0).toFixed(2)})`
+                    : `surfaces meet along ${pct(agreement ?? 0)} of it`;
+            takenIdx.push(k);
+        }
+        reports.push({
+            kind: term.kind,
+            name: term.name,
+            share,
+            amplitude,
+            agreement,
+            chroma,
+            taken: takenIdx.includes(k),
+            why,
+        });
+    });
+    // the taken ones refitted together; a term whose sign turns over in company is dropped
+    let taken = takenIdx.map((k) => candidates[k]!);
+    let refit: Fit | null = null;
+    for (let round = 0; round <= candidates.length && taken.length; round++) {
+        refit = fit(samples, taken, samples.l);
+        if (!refit) break;
+        const bad = taken.findIndex((term, k) => {
+            if (term.kind === "gradient") {
+                if (!light) return true;
+                const c = refit!.columns[k]!;
+                const gx = wrapU ? 0 : refit!.coef[c[0]!]!;
+                const gy = wrapV ? 0 : refit!.coef[c[wrapU ? 0 : 1]!]!;
+                return gx * light[0]! + gy * light[1]! <= 0;
+            }
+            const line = term.line!;
+            const x = line.axis === "x" ? line.at : 0.5;
+            const y = line.axis === "y" ? line.at : 0.5;
+            return partAt(term, refit!, k, x, y) >= 0;
+        });
+        if (bad < 0) break;
+        const report = reports.find((r) => r.name === taken[bad]!.name);
+        if (report) {
+            report.taken = false;
+            report.why = "its sign turns over beside the other terms";
+        }
+        taken = taken.filter((_, k) => k !== bad);
+        refit = null;
+    }
+    const explained = refit && taken.length ? explainedBy(taken, refit) : 0;
+    return { reports, taken: refit ? taken : [], fit: refit, structure, explained, broad };
+}
+
+const pct = (v: number): string => `${Math.round(100 * v)}%`;
+
 // One texture (or one atlas region) de-lit: BGRA in, BGRA out (alpha and transparent texels untouched).
 export function delight(bgra: Uint8Array, w: number, h: number, options: DelightOptions): DelightResult {
-    const k = options.strength ?? strengthFor(options.coherence);
+    const k = options.strength ?? GATE.strength;
     const limit = Math.log(Math.max(1, options.limit ?? 2));
     const n = w * h;
     const out = Buffer.from(bgra);
@@ -335,6 +722,12 @@ export function delight(bgra: Uint8Array, w: number, h: number, options: Delight
     let count = 0;
     for (let i = 0; i < n; i++) if (bgra[i * 4 + 3]! > 8) visible[i] = 1;
     for (let i = 0; i < n; i++) count += visible[i]!;
+    const untouched = (verdict: string, extra?: Partial<DelightStats>): DelightResult => ({
+        bgra: out,
+        shading,
+        stats: { ...emptyStats(verdict, count), ...extra },
+    });
+    if (count === 0 || w < 2 || h < 2) return untouched("untouched: nothing visible to judge");
     let uniform = true;
     let first = -1;
     for (let i = 0; i < n && uniform; i++) {
@@ -342,9 +735,13 @@ export function delight(bgra: Uint8Array, w: number, h: number, options: Delight
         if (first < 0) first = i;
         else for (let c = 0; c < 3; c++) if (bgra[i * 4 + c] !== bgra[first * 4 + c]) uniform = false;
     }
-    if (count === 0 || uniform || k <= 0 || w < 2 || h < 2) return { bgra: out, shading, stats: emptyStats(k) };
+    if (uniform) return untouched("untouched: one colour");
+    if (options.wrapU && options.wrapV)
+        return untouched(
+            "untouched: it tiles both ways - a repeating material has no room for light the model can tell from its own tone",
+        );
 
-    // linear R, G, B (planes) and the log luminance
+    // linear R, G, B and the log luminance / chromaticity
     const lin = [new Float32Array(n), new Float32Array(n), new Float32Array(n)];
     for (let i = 0; i < n; i++) {
         lin[0]![i] = LUT[bgra[i * 4 + 2]!]!;
@@ -360,78 +757,130 @@ export function delight(bgra: Uint8Array, w: number, h: number, options: Delight
         gr[i] = Math.log((lin[0]![i]! + EPS) / (L + EPS));
         gb[i] = Math.log((lin[2]![i]! + EPS) / (L + EPS));
     }
-
-    const cell = Math.max(2, (options.cellFraction ?? 1 / 16) * Math.min(w, h));
+    const cell = Math.max(2, GATE.cellFraction * Math.min(w, h));
+    // (only a colour edge is surface here: a shadow under a ledge starts with a hard step of brightness alone - the
+    // model's shapes, the level and the texel checks tell it from a dark stripe of paint)
     const low = retinexShading(l, gr, gb, visible, w, h, {
         wrapU: options.wrapU,
         wrapV: options.wrapV,
         cell,
-        edgeLuma: options.edgeLuma ?? 0.1,
-        edgeChroma: options.edgeChroma ?? 0.06,
+        edgeLuma: Number.POSITIVE_INFINITY,
+        edgeChroma: 0.06,
     });
+    const radius = Math.max(1, Math.round(cell));
+    const lowR = boxMean(gr, w, h, radius, options.wrapU, options.wrapV);
+    const lowB = boxMean(gb, w, h, radius, options.wrapU, options.wrapV);
 
-    // the zero-mean shading
-    let mean = 0;
-    for (let i = 0; i < n; i++) if (visible[i]) mean += low[i]!;
-    mean /= count;
-    const s = new Float32Array(n);
-    for (let i = 0; i < n; i++) s[i] = visible[i] ? low[i]! - mean : 0;
-    // how far it can be trusted (a Wiener shrink): the cells' means of a high-contrast pattern (speckle, a grate,
-    // random tiles) wander by chance - by the residual's variance over a cell's texels; shading well above that
-    // stays, shading at the level of that chance mostly goes back to the colour
-    const residual = new Float32Array(n);
-    for (let i = 0; i < n; i++) residual[i] = l[i]! - low[i]!;
-    const signal = variance(s, visible);
-    const chance = variance(residual, visible) / (cell * cell);
-    const reliability = signal > 0 ? signal / (signal + 4 * chance) : 0;
-    const kUsed = k * reliability;
+    // the samples: the visible texels on a lattice of at most ~4096
+    const stride = Math.max(1, Math.ceil(Math.sqrt(n / 4096)));
+    const xs: number[] = [];
+    const ys: number[] = [];
+    const ls: number[] = [];
+    const raws: number[] = [];
+    const rs: number[] = [];
+    const bs: number[] = [];
+    for (let y = 0; y < h; y += stride)
+        for (let x = 0; x < w; x += stride) {
+            const i = y * w + x;
+            if (!visible[i]) continue;
+            xs.push((x + 0.5) / w);
+            ys.push((y + 0.5) / h);
+            ls.push(low[i]!);
+            raws.push(l[i]!);
+            rs.push(lowR[i]!);
+            bs.push(lowB[i]!);
+        }
+    const samples: Samples = {
+        x: Float64Array.from(xs),
+        y: Float64Array.from(ys),
+        l: Float64Array.from(ls),
+        raw: Float64Array.from(raws),
+        cr: Float64Array.from(rs),
+        cb: Float64Array.from(bs),
+        n: xs.length,
+    };
+    const broad = sampleVariance(samples.l, samples.n);
+    if (broad < GATE.minBroadStd ** 2)
+        return untouched(`untouched: no broad variation to explain (std ${pct(Math.sqrt(broad))})`, {
+            broadVariance: broad,
+        });
+    const candidates = candidatesFor(options.wrapU, options.wrapV, options.evidence);
+    const judged = judge(samples, candidates, options.evidence, options.wrapU, options.wrapV);
+    const base = {
+        terms: judged.reports,
+        broadVariance: broad,
+        structure: judged.structure,
+        explained: judged.explained,
+    };
+    if (!options.evidence) return untouched("untouched: no level geometry to check the model against", base);
+    if (!judged.taken.length || !judged.fit)
+        return untouched("untouched: no term shaped like light passed the gate", base);
+    if (judged.explained < GATE.minExplained)
+        return untouched(
+            `untouched: the light-shaped terms explain only ${pct(judged.explained)} of the broad variation`,
+            base,
+        );
+
+    // the removed shading per texel
+    const f = judged.fit;
+    let gradientMean = 0;
+    const gradientAt = judged.taken.findIndex((t) => t.kind === "gradient");
+    if (gradientAt >= 0) {
+        for (let i = 0; i < samples.n; i++)
+            gradientMean += partAt(judged.taken[gradientAt]!, f, gradientAt, samples.x[i]!, samples.y[i]!);
+        gradientMean /= samples.n;
+    }
     let maxFactor = 1;
     let clipped = 0;
     let change = 0;
     let chroma = 0;
-    const lAfter = new Float32Array(n);
-    const sAfter = new Float32Array(n);
-    for (let i = 0; i < n; i++) {
-        if (!visible[i]) continue;
-        const r = Math.max(-limit, Math.min(limit, kUsed * s[i]!));
-        shading[i] = r;
-        if (Math.abs(r) >= limit - 1e-6) clipped++;
-        maxFactor = Math.max(maxFactor, Math.exp(Math.abs(r)));
-        const f = Math.exp(-r);
-        let R = LUT[bgra[i * 4 + 2]!]! * f;
-        let G = LUT[bgra[i * 4 + 1]!]! * f;
-        let B = LUT[bgra[i * 4]!]! * f;
-        const top = Math.max(R, G, B);
-        if (top > 1) {
-            R /= top;
-            G /= top;
-            B /= top;
+    for (let y = 0; y < h; y++)
+        for (let x = 0; x < w; x++) {
+            const i = y * w + x;
+            if (!visible[i]) continue;
+            const px = (x + 0.5) / w;
+            const py = (y + 0.5) / h;
+            let s = 0;
+            judged.taken.forEach((t, kk) => {
+                s += partAt(t, f, kk, px, py) - (kk === gradientAt ? gradientMean : 0);
+            });
+            const r = Math.max(-limit, Math.min(limit, k * s));
+            shading[i] = r;
+            if (Math.abs(r) >= limit - 1e-6) clipped++;
+            maxFactor = Math.max(maxFactor, Math.exp(Math.abs(r)));
+            const fct = Math.exp(-r);
+            let R = lin[0]![i]! * fct;
+            let G = lin[1]![i]! * fct;
+            let B = lin[2]![i]! * fct;
+            const top = Math.max(R, G, B);
+            if (top > 1) {
+                R /= top;
+                G /= top;
+                B /= top;
+            }
+            const ob = [bgra[i * 4]!, bgra[i * 4 + 1]!, bgra[i * 4 + 2]!];
+            out[i * 4] = toByte(B);
+            out[i * 4 + 1] = toByte(G);
+            out[i * 4 + 2] = toByte(R);
+            change +=
+                Math.abs(out[i * 4]! - ob[0]!) +
+                Math.abs(out[i * 4 + 1]! - ob[1]!) +
+                Math.abs(out[i * 4 + 2]! - ob[2]!);
+            const sum0 = ob[0]! + ob[1]! + ob[2]! || 1;
+            const sum1 = out[i * 4]! + out[i * 4 + 1]! + out[i * 4 + 2]! || 1;
+            chroma +=
+                Math.abs(ob[2]! / sum0 - out[i * 4 + 2]! / sum1) * 255 +
+                Math.abs(ob[0]! / sum0 - out[i * 4]! / sum1) * 255;
         }
-        const ob = [bgra[i * 4]!, bgra[i * 4 + 1]!, bgra[i * 4 + 2]!];
-        out[i * 4] = toByte(B);
-        out[i * 4 + 1] = toByte(G);
-        out[i * 4 + 2] = toByte(R);
-        change +=
-            Math.abs(out[i * 4]! - ob[0]!) + Math.abs(out[i * 4 + 1]! - ob[1]!) + Math.abs(out[i * 4 + 2]! - ob[2]!);
-        const sum0 = ob[0]! + ob[1]! + ob[2]! || 1;
-        const sum1 = out[i * 4]! + out[i * 4 + 1]! + out[i * 4 + 2]! || 1;
-        chroma +=
-            Math.abs(ob[2]! / sum0 - out[i * 4 + 2]! / sum1) * 255 + Math.abs(ob[0]! / sum0 - out[i * 4]! / sum1) * 255;
-        lAfter[i] = l[i]! - r;
-        sAfter[i] = s[i]! - r;
-    }
-    const shadingVariance = variance(s, visible);
+    const changed = !out.equals(Buffer.from(bgra.buffer, bgra.byteOffset, bgra.byteLength));
     return {
         bgra: out,
         shading,
         stats: {
-            strength: kUsed,
-            reliability,
+            ...base,
+            changed,
+            verdict: `de-lit: ${judged.taken.map((t) => t.name).join(", ")} (${pct(judged.explained)} of the broad variation)`,
             visible: count,
-            shadingVariance,
-            shadingRemoved: shadingVariance > 1e-9 ? 1 - variance(sAfter, visible) / shadingVariance : 0,
-            lumaVariance: variance(l, visible),
-            lumaVarianceAfter: variance(lAfter, visible),
             meanChange: change / (3 * count),
             maxFactor,
             clipped: clipped / count,
@@ -450,30 +899,24 @@ export interface DelightRegion {
     wrapV: boolean;
 }
 
-// An atlas de-lit region by region (each on its own texels and wrap); texels outside every region left as they were.
-// The stats are the regions' (area-weighted; maxFactor the largest).
+// An atlas de-lit region by region (each on its own texels, wrap and evidence); texels outside every region left as
+// they were. The stats: the regions' (area-weighted; maxFactor the largest; the terms each region's, named by it).
 export function delightRegions(
     bgra: Uint8Array,
     w: number,
     h: number,
     regions: readonly DelightRegion[],
-    options: Omit<DelightOptions, "wrapU" | "wrapV">,
+    options: Omit<DelightOptions, "wrapU" | "wrapV" | "evidence"> & {
+        evidenceFor?: (region: DelightRegion) => Evidence | null;
+    },
 ): DelightResult {
     const out = Buffer.from(bgra);
     const shading = new Float32Array(w * h);
-    const total = emptyStats(0);
-    const weighted: (keyof DelightStats)[] = [
-        "shadingVariance",
-        "shadingRemoved",
-        "lumaVariance",
-        "lumaVarianceAfter",
-        "meanChange",
-        "chromaShift",
-        "clipped",
-        "reliability",
-        "strength",
-    ];
-    for (const r of regions) {
+    const total = emptyStats("");
+    const weighted = ["broadVariance", "structure", "explained", "meanChange", "chromaShift", "clipped"] as const;
+    const verdicts: string[] = [];
+    let changed = 0;
+    regions.forEach((r, n) => {
         const rw = r.x1 - r.x0;
         const rh = r.y1 - r.y0;
         const part = Buffer.alloc(rw * rh * 4);
@@ -484,7 +927,12 @@ export function delightRegions(
                 ((r.y0 + y) * w + r.x0) * 4,
                 ((r.y0 + y) * w + r.x1) * 4,
             );
-        const done = delight(part, rw, rh, { ...options, wrapU: r.wrapU, wrapV: r.wrapV });
+        const done = delight(part, rw, rh, {
+            ...options,
+            wrapU: r.wrapU,
+            wrapV: r.wrapV,
+            evidence: options.evidenceFor?.(r) ?? null,
+        });
         for (let y = 0; y < rh; y++) {
             done.bgra.copy(out, ((r.y0 + y) * w + r.x0) * 4, y * rw * 4, (y + 1) * rw * 4);
             shading.set(done.shading.subarray(y * rw, (y + 1) * rw), (r.y0 + y) * w + r.x0);
@@ -493,9 +941,54 @@ export function delightRegions(
         for (const key of weighted) total[key] += done.stats[key] * v;
         total.visible += v;
         total.maxFactor = Math.max(total.maxFactor, done.stats.maxFactor);
-    }
+        total.terms.push(...done.stats.terms.map((t) => ({ ...t, name: `region ${n + 1}: ${t.name}` })));
+        if (done.stats.changed) {
+            changed++;
+            verdicts.push(`region ${n + 1} ${done.stats.verdict}`);
+        }
+    });
     if (total.visible) for (const key of weighted) total[key] /= total.visible;
+    total.changed = changed > 0;
+    total.verdict = changed
+        ? `de-lit ${changed} of ${regions.length} regions: ${verdicts.join("; ")}`
+        : `untouched: none of its ${regions.length} regions passed the gate`;
     return { bgra: out, shading, stats: total };
+}
+
+// ---- what is left as it is ----
+
+// A glowing picture: bright, saturated and clipped (fire, lava, neon, lit windows) - its brightness is what it shows.
+export function glowing(bgra: Uint8Array): boolean {
+    let visible = 0;
+    let clipped = 0;
+    let saturation = 0;
+    for (let i = 0; i < bgra.length; i += 4) {
+        if (bgra[i + 3]! <= 8) continue;
+        visible++;
+        const top = Math.max(bgra[i]!, bgra[i + 1]!, bgra[i + 2]!);
+        const bottom = Math.min(bgra[i]!, bgra[i + 1]!, bgra[i + 2]!);
+        if (top >= 250) clipped++;
+        saturation += top ? (top - bottom) / top : 0;
+    }
+    return visible > 0 && clipped / visible > 0.05 && saturation / visible > 0.6;
+}
+
+// Why base.ts --delight leaves a texture as it is (null: it is judged by the model). `facts`: the level's
+// (delight_geometry.ts; absent: no mesh beside it uses it as a surface).
+export function skipReason(
+    dictionary: string,
+    bgra: Uint8Array,
+    alpha: "opaque" | "binary" | "smooth",
+    orientation: Orientation | undefined,
+    facts: TextureFacts | undefined,
+): string | null {
+    const left = leftAsItIs(dictionary, alpha, orientation);
+    if (left) return left;
+    if (facts?.moving) return "a moving material (water, lava, scrolling - the water system's rule)";
+    if (alpha === "binary") return "a cut-out (a tree's, a fence's painted shading is its form)";
+    if (facts && facts.backdrop >= 0.5) return "a backdrop far outside the play area";
+    if (glowing(bgra)) return "a glowing picture (bright, saturated, clipped)";
+    return null;
 }
 
 // ---- the meshes' face orientations ----
@@ -658,11 +1151,9 @@ export function delightKey(
             h,
             wrapU: options.wrapU,
             wrapV: options.wrapV,
-            k: Math.round((options.strength ?? strengthFor(options.coherence)) * 1000),
-            cell: options.cellFraction ?? 1 / 16,
-            el: options.edgeLuma ?? 0.1,
-            ec: options.edgeChroma ?? 0.06,
+            k: options.strength ?? GATE.strength,
             limit: options.limit ?? 2,
+            evidence: options.evidence ?? null,
             regions: regions ?? null,
         }),
     );
@@ -716,4 +1207,42 @@ export function shadingPicture(shading: Float32Array, span = Math.log(2)): Uint8
     for (let i = 0; i < shading.length; i++)
         out[i] = Math.max(0, Math.min(255, Math.round(128 + (127 * shading[i]!) / span)));
     return out;
+}
+
+// ---- the level's evidence for a texture ----
+
+// Whether the texture tiles along u / v as the level maps it: some triangle (not clamped) reaches across a tile's
+// border; no mapping known (generated coordinates, unreferenced): `fallback` (base.ts detectWrap, from its texels).
+export function tilingOf(
+    uses: readonly UvUse[] | undefined,
+    fallback: { wrapU: boolean; wrapV: boolean },
+): {
+    wrapU: boolean;
+    wrapV: boolean;
+} {
+    if (!uses?.length) return fallback;
+    const crosses = (a: number, b: number): boolean => b - a > 1.02 || Math.floor(a + 0.01) !== Math.floor(b - 0.01);
+    return {
+        wrapU: uses.some((u) => !u.clampU && (u.whole || crosses(u.u0, u.u1))),
+        wrapV: uses.some((u) => !u.clampV && (u.whole || crosses(u.v0, u.v1))),
+    };
+}
+
+// The level's evidence for a whole texture.
+export function textureEvidence(
+    geometry: SceneGeometry | undefined,
+    checksum: number,
+    wrap: { wrapU: boolean; wrapV: boolean },
+): Evidence | null {
+    return geometry?.evidence(checksum, { u0: 0, u1: 1, v0: 0, v1: 1 }, wrap) ?? null;
+}
+
+// ... for each region of an atlas (its rectangle in uv units).
+export function regionEvidence(
+    geometry: SceneGeometry | undefined,
+    checksum: number,
+    w: number,
+    h: number,
+): (region: DelightRegion) => Evidence | null {
+    return (r) => geometry?.evidence(checksum, { u0: r.x0 / w, u1: r.x1 / w, v0: r.y0 / h, v1: r.y1 / h }, r) ?? null;
 }

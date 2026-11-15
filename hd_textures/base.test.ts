@@ -14,6 +14,7 @@ import { readTex, type TexFile, type Texture, writeTex } from "thug2-level-conve
 import type { Image } from "thug2-level-converter-core/lib/frame_diff.ts";
 import * as base from "./base.ts";
 import * as delit from "./delight.ts";
+import type { SceneGeometry } from "./delight_geometry.ts";
 
 // ---- made-up textures ----
 
@@ -432,25 +433,39 @@ test("buildSet with the meshes' uv rectangles: an atlas upscaled region by regio
 test("buildSet --delight: the texture de-lit before the model, the result pulled back to the de-lit texels, recorded", () => {
     const cacheRoot = temp("hd-base-delight-");
     const w = 64;
-    // grain on a paint, lit by a broad periodic light (x 0.55 - x 1.8)
+    // grain on a paint, lit brighter toward the top (bytes x 1.16 - x 0.86: in linear light x 1.4 - x 0.72): a wall's
+    // painted fall-off toward its foot
     const lit = texture(w, w, (x, y) => {
-        const light = Math.exp(0.6 * Math.cos((2 * Math.PI * x) / w) * Math.cos((2 * Math.PI * y) / w));
+        const light = Math.exp(-0.3 * ((y + 0.5) / w - 0.5));
         const grain = 1 + 0.1 * Math.sin(x * 2.1 + y * 1.3);
         return [110 * light * grain, 100 * light * grain, 90 * light * grain, 255];
     });
     const flat = texture(w, w, () => [90, 90, 90, 255]);
-    // (0xf: the same picture, but only drawn as added light - a glow: left as it is)
+    // (0xf: the same picture, but only drawn as added light - a glow: left as it is; 0x10: the same picture where the
+    // level says nothing of which way is up - left as it is)
     const tex = writeTex({
         version: 1,
-        textures: [asTexture(lit, w, w, 0, 0xd), asTexture(flat, w, w, 0, 0xe), asTexture(lit, w, w, 0, 0xf)],
+        textures: [
+            asTexture(lit, w, w, 0, 0xd),
+            asTexture(flat, w, w, 0, 0xe),
+            asTexture(lit, w, w, 0, 0xf),
+            asTexture(lit, w, w, 0, 0x10),
+        ],
     });
-    const floor = { area: 10, coherence: 1, surface: true };
+    const wall = { area: 10, coherence: 1, surface: true };
     const orientations = new Map([
-        [0xd, floor],
-        [0xe, floor],
-        [0xf, { ...floor, surface: false }],
+        [0xd, wall],
+        [0xe, wall],
+        [0xf, { ...wall, surface: false }],
+        [0x10, wall],
     ]);
-    const scenes: base.SceneSource = () => ({ index: new Map(), signature: "", errors: [], orientations });
+    const up: delit.Evidence = { light: [0, -1], lines: [], faces: 2 };
+    // (the level's geometry as delight_geometry.ts gives it: up is the top of every picture but 0x10's)
+    const geometry = {
+        facts: () => ({ area: 10, moving: false, backdrop: 0 }),
+        evidence: (t: number) => (t === 0x10 ? { light: [0, 0], lines: [], faces: 2 } : up),
+    } as unknown as SceneGeometry;
+    const scenes: base.SceneSource = () => ({ index: new Map(), signature: "", errors: [], orientations, geometry });
     const name = "Data/levels/xx/xx.tex.xbx";
     const { files, report } = base.buildSet([{ name, bytes: tex }], "pbrify", {
         cacheRoot,
@@ -461,17 +476,19 @@ test("buildSet --delight: the texture de-lit before the model, the result pulled
     });
     assert.equal(report.delit, 1);
     assert.deepEqual([...report.delitLeft], [["only drawn as light (added, modulated) or on billboards", 1]]);
-    // (a sky's or a model's dictionary: nothing de-lit)
-    assert.equal(delit.leftAsItIs("Data/levels/xx_sky/xx_sky.tex.xbx", "opaque", floor), "a sky's");
-    assert.match(delit.leftAsItIs("Data/models/skater/a.tex.xbx", "opaque", floor) ?? "", /not a level/);
-    assert.match(delit.leftAsItIs(name, "smooth", floor) ?? "", /soft alpha/);
-    assert.equal(delit.leftAsItIs(name, "binary", floor), null);
+    // (a sky's or a model's dictionary, soft alpha, a cut-out: nothing de-lit)
+    assert.equal(delit.leftAsItIs("Data/levels/xx_sky/xx_sky.tex.xbx", "opaque", wall), "a sky's");
+    assert.match(delit.leftAsItIs("Data/models/skater/a.tex.xbx", "opaque", wall) ?? "", /not a level/);
+    assert.match(delit.leftAsItIs(name, "smooth", wall) ?? "", /soft alpha/);
+    assert.match(delit.skipReason(name, lit, "binary", wall, undefined) ?? "", /cut-out/);
     const file = [...files.values()][0]!;
     assert.deepEqual(base.readDelitRecord(file), { delight: delit.DELIGHT_VERSION, textures: ["0000000d"] });
     const out = readTex(fs.readFileSync(file)).textures.find((t) => t.checksum === 0xd)!;
     assert.equal(out.width, w * 4);
     const top = hd.topLevel(out);
-    const expected = delit.delight(lit, w, w, { wrapU: true, wrapV: true }).bgra;
+    const wrap = base.detectWrap(lit, w, w);
+    const expected = delit.delight(lit, w, w, { ...wrap, evidence: up }).bgra;
+    assert.ok(!expected.equals(lit));
     // every 4 x 4 block averages to the de-lit texel (DXT's error aside), far from the lit original
     let toDelit = 0;
     let toLit = 0;
@@ -485,7 +502,7 @@ test("buildSet --delight: the texture de-lit before the model, the result pulled
                 toLit += Math.abs(sum / 16 - lit[(y * w + x) * 4 + c]!);
             }
     const n = w * w * 3;
-    assert.ok(toDelit / n < 4 && toLit / n > 3 * (toDelit / n), `to de-lit ${toDelit / n}, to lit ${toLit / n}`);
+    assert.ok(toDelit / n < 4 && toLit / n > 2 * (toDelit / n), `to de-lit ${toDelit / n}, to lit ${toLit / n}`);
     assert.notEqual(base.fileKey(tex, "pbrify", true, ""), base.fileKey(tex, "pbrify", true, "", true));
     fs.rmSync(cacheRoot, { recursive: true, force: true });
 });

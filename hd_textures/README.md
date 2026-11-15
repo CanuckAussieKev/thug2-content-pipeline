@@ -203,26 +203,33 @@ input).
 
     node tools/pipeline/hd_textures/base.ts --game C:\Games\THUG2-n --model pbrify --delight [--levels BO] [--build-only]
 
-The 2004 colour maps have light painted into them (broad shading across a wall, darker corners, a gradient across a
-tile) that the Vulkan renderer's own lighting then lights again. With `--delight` each texture is de-lit at its
-original size before the model sees it (`delight.ts`), and the pull-back matches the model's output to the **de-lit**
-texels - light the model paints back goes with the rest of the low frequencies. The order is original -> de-light ->
-upscale -> match.
+Some of the 2004 colour maps have light painted into them (a facade darker toward its foot, a gradient down a wall,
+a shadow band under a ledge) that the Vulkan renderer's own lighting then lights again. With `--delight` each texture
+is judged at its original size before the model sees it (`delight.ts`, version 2), and where the painted light is
+taken out the pull-back matches the model's output to the **de-lit** texels. The order is original -> de-light ->
+upscale -> match. Most of THUG2's baked light is in its vertex colours, and most tiling materials have little painted
+light: version 2 removes light only where there is evidence for it and leaves everything else exactly as it is
+(version 1 took any soft broad variation for light - water's ripples, stains, weathering went with it).
 
-- **How** (classical, no model, deterministic): the log luminance's broad part is rebuilt from its soft steps only
-  (gradient-domain Retinex): a step between neighbouring texels counts as light when it is small (|d ln L| < 0.1, the
-  chromaticity changing < 0.06) or no larger than three times the steps round it (grain); a hard step - a colour edge,
-  paint, letters, mortar - is surface. The soft steps are summed between the centres of a coarse grid (a sixteenth of
-  the shorter side) and solved in least squares, spread back bilinearly. Each texel is divided by that shading (a
-  luminance factor: chroma kept, at most x2 either way), scaled by a strength k.
-- **Strength**: k = 0.5 + 0.35 x the faces' coherence (|sum of area x normal| / area of the faces using the texture: a
-  floor or one wall 1, a crate's six sides 0) - one direction can hold baked sun, many directions only painted
-  occlusion and wear; 0.65 when unknown. Then times a reliability (a Wiener shrink: the shading's variance against the
-  chance wander of the grid's cell means - speckle, grates and random tiles are left nearly alone).
-- **Left as they are**: skies' and models' dictionaries (skaters, peds - for a later stage), soft alpha (glass,
-  smoke, glows), textures no mesh beside them draws as a solid surface (added / modulated light, billboards - a flat
-  stand-in's painted shading is its form - and effects). Cut-outs' transparent texels and every alpha are untouched;
-  tiling textures stay seamless (the grid wraps); atlases are de-lit region by region.
+- **The model** (classical, no model weights, deterministic): the broad log luminance (its steps integrated on a grid
+  of a 32nd of the shorter side, colour edges left out) fitted with three shapes light takes - a **gradient** (a plane:
+  light falling off across the picture; only along an axis that doesn't tile), **edge** darkening toward a border
+  (exp(-d / s), s = 0.05 and 0.15: occlusion where the picture's edge meets another surface; only on a border that
+  doesn't tile) and **bands** from lines inside the picture where the level has surfaces meeting this one.
+- **The evidence gate** - a term is removed (at 0.9) only when it explains a clear share of the broad variation on its
+  own (10%, a gradient 15%) and moves the luminance by 8% somewhere (a gradient at most 50%), darkens toward its line /
+  brightens toward the sky, agrees with the level (`delight_geometry.ts`: an edge's border or a band's line is where
+  another solid surface meets this one in a concave corner along 30% of its length; a gradient runs up the faces using
+  the picture - world up turned into the picture's coordinates through the triangles' uv frames, at least 0.3
+  consistent: a floor has no up across it), leaves the colour alone (chromaticity moved by under a fifth of the
+  luminance: paint changes hue) and stands out in the texels themselves (the dip / rise shows in their own means,
+  three times clear of the picture's variation elsewhere: a dark plank at the border of planks is the pattern); then the
+  taken terms refitted together must explain 35% of the broad variation. Each removed shading is bounded to x2.
+- **Left as they are**: skies' and models' dictionaries, soft alpha, cut-outs (a tree's, a fence's painted shading is
+  its form), textures no mesh draws as a solid surface (added / modulated light, billboards), moving materials (the
+  water system's rule: water, lava, scrolling signs), backdrops far outside the play area, glowing pictures (bright,
+  saturated, clipped). Textures tiled both ways (as the level maps them) are judged but never changed; atlases are
+  judged region by region, each with the triangles mapped into it.
 - **Recorded**: the files cache keys on the de-light version; `set.json` gets `"delight": <version>` and per file the
   textures de-lit (`delit`); the game takes `[Graphics] rt_delight` (the same light flattened at draw time) out of
   effect while such a set is chosen ("Off - these textures are already flat"), and keeps it for sets made without.
@@ -230,8 +237,10 @@ upscale -> match.
   de-lit colour (still keyed to the original texels).
 - **Review**: `node tools/pipeline/hd_textures/delight_review.ts --game <folder> --out <folder> [--pbrify 10]
   [--hd-dir <decomp>\out\hd_textures]` writes a contact sheet (`index.html`, self-contained; `strips\*.png`;
-  `numbers.tsv`) of ~65 textures across the levels, skies and characters - original | de-lit | shading removed (| PBRify
-  from each) - with the risky ones listed first.
+  `numbers.tsv`; `census.tsv`): version 1's picks, each level's largest single pictures and the textures the census
+  de-lit - original | de-lit | removed | the evidence (the level's lines and the way up drawn on it) with each term's
+  share, agreement and why it was taken or refused - and on top the census of every level texture by class (de-lit /
+  left / skipped, and why).
 
 ### Measurements (2026-11-13, BO + AU + foun, RTX 5070 Ti shared with four running games)
 

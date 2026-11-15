@@ -25,8 +25,9 @@
 // block pulled back to the original texel - which also brings back a faint trace of the original's DXT blocks); its
 // files are a set of their own in the cache (made from the same model output: no model run). --status lists the
 // installed sets, the one selected and any file whose original changed since its set was made (a level converted
-// again: install the set again). --delight: every texture de-lit at its original size before upscaling (delight.ts:
-// the painted light taken out, atlases region by region, cut-outs' transparent texels untouched); the pull-back then
+// again: install the set again). --delight: each texture de-lit at its original size before upscaling where the level
+// gives evidence of painted light (delight.ts: a lighting model - gradient, edge occlusion, shadow bands - checked
+// against the meshes; atlases region by region; everything else left exactly as it is); the pull-back then
 // matches the model's output to the de-lit texels, so light the model paints back goes too; the set's record says so
 // (set.json delight, per file the textures de-lit) and the game takes [Graphics] rt_delight out of effect for it.
 //
@@ -70,6 +71,7 @@ import { exitWith, helpFromHeader, isMain, print, runMain } from "thug2-level-co
 import { decodePng, encodePng, type Image } from "thug2-level-converter-core/lib/frame_diff.ts";
 import * as atlas from "./atlas.ts";
 import * as delit from "./delight.ts";
+import { Geometries, type SceneGeometry } from "./delight_geometry.ts";
 import {
     HD_DIR,
     isModelName,
@@ -579,18 +581,22 @@ export function fileKey(original: Uint8Array, model: ModelName, match = true, sc
 export function scenesOf(root: string): SceneSource {
     const indexes = new atlas.UvIndexes();
     const orientations = new delit.Orientations();
+    const geometries = new Geometries();
     return (name) => ({
         ...indexes.of(path.join(root, name)),
         orientations: orientations.of(path.join(root, name)),
+        geometry: geometries.of(path.join(root, name)),
     });
 }
 
-// (orientations: the faces using each texture - delight.ts's strength; absent: unknown)
+// (orientations: the faces using each texture - whether one draws it as a surface; geometry: the level's evidence for
+// delight.ts's lighting model; absent: unknown - nothing de-lit)
 export type SceneSource = (name: string) => {
     index: atlas.UvIndex;
     signature: string;
     errors: string[];
     orientations?: Map<number, delit.Orientation>;
+    geometry?: SceneGeometry;
 };
 
 // A texture's top level replaced by `bgra` (32-bit; its smaller levels made from it, as many as it had): what core's
@@ -611,18 +617,25 @@ export function replaceTopLevel(t: Texture, bgra: Buffer): void {
     t.texelDepth = 32;
 }
 
-// The texture de-lit before upscaling (an atlas region by region, each with its own wrap): its stats when its texels
-// changed (its top level then replaced), else null. `wrap`: its tiling as found on the original texels.
+// The texture de-lit before upscaling (an atlas region by region, each with its own wrap and evidence): its stats when
+// its texels changed (its top level then replaced), else null. `wrap`: its tiling as the level maps it (delight.ts
+// tilingOf); `geometry`: the level's (none: nothing is de-lit).
 export function delightTexture(
     t: Texture,
     bgra: Buffer,
     regions: readonly atlas.Region[] | null,
     wrap: hd.Addressing,
-    coherence: number | null,
+    geometry: SceneGeometry | undefined,
 ): delit.DelightStats | null {
     const result = regions
-        ? delit.delightRegions(bgra, t.width, t.height, regions, { coherence })
-        : delit.delight(bgra, t.width, t.height, { wrapU: wrap.wrapU, wrapV: wrap.wrapV, coherence });
+        ? delit.delightRegions(bgra, t.width, t.height, regions, {
+              evidenceFor: delit.regionEvidence(geometry, t.checksum, t.width, t.height),
+          })
+        : delit.delight(bgra, t.width, t.height, {
+              wrapU: wrap.wrapU,
+              wrapV: wrap.wrapV,
+              evidence: delit.textureEvidence(geometry, t.checksum, wrap),
+          });
     if (result.bgra.equals(bgra)) return null;
     replaceTopLevel(t, result.bgra);
     return result.stats;
@@ -701,7 +714,7 @@ export interface BuildReport {
     skippedAtlases: string[]; // left as they were (no mesh uses them, the seam heuristic took them for atlases)
     skipped: Map<string, number>;
     delit: number; // textures de-lit before upscaling (--delight)
-    delitLeft: Map<string, number>; // ... left as they were, by why (delight.ts leftAsItIs)
+    delitLeft: Map<string, number>; // ... left as they were, by why (delight.ts skipReason)
     bytesBefore: number;
     bytesAfter: number;
     seconds: number;
@@ -746,12 +759,14 @@ function upscaleDictionaries(
                 const id = `${name} ${t.checksum.toString(16).padStart(8, "0")}`;
                 const found = atlasRegionsOf(t, bgra, index ? (index.get(t.checksum) ?? []) : null);
                 const orientation = source?.orientations?.get(t.checksum);
-                const coherence = orientation?.coherence ?? null;
-                // (--delight: the level's surfaces only - delight.ts leftAsItIs)
-                const left = delight ? delit.leftAsItIs(name, hd.alphaKind(bgra), orientation) : "off";
+                const geometry = source?.geometry;
+                // (--delight: the level's solid, still, opaque surfaces only - delight.ts skipReason)
+                const left = delight
+                    ? delit.skipReason(name, bgra, hd.alphaKind(bgra), orientation, geometry?.facts(t.checksum))
+                    : "off";
                 if (delight && left) report.delitLeft.set(left, (report.delitLeft.get(left) ?? 0) + 1);
                 if (found.kind === "atlas") {
-                    if (!left && delightTexture(t, bgra, found.regions, { wrapU: false, wrapV: false }, coherence)) {
+                    if (!left && delightTexture(t, bgra, found.regions, { wrapU: false, wrapV: false }, geometry)) {
                         delitHere.push(t.checksum.toString(16).padStart(8, "0"));
                         report.delit++;
                     }
@@ -773,7 +788,8 @@ function upscaleDictionaries(
                 }
                 const wrap = detectWrap(bgra, t.width, t.height);
                 addressing.set(n, wrap);
-                if (!left && delightTexture(t, bgra, null, wrap, coherence)) {
+                const tiling = delit.tilingOf(index?.get(t.checksum), wrap);
+                if (!left && delightTexture(t, bgra, null, tiling, geometry)) {
                     delitHere.push(t.checksum.toString(16).padStart(8, "0"));
                     report.delit++;
                 }
