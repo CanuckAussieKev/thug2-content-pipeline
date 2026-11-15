@@ -13,8 +13,8 @@
 // - the broad part of the log luminance, l = ln(L + 0.01) of the linearised colour (sRGB as 2.2, Rec. 709): its
 //   steps integrated on a grid of a 32nd of the shorter side, colour edges left out (gradient-domain Retinex, Horn
 //   1974 / Blake 1985 - retinexShading: a step where the chromaticity changes hard is paint and counts for nothing; a
-//   step of brightness alone stays - a shadow under a ledge starts with one). The log chromaticity (ln R/L, ln B/L)
-//   blurred to the same scale: light changes brightness, paint changes colour;
+//   step of brightness alone stays - a shadow under a ledge starts with one). The colour (ln of R's and of B's share
+//   of R + G + B) blurred to the same scale: light changes brightness, paint changes colour;
 // - a structured lighting model fitted to it (least squares over the visible texels; x, y the picture's coordinates,
 //   0 - 1) - three kinds of term, each the shape one kind of light takes:
 //   gradient: a plane in l (x - 1/2, y - 1/2) - a smooth directional falloff of light across the picture. Only along
@@ -767,9 +767,16 @@ export function delight(bgra: Uint8Array, w: number, h: number, options: Delight
         edgeLuma: Number.POSITIVE_INFINITY,
         edgeChroma: 0.06,
     });
+    // (the colour the terms are checked against: ln of the channel's share of R + G + B - unchanged when the texel
+    // only grows brighter or darker, even for a dark, saturated paint)
+    const share = (c: number): Float32Array =>
+        Float32Array.from({ length: n }, (_, i) => {
+            const sum = lin[0]![i]! + lin[1]![i]! + lin[2]![i]!;
+            return Math.log((lin[c]![i]! + 1e-3) / (sum + 3e-3));
+        });
     const radius = Math.max(1, Math.round(cell));
-    const lowR = boxMean(gr, w, h, radius, options.wrapU, options.wrapV);
-    const lowB = boxMean(gb, w, h, radius, options.wrapU, options.wrapV);
+    const lowR = boxMean(share(0), w, h, radius, options.wrapU, options.wrapV);
+    const lowB = boxMean(share(2), w, h, radius, options.wrapU, options.wrapV);
 
     // the samples: the visible texels on a lattice of at most ~4096
     const stride = Math.max(1, Math.ceil(Math.sqrt(n / 4096)));
